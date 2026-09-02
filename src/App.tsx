@@ -19,6 +19,7 @@ import { AiConciergeModal } from './components/AiConciergeModal';
 import { ReceptionCheckInApp } from './components/ReceptionCheckInApp';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Footer } from './components/Footer';
+import { WelcomeScreen } from './components/WelcomeScreen';
 
 const AppContent: React.FC = () => {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
@@ -73,6 +74,9 @@ const AppContent: React.FC = () => {
         loop
         src={config.backgroundMusicUrl || "https://cdn.pixabay.com/download/audio/2022/10/25/audio_a1cd1f5795.mp3?filename=retro-wave-style-track-112345.mp3"}
       />
+
+      {/* Welcome Screen for Autoplay Audio */}
+      <WelcomeScreen />
 
       {/* Navigation Bar */}
       <Navbar

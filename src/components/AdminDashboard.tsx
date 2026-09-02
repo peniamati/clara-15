@@ -550,6 +550,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                       <option value="royal-violet">Royal Violet (Violeta & Oro)</option>
                       <option value="champagne">Champagne (Neutros)</option>
                     </select>
+                    <div className="mt-3 p-4 rounded-xl border border-white/5 bg-black flex flex-col gap-3">
+                      <span className="text-[10px] uppercase text-zinc-500 tracking-wider">Paleta Previa:</span>
+                      <div className="flex gap-2">
+                        {localConfig.theme === 'silver-disco' && ['#050505', '#C0C0C0', '#E0E0E0', '#808080'].map(c => <div key={c} className="w-8 h-8 rounded-full border border-white/20" style={{ backgroundColor: c }} />)}
+                        {localConfig.theme === 'gold-emerald' && ['#022B1A', '#D4AF37', '#F3E5AB', '#997A00'].map(c => <div key={c} className="w-8 h-8 rounded-full border border-white/20" style={{ backgroundColor: c }} />)}
+                        {localConfig.theme === 'rose-gold' && ['#1C0E11', '#B76E79', '#E0BFB8', '#904B56'].map(c => <div key={c} className="w-8 h-8 rounded-full border border-white/20" style={{ backgroundColor: c }} />)}
+                        {localConfig.theme === 'royal-violet' && ['#140026', '#8A2BE2', '#D8BFD8', '#4B0082'].map(c => <div key={c} className="w-8 h-8 rounded-full border border-white/20" style={{ backgroundColor: c }} />)}
+                        {localConfig.theme === 'champagne' && ['#12100B', '#F7E7CE', '#FFFFF0', '#C2B280'].map(c => <div key={c} className="w-8 h-8 rounded-full border border-white/20" style={{ backgroundColor: c }} />)}
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Fuente de Títulos</label>
