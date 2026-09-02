@@ -506,10 +506,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     >
                       <option value="cormorant">Cormorant Garamond (Elegante Clásica)</option>
                       <option value="playfair">Playfair Display (Premium Editorial)</option>
+                      <option value="merriweather">Merriweather (Clásica y Formal)</option>
+                      <option value="lora">Lora (Poética y Refinada)</option>
+                      <option value="cinzel">Cinzel (Cinematográfica / Mayúsculas)</option>
+                      <option value="dancing">Dancing Script (Cursiva Relajada)</option>
+                      <option value="greatvibes">Great Vibes (Cursiva Elegante)</option>
+                      <option value="oswald">Oswald (Impactante e Industrial)</option>
                       <option value="montserrat">Montserrat (Moderna Geométrica)</option>
                       <option value="lato">Lato (Limpia y Amigable)</option>
                       <option value="inter">Inter (Minimalista Neutra)</option>
                       <option value="jakarta">Plus Jakarta (Moderna Fresca)</option>
+                      <option value="roboto">Roboto (Clásica y Funcional)</option>
+                      <option value="opensans">Open Sans (Versátil y Amigable)</option>
+                      <option value="poppins">Poppins (Redonda y Amigable)</option>
+                      <option value="raleway">Raleway (Elegante y Delgada)</option>
+                      <option value="nunito">Nunito (Suave y Balanceada)</option>
+                      <option value="dmsans">DM Sans (Limpia Tecnológica)</option>
+                      <option value="quicksand">Quicksand (Moderna Redondeada)</option>
                     </select>
                   </div>
                   <div className="md:col-span-2">
@@ -519,10 +532,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                       onChange={e => handleLocalConfigChange('fontBody', e.target.value as any)}
                       className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
                     >
-                      <option value="jakarta">Plus Jakarta Sans (Moderna)</option>
+                      <option value="jakarta">Plus Jakarta Sans (Moderna Fresca)</option>
                       <option value="inter">Inter (Legible Neutra)</option>
                       <option value="montserrat">Montserrat (Geométrica)</option>
                       <option value="lato">Lato (Clásica y Amigable)</option>
+                      <option value="roboto">Roboto (Clásica y Funcional)</option>
+                      <option value="opensans">Open Sans (Versátil y Amigable)</option>
+                      <option value="poppins">Poppins (Redonda y Amigable)</option>
+                      <option value="raleway">Raleway (Elegante y Delgada)</option>
+                      <option value="nunito">Nunito (Suave y Balanceada)</option>
+                      <option value="dmsans">DM Sans (Limpia Tecnológica)</option>
+                      <option value="quicksand">Quicksand (Moderna Redondeada)</option>
+                      <option value="cormorant">Cormorant Garamond (Elegante Clásica)</option>
+                      <option value="playfair">Playfair Display (Premium Editorial)</option>
+                      <option value="merriweather">Merriweather (Clásica y Formal)</option>
+                      <option value="lora">Lora (Poética y Refinada)</option>
                     </select>
                   </div>
                   <div className="md:col-span-2">

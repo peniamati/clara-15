@@ -43,6 +43,19 @@ const AppContent: React.FC = () => {
     'lato': '"Lato", sans-serif',
     'inter': '"Inter", sans-serif',
     'jakarta': '"Plus Jakarta Sans", sans-serif',
+    'roboto': '"Roboto", sans-serif',
+    'opensans': '"Open Sans", sans-serif',
+    'poppins': '"Poppins", sans-serif',
+    'raleway': '"Raleway", sans-serif',
+    'nunito': '"Nunito", sans-serif',
+    'merriweather': '"Merriweather", serif',
+    'lora': '"Lora", serif',
+    'cinzel': '"Cinzel", serif',
+    'dancing': '"Dancing Script", cursive',
+    'greatvibes': '"Great Vibes", cursive',
+    'dmsans': '"DM Sans", sans-serif',
+    'quicksand': '"Quicksand", sans-serif',
+    'oswald': '"Oswald", sans-serif',
   };
 
   const rootStyle = {

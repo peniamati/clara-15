@@ -1,6 +1,6 @@
 export type ThemeColor = 'gold-emerald' | 'rose-gold' | 'royal-violet' | 'midnight-silver' | 'champagne' | 'silver-disco';
 
-export type FontFamily = 'cormorant' | 'playfair' | 'montserrat' | 'lato' | 'inter' | 'jakarta';
+export type FontFamily = 'cormorant' | 'playfair' | 'montserrat' | 'lato' | 'inter' | 'jakarta' | 'roboto' | 'opensans' | 'poppins' | 'raleway' | 'nunito' | 'merriweather' | 'lora' | 'cinzel' | 'dancing' | 'greatvibes' | 'dmsans' | 'quicksand' | 'oswald';
 
 export interface EventConfig {
   id: string;
