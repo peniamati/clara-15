@@ -1,0 +1,83 @@
+{
+  "entities": {
+    "Guest": {
+      "title": "Guest",
+      "description": "Information about an invited guest to the 15th celebration",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique guest identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "First name of the guest"
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the guest"
+        },
+        "email": {
+          "type": "string",
+          "description": "Contact email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "CONFIRMED", "DECLINED", "CHECKED_IN"],
+          "description": "RSVP attendance and check-in status"
+        },
+        "adultsCount": {
+          "type": "number",
+          "description": "Number of adults attending"
+        },
+        "kidsCount": {
+          "type": "number",
+          "description": "Number of minors attending"
+        },
+        "emergencyContactName": {
+          "type": "string",
+          "description": "Name of responsible adult contact in case of emergency for minors"
+        },
+        "emergencyContactPhone": {
+          "type": "string",
+          "description": "Phone number of emergency contact for minors"
+        },
+        "tableNumber": {
+          "type": "number",
+          "description": "Assigned table number"
+        },
+        "dietaryRestrictions": {
+          "type": "array",
+          "description": "List of dietary requirements or allergies"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Special message or notes"
+        },
+        "qrCode": {
+          "type": "string",
+          "description": "Unique QR verification code"
+        },
+        "uniqueInviteUrl": {
+          "type": "string",
+          "description": "Custom link for personalized invitation pass"
+        },
+        "checkInTime": {
+          "type": "string",
+          "description": "Time when the guest checked in at reception"
+        }
+      },
+      "required": ["id", "name", "lastName", "status", "adultsCount", "kidsCount", "tableNumber"]
+    }
+  },
+  "firestore": {
+    "/guests/{guestId}": {
+      "schema": "Guest",
+      "description": "Collection of guests attending the 15th gala"
+    }
+  }
+}
