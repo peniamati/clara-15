@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import { auth } from '../lib/firebase';
-import { signOut } from 'firebase/auth';
+import { signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import {
   ShieldCheck,
   Users,
@@ -54,30 +54,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async () => {
     try {
-      const { signInWithEmailAndPassword } = await import('firebase/auth');
-      await signInWithEmailAndPassword(auth, email, password);
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error('Login error:', error);
       alert('Error al iniciar sesión: ' + (error.message || 'Credenciales inválidas.'));
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password.length < 6) {
-      alert('La contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
-    try {
-      const { createUserWithEmailAndPassword } = await import('firebase/auth');
-      await createUserWithEmailAndPassword(auth, email, password);
-      alert('Cuenta de organizador creada exitosamente.');
-    } catch (error: any) {
-      console.error('Register error:', error);
-      alert('Error al registrar: ' + (error.message || 'Intente nuevamente.'));
     }
   };
 
@@ -147,46 +130,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
           <h2 className="font-serif text-3xl font-semibold text-white mb-1">Acceso Organizador</h2>
           <p className="text-zinc-400 text-xs mb-6 font-light">Iniciá sesión para administrar la plataforma</p>
 
-          <form className="space-y-4 text-left">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="organizador@fiesta.com"
-                className="w-full px-4 py-3 bg-black border border-white/10 rounded-xl text-white text-sm focus:border-[#C0C0C0] outline-none transition-colors"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">Contraseña</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 bg-black border border-white/10 rounded-xl text-white text-sm focus:border-[#C0C0C0] outline-none transition-colors"
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2 pt-2">
-              <button
-                type="submit"
-                onClick={handleLogin}
-                className="w-full py-3.5 rounded-xl bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10 flex items-center justify-center gap-2 transition-colors"
-              >
-                Iniciar Sesión
-              </button>
-              <button
-                type="button"
-                onClick={handleRegister}
-                className="w-full py-3.5 rounded-xl bg-transparent border border-white/10 hover:border-white/30 text-zinc-300 font-semibold text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"
-              >
-                Crear Cuenta
-              </button>
-            </div>
-          </form>
+          <button
+            onClick={handleLogin}
+            className="w-full py-3.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10 flex items-center justify-center gap-2 transition-colors"
+          >
+            <Users className="w-4 h-4" />
+            Iniciar sesión con Google
+          </button>
         </div>
       </div>
     );
