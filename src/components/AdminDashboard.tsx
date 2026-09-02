@@ -29,6 +29,7 @@ interface AdminDashboardProps {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const {
     config,
+    setPreviewConfig,
     updateConfig,
     guests,
     addOrUpdateGuestRsvp,
@@ -42,9 +43,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   } = useEvent();
 
   const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports' | 'collabs'>('stats');
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   // Customizer state
   const [localConfig, setLocalConfig] = useState(config);
+  
+  React.useEffect(() => {
+    setPreviewConfig(localConfig);
+    return () => setPreviewConfig(null);
+  }, [localConfig, setPreviewConfig]);
+
   const [customizerTab, setCustomizerTab] = useState<'general' | 'location' | 'gifts' | 'appearance' | 'modules'>('general');
 
   const handleLocalConfigChange = (field: keyof typeof config, value: any) => {
@@ -95,6 +103,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
       return;
     }
     updateConfig({ adminEmails: currentAdmins.filter(e => e !== emailToRemove) });
+  };
+
+  const fontMap: Record<string, string> = {
+    'cormorant': '"Cormorant Garamond", serif',
+    'playfair': '"Playfair Display", serif',
+    'montserrat': '"Montserrat", sans-serif',
+    'lato': '"Lato", sans-serif',
+    'inter': '"Inter", sans-serif',
+    'jakarta': '"Plus Jakarta Sans", sans-serif',
+    'roboto': '"Roboto", sans-serif',
+    'opensans': '"Open Sans", sans-serif',
+    'poppins': '"Poppins", sans-serif',
+    'raleway': '"Raleway", sans-serif',
+    'nunito': '"Nunito", sans-serif',
+    'merriweather': '"Merriweather", serif',
+    'lora': '"Lora", serif',
+    'cinzel': '"Cinzel", serif',
+    'dancing': '"Dancing Script", cursive',
+    'greatvibes': '"Great Vibes", cursive',
+    'dmsans': '"DM Sans", sans-serif',
+    'quicksand': '"Quicksand", sans-serif',
+    'oswald': '"Oswald", sans-serif',
   };
 
   const handleSaveConfig = (e: React.FormEvent) => {
@@ -165,6 +195,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const confirmedGuests = guests.filter(g => g.status === 'CONFIRMED' || g.status === 'CHECKED_IN').length;
   const checkedInGuests = guests.filter(g => g.status === 'CHECKED_IN').length;
   const dietaryCount = guests.filter(g => g.dietaryRestrictions.length > 0 && !g.dietaryRestrictions.includes('Ninguna')).length;
+
+  if (isPreviewMode) {
+    return (
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-[#0A0A0A]/95 border border-white/20 p-4 px-6 rounded-full backdrop-blur-2xl flex items-center gap-6 shadow-2xl shadow-black">
+        <span className="text-zinc-300 font-semibold text-sm hidden sm:block">👀 Viendo Vista Previa</span>
+        <button onClick={() => setIsPreviewMode(false)} className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs uppercase tracking-wider rounded-full transition-colors">
+          Volver al Editor
+        </button>
+        <button onClick={handleSaveConfig} className="px-5 py-2.5 bg-[#C0C0C0] hover:bg-white text-black font-bold text-xs uppercase tracking-wider rounded-full transition-colors shadow-lg shadow-[#C0C0C0]/20">
+          Guardar Cambios
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl p-4 sm:p-8 overflow-y-auto flex items-center justify-center">
@@ -337,12 +381,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
           <form onSubmit={handleSaveConfig} className="space-y-6 max-w-3xl mx-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-serif text-2xl font-semibold text-white">Personalización del Sitio</h3>
-              <button
-                type="submit"
-                className="px-6 py-2.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10 transition-colors"
-              >
-                Guardar Cambios
-              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPreviewMode(true)}
+                  className="px-5 py-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs uppercase tracking-widest transition-colors flex items-center gap-2"
+                  title="Ocultar panel temporalmente para ver cómo luce el sitio"
+                >
+                  <span>👁️</span> Vista Previa
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10 transition-colors"
+                >
+                  Guardar Cambios
+                </button>
+              </div>
             </div>
 
             {/* Customizer Sub-tabs */}
@@ -524,6 +578,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                       <option value="dmsans">DM Sans (Limpia Tecnológica)</option>
                       <option value="quicksand">Quicksand (Moderna Redondeada)</option>
                     </select>
+                    <div className="mt-3 p-4 rounded-xl border border-white/5 bg-black">
+                      <span className="text-[10px] uppercase text-zinc-500 mb-2 block tracking-wider">Muestra en Título:</span>
+                      <p className="text-xl text-white" style={{ fontFamily: fontMap[localConfig.fontHeading || 'cormorant'] }}>
+                        Antonella & Matías
+                      </p>
+                    </div>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Fuente de Textos (Cuerpo)</label>
@@ -548,6 +608,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                       <option value="merriweather">Merriweather (Clásica y Formal)</option>
                       <option value="lora">Lora (Poética y Refinada)</option>
                     </select>
+                    <div className="mt-3 p-4 rounded-xl border border-white/5 bg-black">
+                      <span className="text-[10px] uppercase text-zinc-500 mb-2 block tracking-wider">Muestra en Texto:</span>
+                      <p className="text-sm text-zinc-300" style={{ fontFamily: fontMap[localConfig.fontBody || 'jakarta'] }}>
+                        Te invitamos a compartir con nosotros este día tan especial. Será una noche inolvidable llena de momentos mágicos y mucha alegría.
+                      </p>
+                    </div>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">URL Imagen Principal (Portada)</label>

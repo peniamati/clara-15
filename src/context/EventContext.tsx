@@ -35,6 +35,9 @@ import {
 
 interface EventContextType {
   config: EventConfig;
+  previewConfig: EventConfig | null;
+  setPreviewConfig: (config: EventConfig | null) => void;
+  activeConfig: EventConfig;
   updateConfig: (newConfig: Partial<EventConfig>) => void;
   guests: Guest[];
   addOrUpdateGuestRsvp: (guestData: Partial<Guest>) => Guest;
@@ -82,6 +85,8 @@ const EventContext = createContext<EventContextType | undefined>(undefined);
 
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [config, setConfig] = useState<EventConfig>(initialEventConfig);
+  const [previewConfig, setPreviewConfig] = useState<EventConfig | null>(null);
+  const activeConfig = previewConfig || config;
   const [guests, setGuests] = useState<Guest[]>(initialGuests);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -386,7 +391,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <EventContext.Provider
       value={{
-        config,
+        config: activeConfig,
+        previewConfig,
+        setPreviewConfig,
+        activeConfig,
         updateConfig,
         guests,
         addOrUpdateGuestRsvp,
