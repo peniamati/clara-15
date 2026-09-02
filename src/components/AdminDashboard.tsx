@@ -44,12 +44,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports'>('stats');
 
   // Customizer state
-  const [honoree, setHonoree] = useState(config.honoree);
-  const [venue, setVenue] = useState(config.venue);
-  const [address, setAddress] = useState(config.address);
-  const [cbu, setCbu] = useState(config.cbu);
-  const [alias, setAlias] = useState(config.alias);
-  const [theme, setTheme] = useState(config.theme);
+  const [localConfig, setLocalConfig] = useState(config);
+  const [customizerTab, setCustomizerTab] = useState<'general' | 'location' | 'gifts' | 'appearance'>('general');
+
+  const handleLocalConfigChange = (field: keyof typeof config, value: string | string[]) => {
+    setLocalConfig(prev => ({ ...prev, [field]: value }));
+  };
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -74,14 +74,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
 
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();
-    updateConfig({
-      honoree,
-      venue,
-      address,
-      cbu,
-      alias,
-      theme
-    });
+    updateConfig(localConfig);
     alert('¡Configuración de la plataforma actualizada exitosamente!');
   };
 
@@ -315,57 +308,180 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
 
         {/* Tab 3: Customizer */}
         {activeTab === 'customizer' && (
-          <form onSubmit={handleSaveConfig} className="space-y-4 max-w-2xl mx-auto">
-            <h3 className="font-serif text-2xl font-semibold text-white mb-4">Personalización SaaS de la Fiesta</h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1">Nombre de la Homenajeada</label>
-                <input
-                  type="text"
-                  value={honoree}
-                  onChange={(e) => setHonoree(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-black border border-white/10 text-white text-xs focus:border-[#C0C0C0] outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1">Nombre del Salón / Venue</label>
-                <input
-                  type="text"
-                  value={venue}
-                  onChange={(e) => setVenue(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-black border border-white/10 text-white text-xs focus:border-[#C0C0C0] outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1">Alias Regalos</label>
-                <input
-                  type="text"
-                  value={alias}
-                  onChange={(e) => setAlias(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-black border border-white/10 text-white text-xs focus:border-[#C0C0C0] outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1">CBU Regalos</label>
-                <input
-                  type="text"
-                  value={cbu}
-                  onChange={(e) => setCbu(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-black border border-white/10 text-white text-xs focus:border-[#C0C0C0] outline-none"
-                />
-              </div>
+          <form onSubmit={handleSaveConfig} className="space-y-6 max-w-3xl mx-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-serif text-2xl font-semibold text-white">Personalización del Sitio</h3>
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10 transition-colors"
+              >
+                Guardar Cambios
+              </button>
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-3.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10"
-            >
-              Guardar Cambios del Evento
-            </button>
+            {/* Customizer Sub-tabs */}
+            <div className="flex overflow-x-auto pb-2 gap-2 border-b border-white/10 mb-6 no-scrollbar">
+              <button
+                type="button"
+                onClick={() => setCustomizerTab('general')}
+                className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-b-2 ${
+                  customizerTab === 'general' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
+                }`}
+              >
+                General & Textos
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomizerTab('location')}
+                className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-b-2 ${
+                  customizerTab === 'location' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
+                }`}
+              >
+                Ubicación & Dress Code
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomizerTab('gifts')}
+                className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-b-2 ${
+                  customizerTab === 'gifts' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
+                }`}
+              >
+                Regalos & Cuentas
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomizerTab('appearance')}
+                className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-b-2 ${
+                  customizerTab === 'appearance' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
+                }`}
+              >
+                Apariencia & Multimedia
+              </button>
+            </div>
+
+            <div className="bg-black border border-white/10 rounded-2xl p-6">
+              {customizerTab === 'general' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Homenajeada</label>
+                    <input type="text" value={localConfig.honoree} onChange={e => handleLocalConfigChange('honoree', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Tipo de Evento</label>
+                    <input type="text" value={localConfig.eventType} onChange={e => handleLocalConfigChange('eventType', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" placeholder="Mis 15, Boda, etc." />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Subtítulo (Bajo el título principal)</label>
+                    <input type="text" value={localConfig.subTitle} onChange={e => handleLocalConfigChange('subTitle', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Mensaje de Bienvenida</label>
+                    <textarea rows={3} value={localConfig.welcomeMessage} onChange={e => handleLocalConfigChange('welcomeMessage', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none resize-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Fecha del Evento</label>
+                    <input type="datetime-local" value={localConfig.date ? new Date(localConfig.date).toISOString().slice(0, 16) : ''} onChange={e => handleLocalConfigChange('date', new Date(e.target.value).toISOString())} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Fecha Límite Confirmación (RSVP)</label>
+                    <input type="date" value={localConfig.rsvpDeadline} onChange={e => handleLocalConfigChange('rsvpDeadline', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                </div>
+              )}
+
+              {customizerTab === 'location' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Nombre del Salón / Venue</label>
+                    <input type="text" value={localConfig.venue} onChange={e => handleLocalConfigChange('venue', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Ciudad</label>
+                    <input type="text" value={localConfig.city} onChange={e => handleLocalConfigChange('city', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Dirección Exacta</label>
+                    <input type="text" value={localConfig.address} onChange={e => handleLocalConfigChange('address', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Link Google Maps</label>
+                    <input type="url" value={localConfig.googleMapsUrl} onChange={e => handleLocalConfigChange('googleMapsUrl', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div className="md:col-span-2 border-t border-white/10 pt-6 mt-2">
+                    <h4 className="font-serif text-lg font-semibold text-white mb-4">Código de Vestimenta (Dress Code)</h4>
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Estilo Corto (Ej: Elegante)</label>
+                    <input type="text" value={localConfig.dressCode} onChange={e => handleLocalConfigChange('dressCode', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Detalles del Dress Code</label>
+                    <textarea rows={2} value={localConfig.dressCodeDetails} onChange={e => handleLocalConfigChange('dressCodeDetails', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none resize-none" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Colores Prohibidos (Separados por coma)</label>
+                    <input type="text" value={localConfig.forbiddenColors?.join(', ')} onChange={e => handleLocalConfigChange('forbiddenColors', e.target.value.split(',').map(s => s.trim()))} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" placeholder="Blanco, Verde..." />
+                  </div>
+                </div>
+              )}
+
+              {customizerTab === 'gifts' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Alias (Transferencia)</label>
+                    <input type="text" value={localConfig.alias} onChange={e => handleLocalConfigChange('alias', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">CBU / CVU</label>
+                    <input type="text" value={localConfig.cbu} onChange={e => handleLocalConfigChange('cbu', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Link de MercadoPago (URL o QR)</label>
+                    <input type="url" value={localConfig.mpQrUrl} onChange={e => handleLocalConfigChange('mpQrUrl', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Link de PayPal</label>
+                    <input type="url" value={localConfig.payPalUrl || ''} onChange={e => handleLocalConfigChange('payPalUrl', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                </div>
+              )}
+
+              {customizerTab === 'appearance' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Temática de Color</label>
+                    <select
+                      value={localConfig.theme}
+                      onChange={e => handleLocalConfigChange('theme', e.target.value as any)}
+                      className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
+                    >
+                      <option value="silver-disco">Silver Disco (Plata & Negro)</option>
+                      <option value="gold-emerald">Gold Emerald (Dorado & Esmeralda)</option>
+                      <option value="rose-gold">Rose Gold (Rosa & Dorado)</option>
+                      <option value="royal-violet">Royal Violet (Violeta & Oro)</option>
+                      <option value="champagne">Champagne (Neutros)</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">URL Imagen Principal (Portada)</label>
+                    <input type="url" value={localConfig.heroImageUrl} onChange={e => handleLocalConfigChange('heroImageUrl', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                    {localConfig.heroImageUrl && (
+                      <div className="mt-2 w-full h-32 rounded-xl overflow-hidden border border-white/10">
+                        <img src={localConfig.heroImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Hashtag de Instagram</label>
+                    <input type="text" value={localConfig.customHashtag} onChange={e => handleLocalConfigChange('customHashtag', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Música de Fondo (URL MP3)</label>
+                    <input type="url" value={localConfig.backgroundMusicUrl} onChange={e => handleLocalConfigChange('backgroundMusicUrl', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  </div>
+                </div>
+              )}
+            </div>
           </form>
         )}
 
