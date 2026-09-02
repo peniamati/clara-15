@@ -1,5 +1,7 @@
 export type ThemeColor = 'gold-emerald' | 'rose-gold' | 'royal-violet' | 'midnight-silver' | 'champagne' | 'silver-disco';
 
+export type FontFamily = 'cormorant' | 'playfair' | 'montserrat' | 'lato' | 'inter' | 'jakarta';
+
 export interface EventConfig {
   id: string;
   honoree: string;
@@ -22,12 +24,23 @@ export interface EventConfig {
   mpQrUrl: string;
   payPalUrl: string;
   theme: ThemeColor;
+  fontHeading?: FontFamily;
+  fontBody?: FontFamily;
+  enableHero?: boolean;
+  enableCountdown?: boolean;
+  enableTimeline?: boolean;
+  enableDressCode?: boolean;
+  enableGifts?: boolean;
+  enableGuestbook?: boolean;
+  enableTrivia?: boolean;
+  enableAI?: boolean;
   backgroundMusicUrl: string;
   customHashtag: string;
   rsvpDeadline: string;
   welcomeMessage: string;
   heroVideoUrl?: string;
   heroImageUrl: string;
+  adminEmails?: string[];
 }
 
 export interface Guest {

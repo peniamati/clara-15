@@ -41,13 +41,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     isAdminLoggedIn
   } = useEvent();
 
-  const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports' | 'collabs'>('stats');
 
   // Customizer state
   const [localConfig, setLocalConfig] = useState(config);
-  const [customizerTab, setCustomizerTab] = useState<'general' | 'location' | 'gifts' | 'appearance'>('general');
+  const [customizerTab, setCustomizerTab] = useState<'general' | 'location' | 'gifts' | 'appearance' | 'modules'>('general');
 
-  const handleLocalConfigChange = (field: keyof typeof config, value: string | string[]) => {
+  const handleLocalConfigChange = (field: keyof typeof config, value: any) => {
     setLocalConfig(prev => ({ ...prev, [field]: value }));
   };
 
@@ -57,7 +57,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const handleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const allowedAdmins = config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
+      if (!allowedAdmins.map(e => e.toLowerCase()).includes(result.user.email?.toLowerCase() || '')) {
+        await signOut(auth);
+        alert('Acceso denegado: Tu cuenta de Google no tiene permisos de organizador para este evento.');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       alert('Error al iniciar sesión: ' + (error.message || 'Credenciales inválidas.'));
@@ -70,6 +75,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     } catch (error) {
       console.error('Logout error:', error);
     }
+  };
+
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const handleAddAdmin = () => {
+    if (!newAdminEmail.trim()) return;
+    const email = newAdminEmail.trim().toLowerCase();
+    const currentAdmins = config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
+    if (!currentAdmins.includes(email)) {
+      updateConfig({ adminEmails: [...currentAdmins, email] });
+    }
+    setNewAdminEmail('');
+  };
+
+  const handleRemoveAdmin = (emailToRemove: string) => {
+    const currentAdmins = config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
+    if (currentAdmins.length <= 1) {
+      alert('Debe haber al menos un administrador en la plataforma.');
+      return;
+    }
+    updateConfig({ adminEmails: currentAdmins.filter(e => e !== emailToRemove) });
   };
 
   const handleSaveConfig = (e: React.FormEvent) => {
@@ -181,6 +206,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               { id: 'moderation', label: '🎵 Moderación' },
               { id: 'customizer', label: '🎨 Personalizar' },
               { id: 'exports', label: '📥 Exportar' },
+              { id: 'collabs', label: '🛡️ Administradores' },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -357,6 +383,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               >
                 Apariencia & Multimedia
               </button>
+              <button
+                type="button"
+                onClick={() => setCustomizerTab('modules')}
+                className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-b-2 ${
+                  customizerTab === 'modules' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
+                }`}
+              >
+                Módulos & Secciones
+              </button>
             </div>
 
             <div className="bg-black border border-white/10 rounded-2xl p-6">
@@ -448,7 +483,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
 
               {customizerTab === 'appearance' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2">
+                  <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Temática de Color</label>
                     <select
                       value={localConfig.theme}
@@ -460,6 +495,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                       <option value="rose-gold">Rose Gold (Rosa & Dorado)</option>
                       <option value="royal-violet">Royal Violet (Violeta & Oro)</option>
                       <option value="champagne">Champagne (Neutros)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Fuente de Títulos</label>
+                    <select
+                      value={localConfig.fontHeading || 'cormorant'}
+                      onChange={e => handleLocalConfigChange('fontHeading', e.target.value as any)}
+                      className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
+                    >
+                      <option value="cormorant">Cormorant Garamond (Elegante Clásica)</option>
+                      <option value="playfair">Playfair Display (Premium Editorial)</option>
+                      <option value="montserrat">Montserrat (Moderna Geométrica)</option>
+                      <option value="lato">Lato (Limpia y Amigable)</option>
+                      <option value="inter">Inter (Minimalista Neutra)</option>
+                      <option value="jakarta">Plus Jakarta (Moderna Fresca)</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Fuente de Textos (Cuerpo)</label>
+                    <select
+                      value={localConfig.fontBody || 'jakarta'}
+                      onChange={e => handleLocalConfigChange('fontBody', e.target.value as any)}
+                      className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
+                    >
+                      <option value="jakarta">Plus Jakarta Sans (Moderna)</option>
+                      <option value="inter">Inter (Legible Neutra)</option>
+                      <option value="montserrat">Montserrat (Geométrica)</option>
+                      <option value="lato">Lato (Clásica y Amigable)</option>
                     </select>
                   </div>
                   <div className="md:col-span-2">
@@ -481,6 +544,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   </div>
                 </div>
               )}
+
+              {customizerTab === 'modules' && (
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="border-b border-white/10 pb-4">
+                    <h4 className="font-serif text-xl font-semibold text-white mb-2">Activar/Desactivar Secciones</h4>
+                    <p className="text-zinc-400 text-xs font-light">Controla qué módulos se muestran a tus invitados en la página web.</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[
+                      { id: 'enableHero', label: 'Cabecera Principal (Portada)' },
+                      { id: 'enableCountdown', label: 'Cuenta Regresiva' },
+                      { id: 'enableTimeline', label: 'Cronograma del Evento' },
+                      { id: 'enableDressCode', label: 'Dress Code & Outfit' },
+                      { id: 'enableGifts', label: 'Sección de Regalos' },
+                      { id: 'enableGuestbook', label: 'Libro de Firmas Virtual' },
+                      { id: 'enableTrivia', label: 'Juegos & Trivia' },
+                      { id: 'enableAI', label: 'Asistente IA (Chatbot)' },
+                    ].map((mod) => (
+                      <label key={mod.id} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+                        <span className="text-sm font-medium text-white">{mod.label}</span>
+                        <div className={`w-10 h-5 rounded-full relative transition-colors ${localConfig[mod.id as keyof typeof config] !== false ? 'bg-[#C0C0C0]' : 'bg-zinc-700'}`}>
+                          <div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform ${localConfig[mod.id as keyof typeof config] !== false ? 'translate-x-5' : ''}`}></div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          className="hidden"
+                          checked={localConfig[mod.id as keyof typeof config] !== false}
+                          onChange={(e) => handleLocalConfigChange(mod.id as keyof typeof config, e.target.checked)}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </form>
         )}
@@ -498,6 +595,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
             >
               Descargar Lista CSV Completa
             </button>
+          </div>
+        )}
+
+        {/* Tab 6: Collabs / Admins */}
+        {activeTab === 'collabs' && (
+          <div className="max-w-xl mx-auto">
+            <h3 className="font-serif text-2xl font-semibold text-white mb-2">Administradores del Sitio</h3>
+            <p className="text-xs text-zinc-400 font-light mb-6">Gestioná los correos de Google (Gmail) que tienen permiso para acceder a este panel de control y modificar la página.</p>
+            
+            <div className="flex gap-2 mb-6">
+              <input
+                type="email"
+                placeholder="nuevo.admin@gmail.com"
+                value={newAdminEmail}
+                onChange={e => setNewAdminEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddAdmin()}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
+              />
+              <button
+                onClick={handleAddAdmin}
+                className="px-6 py-2.5 rounded-xl bg-[#C0C0C0] text-black font-semibold text-xs tracking-wider hover:bg-white transition-colors uppercase"
+              >
+                Agregar
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {(config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com']).map(email => (
+                <div key={email} className="flex items-center justify-between p-4 rounded-xl bg-black border border-white/10">
+                  <span className="text-sm text-zinc-300 font-medium">{email}</span>
+                  <button
+                    onClick={() => handleRemoveAdmin(email)}
+                    className="p-2 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
+                    title="Eliminar administrador"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

@@ -23,7 +23,7 @@ import { Footer } from './components/Footer';
 const AppContent: React.FC = () => {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
-  const { isPlayingMusic } = useEvent();
+  const { config, isPlayingMusic } = useEvent();
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -36,15 +36,29 @@ const AppContent: React.FC = () => {
     }
   }, [isPlayingMusic]);
 
+  const fontMap: Record<string, string> = {
+    'cormorant': '"Cormorant Garamond", serif',
+    'playfair': '"Playfair Display", serif',
+    'montserrat': '"Montserrat", sans-serif',
+    'lato': '"Lato", sans-serif',
+    'inter': '"Inter", sans-serif',
+    'jakarta': '"Plus Jakarta Sans", sans-serif',
+  };
+
+  const rootStyle = {
+    '--font-heading': fontMap[config.fontHeading || 'cormorant'],
+    '--font-body': fontMap[config.fontBody || 'jakarta'],
+  } as React.CSSProperties;
+
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#C0C0C0] selection:text-black overflow-x-hidden">
+    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#C0C0C0] selection:text-black overflow-x-hidden" style={rootStyle}>
       
       {/* Background audio loop simulator - Upbeat/Disco track */}
       <audio
         ref={audioRef}
         id="bg-audio"
         loop
-        src="https://cdn.pixabay.com/download/audio/2022/10/25/audio_a1cd1f5795.mp3?filename=retro-wave-style-track-112345.mp3"
+        src={config.backgroundMusicUrl || "https://cdn.pixabay.com/download/audio/2022/10/25/audio_a1cd1f5795.mp3?filename=retro-wave-style-track-112345.mp3"}
       />
 
       {/* Navigation Bar */}
@@ -55,24 +69,24 @@ const AppContent: React.FC = () => {
 
       {/* Main Sections Stack */}
       <main>
-        <HeroWelcome />
-        <Countdown />
-        <LifeTimeline />
+        {config.enableHero !== false && <HeroWelcome />}
+        {config.enableCountdown !== false && <Countdown />}
+        {config.enableTimeline !== false && <LifeTimeline />}
         <GalleryMasonry />
         <VideoSection />
         <EventInfoDetails />
         <SeatingChart />
         <RsvpForm />
         <CollaborativePlaylist />
-        <Guestbook />
-        <GiftsSection />
-        <DressCodeMoodboard />
+        {config.enableGuestbook !== false && <Guestbook />}
+        {config.enableGifts !== false && <GiftsSection />}
+        {config.enableDressCode !== false && <DressCodeMoodboard />}
         <PhotoboothCollabAlbum />
-        <InteractiveGames />
+        {config.enableTrivia !== false && <InteractiveGames />}
       </main>
 
       {/* AI Concierge Floating Assistant */}
-      <AiConciergeModal />
+      {config.enableAI !== false && <AiConciergeModal />}
 
       {/* Reception Check-In App Drawer */}
       {showCheckInModal && (
@@ -86,7 +100,6 @@ const AppContent: React.FC = () => {
 
       {/* Footer & Credits */}
       <Footer />
-
     </div>
   );
 };

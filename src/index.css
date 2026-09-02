@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;600&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap');
 
 @layer base {
   :root {
@@ -6,15 +7,17 @@
     --gold-accent: #C0C0C0;
     --gold-light: #E0E0E0;
     --gold-dark: #808080;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+    --font-heading: 'Cormorant Garamond', serif;
   }
 
   html {
     scroll-behavior: smooth;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: var(--font-body);
   }
 
   h1, h2, h3, .font-serif-luxury {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: var(--font-heading) !important;
   }
 }
 

@@ -84,13 +84,27 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [config, setConfig] = useState<EventConfig>(initialEventConfig);
   const [guests, setGuests] = useState<Guest[]>(initialGuests);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      setIsAdminLoggedIn(!!user);
+      setCurrentUser(user);
     });
     return () => unsubscribeAuth();
   }, []);
+
+  useEffect(() => {
+    if (currentUser && currentUser.email) {
+      const allowedAdmins = config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
+      if (allowedAdmins.map(e => e.toLowerCase()).includes(currentUser.email.toLowerCase())) {
+        setIsAdminLoggedIn(true);
+      } else {
+        setIsAdminLoggedIn(false);
+      }
+    } else {
+      setIsAdminLoggedIn(false);
+    }
+  }, [currentUser, config.adminEmails]);
 
   // Firestore synchronization for config
   useEffect(() => {

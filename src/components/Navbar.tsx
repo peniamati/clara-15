@@ -37,17 +37,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const navLinks = [
-    { name: 'Inicio', href: '#inicio' },
-    { name: 'Historia', href: '#historia' },
-    { name: 'Galería', href: '#galeria' },
-    { name: 'Evento', href: '#evento' },
-    { name: 'RSVP', href: '#rsvp' },
-    { name: 'Playlist', href: '#playlist' },
-    { name: 'Firmas', href: '#firmas' },
-    { name: 'Regalos', href: '#regalos' },
-    { name: 'Photobooth', href: '#photobooth' },
-    { name: 'Juegos', href: '#juegos' },
-  ];
+    { name: 'Inicio', href: '#inicio', condition: config.enableHero !== false },
+    { name: 'Historia', href: '#historia', condition: config.enableTimeline !== false },
+    { name: 'Galería', href: '#galeria', condition: true },
+    { name: 'Evento', href: '#evento', condition: true },
+    { name: 'RSVP', href: '#rsvp', condition: true },
+    { name: 'Playlist', href: '#playlist', condition: true },
+    { name: 'Firmas', href: '#firmas', condition: config.enableGuestbook !== false },
+    { name: 'Regalos', href: '#regalos', condition: config.enableGifts !== false },
+    { name: 'Photobooth', href: '#photobooth', condition: true },
+    { name: 'Juegos', href: '#juegos', condition: config.enableTrivia !== false },
+  ].filter(link => link.condition);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#050505]/90 border-b border-white/10 text-white transition-all duration-300">

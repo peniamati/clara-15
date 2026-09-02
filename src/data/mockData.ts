@@ -36,11 +36,22 @@ export const initialEventConfig: EventConfig = {
   mpQrUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400&q=80',
   payPalUrl: 'https://paypal.me/clara15',
   theme: 'silver-disco',
+  fontHeading: 'cormorant',
+  fontBody: 'jakarta',
+  enableHero: true,
+  enableCountdown: true,
+  enableTimeline: true,
+  enableDressCode: true,
+  enableGifts: true,
+  enableGuestbook: true,
+  enableTrivia: true,
+  enableAI: true,
   backgroundMusicUrl: 'https://cdn.pixabay.com/download/audio/2022/10/25/audio_a1cd1f5795.mp3?filename=retro-wave-style-track-112345.mp3',
   customHashtag: '#Clara15Disco',
   rsvpDeadline: '2026-10-01',
   welcomeMessage: 'Un sueño de quince años que comenzó en familia y hoy quiero celebrar bailando contigo.',
   heroImageUrl: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1600&q=80',
+  adminEmails: ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'],
 };
 
 export const initialGuests: Guest[] = [
