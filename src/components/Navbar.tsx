@@ -165,10 +165,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* SaaS Admin / Staff Shortcut */}
           <button
             onClick={onOpenAdmin}
-            title="Panel de Control SaaS"
-            className="p-2.5 rounded-full bg-zinc-900/80 border border-white/10 text-zinc-300 hover:text-[#C0C0C0] hover:border-[#C0C0C0]/40 transition-all"
+            title="Panel de Control del Organizador"
+            className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-zinc-900/80 border border-white/10 text-zinc-300 hover:text-[#C0C0C0] hover:border-[#C0C0C0]/40 text-xs font-semibold tracking-wide transition-all"
           >
-            <ShieldCheck className="w-4 h-4" />
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Organizador</span>
           </button>
 
           {/* Mobile Menu Toggle */}
@@ -197,20 +198,29 @@ export const Navbar: React.FC<NavbarProps> = ({
               </a>
             ))}
           </nav>
-          <div className="pt-2 flex flex-wrap gap-2">
+          <div className="pt-2 flex flex-col gap-2">
             <a
               href="#rsvp"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex-1 py-2.5 rounded-xl bg-[#C0C0C0]/20 border border-[#C0C0C0]/40 text-[#C0C0C0] text-xs font-semibold flex items-center justify-center gap-2"
+              className="py-2.5 rounded-xl bg-[#C0C0C0]/20 border border-[#C0C0C0]/40 text-[#C0C0C0] text-xs font-semibold flex items-center justify-center gap-2"
             >
               <QrCode className="w-4 h-4" /> Confirmar / Mi Pase
             </a>
-            <button
-              onClick={() => { setMobileMenuOpen(false); onOpenCheckIn(); }}
-              className="py-2.5 px-4 rounded-xl bg-zinc-900 border border-white/10 text-white text-xs font-semibold flex items-center gap-1.5"
-            >
-              Recepción Check-In
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => { setMobileMenuOpen(false); onOpenAdmin(); }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-zinc-900 border border-white/10 text-white text-xs font-semibold flex items-center justify-center gap-1.5"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                Organizador
+              </button>
+              <button
+                onClick={() => { setMobileMenuOpen(false); onOpenCheckIn(); }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-zinc-900 border border-white/10 text-white text-xs font-semibold flex items-center justify-center gap-1.5"
+              >
+                Recepción
+              </button>
+            </div>
           </div>
         </div>
       )}

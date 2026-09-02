@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
+import { auth } from '../lib/firebase';
+import { signOut } from 'firebase/auth';
 import {
   ShieldCheck,
   Users,
@@ -16,7 +18,8 @@ import {
   Edit2,
   Trash2,
   FileSpreadsheet,
-  FileText
+  FileText,
+  LogOut
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -35,11 +38,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     photoboothImages,
     gifts,
     tables,
-    isAdminLoggedIn,
-    setIsAdminLoggedIn
+    isAdminLoggedIn
   } = useEvent();
 
-  const [passcode, setPasscode] = useState('');
   const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports'>('stats');
 
   // Customizer state
@@ -50,12 +51,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const [alias, setAlias] = useState(config.alias);
   const [theme, setTheme] = useState(config.theme);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcode === '1515' || passcode === 'admin') {
-      setIsAdminLoggedIn(true);
-    } else {
-      alert('Código de acceso incorrecto. (Usar 1515)');
+    try {
+      const { signInWithEmailAndPassword } = await import('firebase/auth');
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      alert('Error al iniciar sesión: ' + (error.message || 'Credenciales inválidas.'));
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      alert('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    try {
+      const { createUserWithEmailAndPassword } = await import('firebase/auth');
+      await createUserWithEmailAndPassword(auth, email, password);
+      alert('Cuenta de organizador creada exitosamente.');
+    } catch (error: any) {
+      console.error('Register error:', error);
+      alert('Error al registrar: ' + (error.message || 'Intente nuevamente.'));
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   };
 
@@ -114,23 +144,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
           </button>
 
           <Lock className="w-12 h-12 text-[#C0C0C0] mx-auto mb-3" />
-          <h2 className="font-serif text-3xl font-semibold text-white mb-1">Panel de Control SaaS</h2>
-          <p className="text-zinc-400 text-xs mb-6 font-light">Ingresá el PIN de Administrador (Prueba: 1515)</p>
+          <h2 className="font-serif text-3xl font-semibold text-white mb-1">Acceso Organizador</h2>
+          <p className="text-zinc-400 text-xs mb-6 font-light">Iniciá sesión para administrar la plataforma</p>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="password"
-              value={passcode}
-              onChange={(e) => setPasscode(e.target.value)}
-              placeholder="Código PIN (1515)"
-              className="w-full px-4 py-3 rounded-xl bg-black border border-white/10 text-white text-center text-lg font-mono focus:border-[#C0C0C0] outline-none"
-            />
-            <button
-              type="submit"
-              className="w-full py-3.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10"
-            >
-              Ingresar al Dashboard
-            </button>
+          <form className="space-y-4 text-left">
+            <div>
+              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="organizador@fiesta.com"
+                className="w-full px-4 py-3 bg-black border border-white/10 rounded-xl text-white text-sm focus:border-[#C0C0C0] outline-none transition-colors"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">Contraseña</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 bg-black border border-white/10 rounded-xl text-white text-sm focus:border-[#C0C0C0] outline-none transition-colors"
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                type="submit"
+                onClick={handleLogin}
+                className="w-full py-3.5 rounded-xl bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10 flex items-center justify-center gap-2 transition-colors"
+              >
+                Iniciar Sesión
+              </button>
+              <button
+                type="button"
+                onClick={handleRegister}
+                className="w-full py-3.5 rounded-xl bg-transparent border border-white/10 hover:border-white/30 text-zinc-300 font-semibold text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"
+              >
+                Crear Cuenta
+              </button>
+            </div>
           </form>
         </div>
       </div>
@@ -147,12 +202,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl p-4 sm:p-8 overflow-y-auto flex items-center justify-center">
       <div className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-6 sm:p-10 max-w-6xl w-full shadow-2xl relative">
         
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-6 p-2 rounded-full bg-zinc-900 text-zinc-400 hover:text-white"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="absolute top-6 right-6 flex items-center gap-2">
+          <button
+            onClick={handleLogout}
+            className="p-2 px-4 flex items-center gap-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-xs font-semibold uppercase tracking-wider"
+            title="Cerrar sesión"
+          >
+            <LogOut className="w-4 h-4" />
+            Cerrar Sesión
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full bg-zinc-900 text-zinc-400 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         {/* Dashboard Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-6 border-b border-white/10">

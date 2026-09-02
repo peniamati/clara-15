@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { db, auth } from '../lib/firebase';
 import {
   EventConfig,
   Guest,
@@ -75,35 +76,38 @@ interface EventContextType {
     darkMode: boolean;
   }>>;
   isAdminLoggedIn: boolean;
-  setIsAdminLoggedIn: (val: boolean) => void;
 }
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
 
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [config, setConfig] = useState<EventConfig>(() => {
-    try {
-      const saved = localStorage.getItem('maestro_event_config');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // If the stored name contains old template values, overwrite with Clara Hoggan config
-        if (
-          parsed &&
-          parsed.honoree &&
-          !parsed.honoree.toLowerCase().includes('sofia') &&
-          !parsed.honoree.toLowerCase().includes('sofía') &&
-          !parsed.honoree.toLowerCase().includes('valenzuela')
-        ) {
-          return { ...initialEventConfig, ...parsed };
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return initialEventConfig;
-  });
-
+  const [config, setConfig] = useState<EventConfig>(initialEventConfig);
   const [guests, setGuests] = useState<Guest[]>(initialGuests);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setIsAdminLoggedIn(!!user);
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  // Firestore synchronization for config
+  useEffect(() => {
+    const configDocRef = doc(db, 'settings', 'config');
+    const unsubscribe = onSnapshot(configDocRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const fetchedConfig = docSnapshot.data() as EventConfig;
+        setConfig({ ...initialEventConfig, ...fetchedConfig });
+      } else {
+        // If it doesn't exist in Firestore, initialize it
+        setDoc(configDocRef, initialEventConfig).catch(console.error);
+      }
+    }, (error) => {
+      console.error('Error fetching config:', error);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Firestore synchronization for guests
   useEffect(() => {
@@ -140,7 +144,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [tables, setTables] = useState<TableInfo[]>(initialTables);
   const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
   const [isPlayingMusic, setIsPlayingMusic] = useState<boolean>(false);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
 
   const [accessibility, setAccessibility] = useState<{
     fontSize: 'normal' | 'large' | 'xlarge';
@@ -151,13 +154,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     highContrast: false,
     darkMode: true
   });
-
-  // Remove local storage for guests since it's on Firestore
-  useEffect(() => {
-    localStorage.setItem('maestro_event_config', JSON.stringify(config));
-  }, [config]);
-
-  // localStorage.setItem('maestro_guests', JSON.stringify(guests)); // removed
 
   useEffect(() => {
     localStorage.setItem('maestro_songs', JSON.stringify(songs));
@@ -172,7 +168,12 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [photoboothImages]);
 
   const updateConfig = (newConfig: Partial<EventConfig>) => {
-    setConfig(prev => ({ ...prev, ...newConfig }));
+    const updated = { ...config, ...newConfig };
+    setConfig(updated);
+    const configDocRef = doc(db, 'settings', 'config');
+    updateDoc(configDocRef, newConfig).catch((err) => {
+      console.error('Error updating config:', err);
+    });
   };
 
   const addOrUpdateGuestRsvp = (guestData: Partial<Guest>): Guest => {

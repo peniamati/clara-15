@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { 
   initializeFirestore, 
   collection, 
@@ -10,19 +11,22 @@ import {
   serverTimestamp, 
   updateDoc, 
   doc, 
-  setDoc 
+  setDoc,
+  getDoc
 } from 'firebase/firestore';
 
 const firebaseConfig = {
-  projectId: "gen-lang-client-0219785326",
-  appId: "1:614613073026:web:acf601be5b10ff74c3889b",
-  apiKey: "AIzaSyDZW7-QOy2LaSgpSxDtG4JVhrn1rdfSals",
-  authDomain: "gen-lang-client-0219785326.firebaseapp.com",
-  storageBucket: "gen-lang-client-0219785326.firebasestorage.app",
-  messagingSenderId: "614613073026",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
 };
 
 export const app = initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
 
 // Initialize Firestore with auto-detect long polling to prevent "unavailable / could not reach Cloud Firestore backend" in sandboxed environments
 export const db = initializeFirestore(
@@ -33,5 +37,9 @@ export const db = initializeFirestore(
   "ai-studio-maestro15platafo-9d6f18a3-120c-410d-ac5d-13793017bfbd"
 );
 
-export { collection, addDoc, getDocs, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, setDoc };
+export { 
+  collection, addDoc, getDocs, onSnapshot, query, orderBy, 
+  serverTimestamp, updateDoc, doc, setDoc, getDoc,
+  signInWithEmailAndPassword, signOut, onAuthStateChanged
+};
 
