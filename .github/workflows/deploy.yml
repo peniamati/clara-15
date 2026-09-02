@@ -35,6 +35,8 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build static site
+        env:
+          GITHUB_PAGES: 'true'
         run: npx vite build
 
       - name: Setup Pages
