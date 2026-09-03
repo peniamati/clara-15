@@ -1,7 +1,7 @@
 import React from 'react';
 import { useEvent } from '../context/EventContext';
 import { Sparkles, Calendar, Clock, MapPin, ChevronDown } from 'lucide-react';
-import discoInvitation from '../assets/disco-invitation.png';
+import discoHero from '../assets/disco-hero-unsplash.jpg';
 
 export const HeroWelcome: React.FC = () => {
   const { config } = useEvent();
@@ -18,8 +18,8 @@ export const HeroWelcome: React.FC = () => {
     minute: '2-digit'
   });
   const heroImage = config.heroImageUrl?.includes('photo-1511795409834-ef04bbd61622')
-    ? discoInvitation
-    : config.heroImageUrl || discoInvitation;
+    ? discoHero
+    : config.heroImageUrl || discoHero;
 
   return (
     <section

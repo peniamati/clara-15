@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import { auth } from '../lib/firebase';
 import { signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import discoHero from '../assets/disco-hero-unsplash.jpg';
 import {
   ShieldCheck,
   Users,
@@ -44,6 +45,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
 
   const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports' | 'collabs'>('stats');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [notice, setNotice] = useState<{ title: string; message: string; tone?: 'success' | 'error' } | null>(null);
 
   // Customizer state
   const [localConfig, setLocalConfig] = useState(config);
@@ -69,11 +71,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
       const allowedAdmins = config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
       if (!allowedAdmins.map(e => e.toLowerCase()).includes(result.user.email?.toLowerCase() || '')) {
         await signOut(auth);
-        alert('Acceso denegado: Tu cuenta de Google no tiene permisos de organizador para este evento.');
+        setNotice({ title: 'Acceso denegado', message: 'Tu cuenta no tiene permisos de organizador para este evento.', tone: 'error' });
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      alert('Error al iniciar sesión: ' + (error.message || 'Credenciales inválidas.'));
+      setNotice({ title: 'No se pudo iniciar sesión', message: error.message || 'Verificá tus credenciales e intentá nuevamente.', tone: 'error' });
     }
   };
 
@@ -99,7 +101,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const handleRemoveAdmin = (emailToRemove: string) => {
     const currentAdmins = config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
     if (currentAdmins.length <= 1) {
-      alert('Debe haber al menos un administrador en la plataforma.');
+      setNotice({ title: 'No se puede quitar', message: 'Debe haber al menos un administrador en la plataforma.', tone: 'error' });
       return;
     }
     updateConfig({ adminEmails: currentAdmins.filter(e => e !== emailToRemove) });
@@ -130,7 +132,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();
     updateConfig(localConfig);
-    alert('¡Configuración de la plataforma actualizada exitosamente!');
+    setNotice({ title: 'Cambios guardados', message: 'La configuración se actualizó correctamente para tus invitados.', tone: 'success' });
   };
 
   const exportCsv = () => {
@@ -211,10 +213,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl overflow-y-auto overscroll-contain sm:p-6">
-      <div className="min-h-full w-full bg-[#0F0F0F] border border-white/10 rounded-none p-4 pt-5 shadow-2xl sm:my-4 sm:min-h-0 sm:max-w-6xl sm:rounded-3xl sm:p-10 sm:mx-auto relative overflow-x-hidden">
+    <div className="fixed inset-0 z-50 bg-black/95 p-0 backdrop-blur-2xl sm:p-6">
+      <div className="relative h-full w-full overflow-y-auto overscroll-contain bg-[#0F0F0F] p-4 pt-5 shadow-2xl sm:mx-auto sm:max-h-[calc(100dvh-3rem)] sm:max-w-6xl sm:rounded-3xl sm:p-10">
         
-        <div className="mb-5 flex items-center justify-end gap-2 sm:absolute sm:top-6 sm:right-6 sm:mb-0">
+        <div className="sticky top-0 z-30 -mx-4 -mt-5 mb-5 border-b border-white/10 bg-[#0F0F0F]/95 px-4 pt-5 backdrop-blur-xl sm:-mx-10 sm:-mt-10 sm:mb-6 sm:px-10 sm:pt-10">
+        <div className="mb-5 flex items-center justify-end gap-2 sm:absolute sm:right-6 sm:top-6 sm:mb-0">
           <button
             onClick={handleLogout}
             className="p-2 px-3 flex items-center gap-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-[10px] sm:text-xs font-semibold uppercase tracking-wider"
@@ -232,14 +235,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         </div>
 
         {/* Dashboard Header */}
-        <div className="flex flex-col items-stretch gap-5 mb-6 pb-6 border-b border-white/10 sm:pr-32">
+        <div className="flex flex-col items-stretch gap-5 pb-5 sm:pr-32">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-12 h-12 rounded-2xl bg-[#C0C0C0]/20 border border-[#C0C0C0] flex items-center justify-center text-[#C0C0C0]">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
               <h2 className="font-serif text-2xl leading-tight sm:text-3xl font-semibold text-white break-words">Panel Organizador · {config.honoree}</h2>
-              <span className="text-xs text-zinc-400 block font-light">SaaS Event Platform · Nivel Empresa</span>
+              <span className="block text-xs font-light text-zinc-400">Panel de organización del evento</span>
             </div>
           </div>
 
@@ -255,7 +258,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`min-w-0 px-2 py-2.5 sm:px-4 rounded-xl sm:rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider transition-all ${
+                className={`flex min-w-0 items-center justify-center px-2 py-2.5 text-center sm:px-4 rounded-xl sm:rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider transition-all ${
                   activeTab === tab.id
                     ? 'bg-[#C0C0C0] text-black font-bold shadow-lg shadow-[#C0C0C0]/10'
                     : 'bg-black border border-white/10 text-zinc-400 hover:text-white'
@@ -265,6 +268,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               </button>
             ))}
           </div>
+        </div>
         </div>
 
         {/* Tab 1: Stats */}
@@ -378,7 +382,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
 
         {/* Tab 3: Customizer */}
         {activeTab === 'customizer' && (
-          <form onSubmit={handleSaveConfig} className="space-y-6 max-w-3xl mx-auto">
+          <form onSubmit={handleSaveConfig} className="mx-auto max-w-3xl space-y-6 pb-24">
             <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:justify-between sm:items-center">
               <h3 className="font-serif text-2xl font-semibold text-white">Personalización del Sitio</h3>
               <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
@@ -404,7 +408,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={() => setCustomizerTab('general')}
-                className={`px-2 py-2 text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
+                className={`flex items-center justify-center px-2 py-2 text-center text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
                   customizerTab === 'general' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
                 }`}
               >
@@ -413,7 +417,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={() => setCustomizerTab('location')}
-                className={`px-2 py-2 text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
+                className={`flex items-center justify-center px-2 py-2 text-center text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
                   customizerTab === 'location' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
                 }`}
               >
@@ -422,7 +426,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={() => setCustomizerTab('gifts')}
-                className={`px-2 py-2 text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
+                className={`flex items-center justify-center px-2 py-2 text-center text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
                   customizerTab === 'gifts' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
                 }`}
               >
@@ -431,7 +435,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={() => setCustomizerTab('appearance')}
-                className={`px-2 py-2 text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
+                className={`flex items-center justify-center px-2 py-2 text-center text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
                   customizerTab === 'appearance' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
                 }`}
               >
@@ -440,7 +444,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={() => setCustomizerTab('modules')}
-                className={`col-span-2 px-2 py-2 text-[10px] sm:col-auto sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
+                className={`col-span-2 flex items-center justify-center px-2 py-2 text-center text-[10px] sm:col-auto sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
                   customizerTab === 'modules' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
                 }`}
               >
@@ -537,6 +541,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
 
               {customizerTab === 'appearance' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-xs uppercase tracking-wider text-zinc-300">Portada de la invitación</label>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => handleLocalConfigChange('heroImageUrl', discoHero)}
+                        aria-pressed={localConfig.heroImageUrl === discoHero}
+                        className={`overflow-hidden rounded-2xl border-2 p-1 text-left ${localConfig.heroImageUrl === discoHero ? 'border-[#C0C0C0] shadow-lg shadow-[#C0C0C0]/10' : 'border-white/10'}`}
+                      >
+                        <img src={discoHero} alt="Portada disco con bolas de espejo" className="h-28 w-full rounded-xl object-cover" />
+                        <span className="block px-2 pb-1 pt-2 text-xs font-semibold text-white">Bolas disco · recomendada</span>
+                      </button>
+                      <label className="cursor-pointer rounded-2xl border border-dashed border-white/20 bg-zinc-900/60 p-4 text-sm text-zinc-300 transition-colors hover:border-[#C0C0C0]/60">
+                        <span className="mb-2 block font-semibold text-white">Usar otra imagen</span>
+                        <span className="block text-xs text-zinc-500">Pegá una URL en el campo de abajo para personalizar la portada.</span>
+                      </label>
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Temática de Color</label>
                     <select
@@ -734,6 +756,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'customizer' && (
+          <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center border-t border-white/10 bg-[#0A0A0A]/95 p-3 backdrop-blur-xl sm:bottom-6 sm:border sm:rounded-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:p-2.5">
+            <div className="flex w-full max-w-md items-center justify-center gap-2 sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setIsPreviewMode(true)}
+                className="flex-1 rounded-full border border-white/10 bg-zinc-800 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white sm:flex-none"
+              >
+                Vista previa
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveConfig}
+                className="flex-1 rounded-full bg-[#C0C0C0] px-5 py-3 text-center text-xs font-bold uppercase tracking-wider text-black shadow-lg shadow-[#C0C0C0]/20 sm:flex-none"
+              >
+                Guardar cambios
+              </button>
+            </div>
+          </div>
+        )}
+
+        {notice && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="notice-title">
+            <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#121212] p-6 text-center shadow-2xl">
+              <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${notice.tone === 'error' ? 'bg-red-500/15 text-red-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
+                {notice.tone === 'error' ? <XCircle className="h-6 w-6" /> : <CheckCircle2 className="h-6 w-6" />}
+              </div>
+              <h3 id="notice-title" className="mb-2 font-serif text-2xl font-semibold text-white">{notice.title}</h3>
+              <p className="mb-6 text-sm leading-relaxed text-zinc-400">{notice.message}</p>
+              <button type="button" onClick={() => setNotice(null)} className="w-full rounded-full bg-[#C0C0C0] px-5 py-3 text-xs font-bold uppercase tracking-wider text-black">
+                Entendido
+              </button>
             </div>
           </div>
         )}

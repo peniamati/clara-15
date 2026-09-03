@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import { Film, Play, Sparkles } from 'lucide-react';
-import discoInvitation from '../assets/disco-invitation.png';
+import discoHero from '../assets/disco-hero-unsplash.jpg';
 
 export const VideoSection: React.FC = () => {
   const { config } = useEvent();
@@ -60,7 +60,7 @@ export const VideoSection: React.FC = () => {
 
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0F0F0F] p-2 shadow-2xl sm:p-4">
           <div className="group relative aspect-video overflow-hidden rounded-2xl bg-black">
-            <img src={discoInvitation} alt="Bolas de espejos para la fiesta" className="h-full w-full object-cover object-top opacity-80 transition duration-700 group-hover:scale-[1.03]" />
+            <img src={discoHero} alt="Bolas de espejos para la fiesta" className="h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-[1.03]" />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/40 bg-black/50 text-[#E0E0E0] shadow-xl backdrop-blur-sm">
