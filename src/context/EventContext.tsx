@@ -79,12 +79,15 @@ interface EventContextType {
     darkMode: boolean;
   }>>;
   isAdminLoggedIn: boolean;
+  setIsAdminLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
+  isConfigReady: boolean;
 }
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
 
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [config, setConfig] = useState<EventConfig>(initialEventConfig);
+  const [isConfigReady, setIsConfigReady] = useState(false);
   const [previewConfig, setPreviewConfig] = useState<EventConfig | null>(null);
   const activeConfig = previewConfig || config;
   const [guests, setGuests] = useState<Guest[]>(initialGuests);
@@ -122,8 +125,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // If it doesn't exist in Firestore, initialize it
         setDoc(configDocRef, initialEventConfig).catch(console.error);
       }
+      setIsConfigReady(true);
     }, (error) => {
       console.error('Error fetching config:', error);
+      // Keep the invitation usable with bundled data if Firestore is unavailable.
+      setIsConfigReady(true);
     });
     return () => unsubscribe();
   }, []);
@@ -428,6 +434,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         accessibility,
         setAccessibility,
         isAdminLoggedIn,
+        isConfigReady,
         setIsAdminLoggedIn
       }}
     >

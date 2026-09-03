@@ -216,7 +216,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     <div className="fixed inset-0 z-50 bg-black/95 p-0 backdrop-blur-2xl sm:p-6">
       <div className="relative h-full w-full overflow-y-auto overscroll-contain bg-[#0F0F0F] p-4 pt-5 shadow-2xl sm:mx-auto sm:max-h-[calc(100dvh-3rem)] sm:max-w-6xl sm:rounded-3xl sm:p-10">
         
-        <div className="-mx-4 -mt-5 mb-6 border-b border-white/10 bg-[#0F0F0F] px-4 pt-5 sm:-mx-10 sm:-mt-10 sm:px-10 sm:pt-10">
+        <div className="sticky top-0 z-30 -mx-4 -mt-5 mb-6 bg-[#0F0F0F]/95 px-4 pt-5 shadow-[0_12px_20px_-20px_rgba(0,0,0,0.95)] backdrop-blur-xl sm:-mx-10 sm:-mt-10 sm:px-10 sm:pt-10">
         <div className="mb-5 flex items-center justify-end gap-2 sm:absolute sm:right-6 sm:top-6 sm:mb-0">
           <button
             onClick={handleLogout}
@@ -235,20 +235,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         </div>
 
         {/* Dashboard Header */}
-        <div className="flex flex-col items-stretch gap-5 pb-5 sm:pr-32">
+        <div className="flex flex-col items-stretch pb-5 sm:pr-32">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-12 h-12 rounded-2xl bg-[#C0C0C0]/20 border border-[#C0C0C0] flex items-center justify-center text-[#C0C0C0]">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="font-serif text-2xl leading-tight sm:text-3xl font-semibold text-white break-words">Panel Organizador · {config.honoree}</h2>
+              <h2 className="!font-sans text-2xl leading-tight sm:text-3xl font-semibold text-white break-words">Panel Organizador · {config.honoree}</h2>
               <span className="block text-xs font-light text-zinc-400">Panel de organización del evento</span>
             </div>
           </div>
         </div>
         </div>
 
-        <div className="sticky top-0 z-30 -mx-4 mb-6 grid grid-cols-2 gap-2 border-y border-white/10 bg-[#0F0F0F]/95 px-4 py-3 backdrop-blur-xl sm:-mx-10 sm:flex sm:flex-wrap sm:px-10">
+        <div className="-mx-4 grid grid-cols-2 gap-2 border-y border-white/10 px-4 py-3 sm:-mx-10 sm:flex sm:flex-wrap sm:px-10">
             {[
               { id: 'stats', label: '📊 Estadísticas' },
               { id: 'guests', label: '👥 Invitados' },
@@ -269,6 +269,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                 {tab.label}
               </button>
             ))}
+        </div>
         </div>
 
         {/* Tab 1: Stats */}
