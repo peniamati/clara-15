@@ -1,22 +1,11 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: "20mb" }));
-
-// Initialize Gemini AI Client
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      "User-Agent": "aistudio-build",
-    },
-  },
-});
 
 // Mock in-memory database store with default event settings
 let eventConfig = {
@@ -50,70 +39,6 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/event-info", (_req, res) => {
   res.json(eventConfig);
-});
-
-// AI Concierge virtual assistant
-app.post("/api/ai/concierge", async (req, res) => {
-  try {
-    const { question, guestName } = req.body;
-
-    if (!question) {
-      return res.status(400).json({ error: "Pregunta requerida" });
-    }
-
-    const prompt = `
-Eres la Asistente Virtual Concierge de Inteligencia Artificial para la fiesta de Mis 15 de ${eventConfig.honoree}.
-Responde de forma sumamente educada, elegante, cordial, moderna y servicial.
-Contexto del evento:
-- Homenajeada: ${eventConfig.honoree} (${eventConfig.eventType})
-- Fecha y Hora: ${eventConfig.date} (17 de Octubre)
-- Lugar: ${eventConfig.venue} (${eventConfig.address})
-- Dress Code: ${eventConfig.dressCode}
-- Colores sugeridos: ${eventConfig.suggestedColors.join(", ")}
-- Colores prohibidos: ${eventConfig.forbiddenColors.join(", ")}
-- CBU/Alias para regalos: ${eventConfig.alias} / ${eventConfig.cbu}
-- Cronograma: ${JSON.stringify(eventConfig.timeline)}
-
-Pregunta del invitado (${guestName || "Invitado"}): "${question}"
-
-Proporciona una respuesta breve, útil y amistosa en español, con emojis elegantes.
-`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: prompt,
-    });
-
-    res.json({ reply: response.text || "¡Hola! Con gusto te puedo ayudar con cualquier detalle del evento." });
-  } catch (err: any) {
-    console.error("AI Concierge error:", err);
-    res.status(500).json({ 
-      reply: `En este momento estoy consultando la información. La fiesta de 15 de ${eventConfig.honoree} es el 17 de Octubre a las 20:00 hs con dress code Elegante / Disco Chic.`
-    });
-  }
-});
-
-// AI Thank You Generator
-app.post("/api/ai/generate-thanks", async (req, res) => {
-  let guestName = "amigo/a";
-  try {
-    const { guestName: reqName, giftOrPresence } = req.body;
-    if (reqName) guestName = reqName;
-
-    const prompt = `
-Escribe un mensaje de agradecimiento sumamente emotivo, dulce y elegante en nombre de ${eventConfig.honoree} para su invitado ${guestName} por su asistencia o regalo (${giftOrPresence || "asistir a sus 15 años"}).
-Debe sonar cercano, festivo y cálido. Máximo 3 oraciones.
-`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: prompt,
-    });
-
-    res.json({ message: response.text || `¡Muchas gracias por acompañarme en una noche tan soñada, ${guestName}!` });
-  } catch (err) {
-    res.json({ message: `¡Querido/a ${guestName}, gracias de todo corazón por compartir conmigo este momento inolvidable de mis 15!` });
-  }
 });
 
 async function startServer() {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEvent } from '../context/EventContext';
-import { Sparkles, Heart, Share2, Volume2, ShieldCheck, Download, Smartphone } from 'lucide-react';
+import { Heart, Share2, Volume2 } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const { config, isAudioPlaying, setIsAudioPlaying } = useEvent();
@@ -57,8 +57,8 @@ export const Footer: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1.5 text-zinc-400 font-serif">
-            <span>Desarrollado con</span> <Heart className="w-3.5 h-3.5 text-[#C0C0C0] fill-[#C0C0C0]" /> <span>por</span>
-            <strong className="text-[#C0C0C0] font-semibold">PROMPT MAESTRO Enterprise Platform</strong>
+            <Heart className="w-3.5 h-3.5 text-[#C0C0C0] fill-[#C0C0C0]" />
+            <span>Hecho para celebrar</span>
           </div>
         </div>
 

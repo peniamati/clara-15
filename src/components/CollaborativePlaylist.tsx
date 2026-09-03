@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
-import { Music, ThumbsUp, Plus, Search, Disc, Sparkles, ExternalLink } from 'lucide-react';
+import { Music, ThumbsUp, Plus, Search, Disc } from 'lucide-react';
 
 export const CollaborativePlaylist: React.FC = () => {
   const { songs, addSongRequest, voteSong, config } = useEvent();
@@ -155,27 +155,10 @@ export const CollaborativePlaylist: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/10 text-center">
-              <div className="w-full h-24 mb-4 rounded-2xl overflow-hidden border border-white/10">
-                <iframe 
-                  style={{ borderRadius: '12px' }} 
-                  src="https://open.spotify.com/embed/playlist/37i9dQZF1DX1MUPbVKMgJE?utm_source=generator&theme=0" 
-                  width="100%" 
-                  height="152" 
-                  frameBorder="0" 
-                  allowFullScreen={false} 
-                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-                  loading="lazy"
-                ></iframe>
-              </div>
-              <a
-                href="https://open.spotify.com"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 text-xs text-[#C0C0C0] font-semibold hover:underline uppercase tracking-wider"
-              >
-                <ExternalLink className="w-3.5 h-3.5" /> Abrir Playlist de {config.honoree} en Spotify
-              </a>
+            <div className="mt-6 border-t border-white/10 pt-5 text-center">
+              <p className="text-xs text-zinc-400">
+                Las canciones más votadas se sumarán al set del DJ para la fiesta de {config.honoree}.
+              </p>
             </div>
           </div>
 

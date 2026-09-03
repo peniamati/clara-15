@@ -13,6 +13,7 @@ import {
   FaqItem,
   TimeCapsuleMessage
 } from '../types';
+import discoInvitation from '../assets/disco-invitation.png';
 
 export const initialEventConfig: EventConfig = {
   id: 'evt-clara-15',
@@ -45,12 +46,11 @@ export const initialEventConfig: EventConfig = {
   enableGifts: true,
   enableGuestbook: true,
   enableTrivia: true,
-  enableAI: true,
   backgroundMusicUrl: 'https://www.youtube.com/watch?v=nNEb2k_EmMg',
   customHashtag: '#Clara15Disco',
   rsvpDeadline: '2026-10-01',
   welcomeMessage: 'Un sueño de quince años que comenzó en familia y hoy quiero celebrar bailando contigo.',
-  heroImageUrl: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1600&q=80',
+  heroImageUrl: discoInvitation,
   adminEmails: ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'],
 };
 

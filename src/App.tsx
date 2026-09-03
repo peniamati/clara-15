@@ -15,7 +15,6 @@ import { GiftsSection } from './components/GiftsSection';
 import { DressCodeMoodboard } from './components/DressCodeMoodboard';
 import { PhotoboothCollabAlbum } from './components/PhotoboothCollabAlbum';
 import { InteractiveGames } from './components/InteractiveGames';
-import { AiConciergeModal } from './components/AiConciergeModal';
 import { ReceptionCheckInApp } from './components/ReceptionCheckInApp';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Footer } from './components/Footer';
@@ -89,9 +88,6 @@ const AppContent: React.FC = () => {
         <PhotoboothCollabAlbum />
         {config.enableTrivia !== false && <InteractiveGames />}
       </main>
-
-      {/* AI Concierge Floating Assistant */}
-      {config.enableAI !== false && <AiConciergeModal />}
 
       {/* Reception Check-In App Drawer */}
       {showCheckInModal && (

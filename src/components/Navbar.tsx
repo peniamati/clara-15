@@ -44,27 +44,27 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#050505]/90 border-b border-white/10 text-white transition-all duration-300">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-3 sm:px-6 lg:px-8">
         
         {/* Brand Logo */}
-        <a href="#inicio" className="group flex min-w-0 items-center gap-2 sm:gap-3">
+        <a href="#inicio" className="group flex shrink-0 items-center gap-2 sm:gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#C0C0C0] via-amber-200 to-[#997A15] flex items-center justify-center p-[1px] shadow-lg shadow-[#C0C0C0]/10 group-hover:scale-105 transition-transform">
             <div className="w-full h-full bg-[#050505] rounded-full flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-[#C0C0C0]" />
             </div>
           </div>
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate font-serif text-base font-bold tracking-wider text-white transition-colors group-hover:text-[#C0C0C0] sm:text-xl">
+          <div className="flex flex-col">
+            <span className="whitespace-nowrap font-serif text-base font-bold tracking-wider text-white transition-colors group-hover:text-[#C0C0C0] sm:text-xl">
               {config.honoree}
             </span>
-            <span className="truncate text-[8px] font-semibold uppercase tracking-[0.16em] text-[#C0C0C0] sm:text-[9px] sm:tracking-widest">
+            <span className="whitespace-nowrap text-[8px] font-semibold uppercase tracking-[0.16em] text-[#C0C0C0] sm:text-[9px] sm:tracking-widest">
               {config.eventType} · Gala VIP
             </span>
           </div>
         </a>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden lg:flex items-center gap-6 text-xs tracking-widest uppercase font-medium text-zinc-300">
+        <nav className="hidden xl:flex items-center gap-3 2xl:gap-6 text-[11px] 2xl:text-xs tracking-wider 2xl:tracking-widest uppercase font-medium text-zinc-300">
           {navLinks.map((link) => (
             <a
               key={link.name}
@@ -174,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-expanded={mobileMenuOpen}
             aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
-            className="min-h-11 min-w-11 touch-manipulation rounded-full border border-white/10 bg-zinc-900 p-2.5 text-zinc-300 active:scale-95 lg:hidden"
+            className="min-h-11 min-w-11 touch-manipulation rounded-full border border-white/10 bg-zinc-900 p-2.5 text-zinc-300 active:scale-95 xl:hidden"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -184,7 +184,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="flex max-h-[calc(100dvh-5rem)] flex-col gap-4 overflow-y-auto overscroll-contain border-b border-white/10 bg-[#0A0A0A]/95 px-6 py-6 backdrop-blur-2xl lg:hidden">
+        <div className="flex max-h-[calc(100dvh-5rem)] flex-col gap-4 overflow-y-auto overscroll-contain border-b border-white/10 bg-[#0A0A0A]/95 px-6 py-6 backdrop-blur-2xl xl:hidden">
           <nav className="flex flex-col gap-3 font-medium text-zinc-300 text-sm">
             {navLinks.map((link) => (
               <a

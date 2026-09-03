@@ -1,41 +1,15 @@
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
-import { Gift, Copy, Check, QrCode, Heart, Sparkles, Send, ExternalLink } from 'lucide-react';
+import { Gift, Copy, Check, ExternalLink } from 'lucide-react';
 
 export const GiftsSection: React.FC = () => {
   const { config, gifts } = useEvent();
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // AI Thank you state
-  const [guestName, setGuestName] = useState('');
-  const [giftDetail, setGiftDetail] = useState('');
-  const [aiThanksMessage, setAiThanksMessage] = useState<string | null>(null);
-  const [loadingAi, setLoadingAi] = useState(false);
-
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(label);
     setTimeout(() => setCopiedField(null), 2500);
-  };
-
-  const generateAiThanks = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!guestName) return;
-
-    setLoadingAi(true);
-    try {
-      const res = await fetch('/api/ai/generate-thanks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guestName, giftOrPresence: giftDetail })
-      });
-      const data = await res.json();
-      setAiThanksMessage(data.message);
-    } catch (err) {
-      setAiThanksMessage(`¡Muchas gracias por acompañarme y ser parte de esta noche soñada, ${guestName}!`);
-    } finally {
-      setLoadingAi(false);
-    }
   };
 
   return (
@@ -150,46 +124,6 @@ export const GiftsSection: React.FC = () => {
               );
             })}
           </div>
-        </div>
-
-        {/* AI Thank You Message Generator */}
-        <div className="max-w-2xl mx-auto bg-[#0F0F0F] border border-white/10 rounded-3xl p-8 shadow-2xl text-center">
-          <Sparkles className="w-8 h-8 text-[#C0C0C0] mx-auto mb-2" />
-          <h3 className="font-serif text-3xl font-semibold text-white mb-1">Generador Inteligente de Agradecimientos</h3>
-          <p className="text-zinc-400 text-xs mb-6 font-light">
-            Ingresá tu nombre para recibir un mensaje de agradecimiento personalizado creado por Inteligencia Artificial.
-          </p>
-
-          <form onSubmit={generateAiThanks} className="flex flex-col sm:flex-row gap-2 mb-4">
-            <input
-              type="text"
-              required
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              placeholder="Tu nombre (Ej: Juan)"
-              className="flex-1 px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
-            />
-            <input
-              type="text"
-              value={giftDetail}
-              onChange={(e) => setGiftDetail(e.target.value)}
-              placeholder="Detalle o regalo (Opcional)"
-              className="flex-1 px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
-            />
-            <button
-              type="submit"
-              disabled={loadingAi}
-              className="px-6 py-3 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-[#C0C0C0]/10"
-            >
-              {loadingAi ? 'Generando...' : 'Obtener Agradecimiento ✨'}
-            </button>
-          </form>
-
-          {aiThanksMessage && (
-            <div className="p-4 rounded-2xl bg-[#C0C0C0]/10 border border-[#C0C0C0]/40 text-[#C0C0C0] text-sm font-serif italic animate-fade-in">
-              "{aiThanksMessage}"
-            </div>
-          )}
         </div>
 
       </div>

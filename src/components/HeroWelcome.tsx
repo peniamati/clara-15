@@ -1,6 +1,7 @@
 import React from 'react';
 import { useEvent } from '../context/EventContext';
 import { Sparkles, Calendar, Clock, MapPin, ChevronDown } from 'lucide-react';
+import discoInvitation from '../assets/disco-invitation.png';
 
 export const HeroWelcome: React.FC = () => {
   const { config } = useEvent();
@@ -16,6 +17,9 @@ export const HeroWelcome: React.FC = () => {
     hour: '2-digit',
     minute: '2-digit'
   });
+  const heroImage = config.heroImageUrl?.includes('photo-1511795409834-ef04bbd61622')
+    ? discoInvitation
+    : config.heroImageUrl || discoInvitation;
 
   return (
     <section
@@ -25,7 +29,7 @@ export const HeroWelcome: React.FC = () => {
       {/* Background Media with Dark Luxury Overlay */}
       <div className="absolute inset-0 z-0">
         <img
-          src={config.heroImageUrl}
+          src={heroImage}
           alt={config.honoree}
           className="w-full h-full object-cover object-center filter brightness-40 contrast-125 saturate-90 transition-transform duration-10000"
         />

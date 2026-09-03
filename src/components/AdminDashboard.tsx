@@ -661,7 +661,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                       { id: 'enableGifts', label: 'Sección de Regalos' },
                       { id: 'enableGuestbook', label: 'Libro de Firmas Virtual' },
                       { id: 'enableTrivia', label: 'Juegos & Trivia' },
-                      { id: 'enableAI', label: 'Asistente IA (Chatbot)' },
                     ].map((mod) => (
                       <label key={mod.id} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
                         <span className="text-sm font-medium text-white">{mod.label}</span>

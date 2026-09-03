@@ -1,6 +1,5 @@
 {
   "name": "Maestro 15 - Plataforma Eventos Premium",
-  "description": "Plataforma web premium, interactiva y multi-evento para cumpleaños de 15, bodas y fiestas luxury nivel empresa con invitaciones personalizadas, RSVP, IA concierge, mesas, playlist, photobooth y panel admin.",
-  "requestFramePermissions": ["camera", "microphone"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "description": "Plataforma web premium e interactiva para cumpleaños de 15, bodas y fiestas, con invitaciones personalizadas, RSVP, mesas, playlist, photobooth y panel de organización.",
+  "requestFramePermissions": ["camera", "microphone"]
 }

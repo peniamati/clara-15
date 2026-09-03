@@ -33,7 +33,6 @@ export interface EventConfig {
   enableGifts?: boolean;
   enableGuestbook?: boolean;
   enableTrivia?: boolean;
-  enableAI?: boolean;
   backgroundMusicUrl: string;
   customHashtag: string;
   rsvpDeadline: string;
