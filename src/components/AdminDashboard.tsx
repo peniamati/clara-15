@@ -639,9 +639,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     <input type="text" value={localConfig.customHashtag} onChange={e => handleLocalConfigChange('customHashtag', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Música de Fondo (YouTube o MP3)</label>
-                    <input type="url" value={localConfig.backgroundMusicUrl} onChange={e => handleLocalConfigChange('backgroundMusicUrl', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
-                    <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">Pegá un enlace de YouTube (youtube.com, youtu.be o embed) para reproducirlo solo como música, o una URL directa a MP3.</p>
+                    <label className="mb-1.5 block text-xs uppercase tracking-wider text-zinc-300">Música de Fondo (URL o ID de YouTube)</label>
+                    <input type="url" value={localConfig.backgroundMusicUrl} onChange={e => handleLocalConfigChange('backgroundMusicUrl', e.target.value)} placeholder="https://www.youtube.com/watch?v=nNEb2k_EmMg" className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-base text-white outline-none focus:border-[#C0C0C0] sm:text-sm" />
+                    <p className="mt-1.5 text-xs text-zinc-500">Al abrir la invitación se reproduce el video; al silenciar se pausa. Podés pegar una URL de YouTube, su ID de 11 caracteres o una URL directa a MP3.</p>
                   </div>
                 </div>
               )}

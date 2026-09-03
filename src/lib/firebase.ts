@@ -29,12 +29,14 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 // Initialize Firestore with auto-detect long polling to prevent "unavailable / could not reach Cloud Firestore backend" in sandboxed environments
+const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID?.trim() || '(default)';
+
 export const db = initializeFirestore(
   app, 
   {
     experimentalAutoDetectLongPolling: true,
   }, 
-  "ai-studio-maestro15platafo-9d6f18a3-120c-410d-ac5d-13793017bfbd"
+  firestoreDatabaseId
 );
 
 export { 

@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import {
-  Music,
   Volume2,
   VolumeX,
   QrCode,
   ShieldCheck,
-  Sun,
-  Moon,
   Type,
   Eye,
   Menu,
@@ -16,19 +13,15 @@ import {
 } from 'lucide-react';
 
 interface NavbarProps {
-  onOpenQrPass: () => void;
   onOpenAdmin: () => void;
-  onOpenGiantScreen: () => void;
   onOpenCheckIn: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  onOpenQrPass,
   onOpenAdmin,
-  onOpenGiantScreen,
   onOpenCheckIn,
 }) => {
-  const { config, isPlayingMusic, setIsPlayingMusic, accessibility, setAccessibility, activeGuest } = useEvent();
+  const { config, isPlayingMusic, setIsPlayingMusic, accessibility, setAccessibility } = useEvent();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accMenuOpen, setAccMenuOpen] = useState(false);
 
@@ -51,20 +44,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#050505]/90 border-b border-white/10 text-white transition-all duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
         
         {/* Brand Logo */}
-        <a href="#inicio" className="flex items-center gap-3 group">
+        <a href="#inicio" className="group flex min-w-0 items-center gap-2 sm:gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#C0C0C0] via-amber-200 to-[#997A15] flex items-center justify-center p-[1px] shadow-lg shadow-[#C0C0C0]/10 group-hover:scale-105 transition-transform">
             <div className="w-full h-full bg-[#050505] rounded-full flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-[#C0C0C0]" />
             </div>
           </div>
-          <div className="flex flex-col">
-            <span className="font-serif text-xl font-bold tracking-wider text-white group-hover:text-[#C0C0C0] transition-colors">
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate font-serif text-base font-bold tracking-wider text-white transition-colors group-hover:text-[#C0C0C0] sm:text-xl">
               {config.honoree}
             </span>
-            <span className="text-[9px] uppercase tracking-widest text-[#C0C0C0] font-semibold">
+            <span className="truncate text-[8px] font-semibold uppercase tracking-[0.16em] text-[#C0C0C0] sm:text-[9px] sm:tracking-widest">
               {config.eventType} · Gala VIP
             </span>
           </div>
@@ -84,13 +77,15 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           
           {/* Audio Toggle Button */}
           <button
+            type="button"
             onClick={toggleMusic}
+            aria-pressed={isPlayingMusic}
             title={isPlayingMusic ? 'Pausar música ambiental' : 'Reproducir música ambiental'}
-            className={`p-2.5 rounded-full border transition-all ${
+            className={`min-h-11 min-w-11 touch-manipulation rounded-full border p-2.5 transition-all active:scale-95 ${
               isPlayingMusic
                 ? 'bg-[#C0C0C0]/20 border-[#C0C0C0] text-[#C0C0C0] animate-pulse'
                 : 'bg-zinc-900/80 border-white/10 text-zinc-400 hover:text-white'
@@ -102,9 +97,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Accessibility Controls Dropdown */}
           <div className="relative">
             <button
+              type="button"
               onClick={() => setAccMenuOpen(!accMenuOpen)}
               title="Ajustes de accesibilidad"
-              className="p-2.5 rounded-full bg-zinc-900/80 border border-white/10 text-zinc-400 hover:text-[#C0C0C0] transition-colors"
+              className="min-h-11 min-w-11 touch-manipulation rounded-full border border-white/10 bg-zinc-900/80 p-2.5 text-zinc-400 transition-colors active:scale-95 hover:text-[#C0C0C0]"
             >
               <Eye className="w-4 h-4" />
             </button>
@@ -174,8 +170,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Mobile Menu Toggle */}
           <button
+            type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2.5 rounded-full bg-zinc-900 border border-white/10 text-zinc-300"
+            aria-expanded={mobileMenuOpen}
+            aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+            className="min-h-11 min-w-11 touch-manipulation rounded-full border border-white/10 bg-zinc-900 p-2.5 text-zinc-300 active:scale-95 lg:hidden"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -185,7 +184,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#0A0A0A]/95 border-b border-white/10 px-6 py-6 flex flex-col gap-4 backdrop-blur-2xl">
+        <div className="flex max-h-[calc(100dvh-5rem)] flex-col gap-4 overflow-y-auto overscroll-contain border-b border-white/10 bg-[#0A0A0A]/95 px-6 py-6 backdrop-blur-2xl lg:hidden">
           <nav className="flex flex-col gap-3 font-medium text-zinc-300 text-sm">
             {navLinks.map((link) => (
               <a

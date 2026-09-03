@@ -23,15 +23,10 @@ const getYouTubeVideoId = (value: string) => {
 /** Plays either a YouTube video (audio only) or a regular audio file. */
 export const BackgroundMusic: React.FC<BackgroundMusicProps> = ({ source, isPlaying, onPlaybackError }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const videoId = useMemo(() => getYouTubeVideoId(source), [source]);
 
   useEffect(() => {
-    if (videoId) {
-      // The YouTube iframe API accepts these commands after enablejsapi=1.
-      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: isPlaying ? 'playVideo' : 'pauseVideo', args: [] }), '*');
-      return;
-    }
+    if (videoId) return;
 
     const audio = audioRef.current;
     if (!audio) return;
@@ -39,21 +34,15 @@ export const BackgroundMusic: React.FC<BackgroundMusicProps> = ({ source, isPlay
     else audio.pause();
   }, [isPlaying, videoId, onPlaybackError]);
 
-  useEffect(() => {
-    if (!videoId || !isPlaying) return;
-    const timer = window.setTimeout(() => {
-      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
-    }, 350);
-    return () => window.clearTimeout(timer);
-  }, [videoId, source, isPlaying]);
-
   if (videoId) {
+    // The iframe is created by the user's "Abrir invitación" / music-button action.
+    // Removing it when muted reliably stops playback on mobile browsers.
+    if (!isPlaying) return null;
     return (
       <iframe
-        ref={iframeRef}
         title="Música ambiental"
         className="fixed h-px w-px -left-2 -top-2 opacity-0 pointer-events-none"
-        src={`https://www.youtube-nocookie.com/embed/${videoId}?enablejsapi=1&autoplay=0&loop=1&playlist=${videoId}&controls=0&playsinline=1&rel=0`}
+        src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=0&playsinline=1&rel=0`}
         allow="autoplay; encrypted-media"
       />
     );

@@ -15,10 +15,46 @@
   html {
     scroll-behavior: smooth;
     font-family: var(--font-body);
+    scroll-padding-top: 5.5rem;
+    overscroll-behavior-x: none;
+  }
+
+  body {
+    min-width: 320px;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
   }
 
   h1, h2, h3, .font-serif-luxury {
     font-family: var(--font-heading) !important;
+  }
+}
+
+button, a, input, textarea, select {
+  touch-action: manipulation;
+}
+
+button, [role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid #C0C0C0;
+  outline-offset: 3px;
+}
+
+@media (pointer: coarse) {
+  button, a[role="button"], input[type="button"], input[type="submit"] {
+    min-height: 44px;
+  }
+
+  button:active, a:active {
+    transform: scale(0.98);
+  }
+
+  input, textarea, select {
+    font-size: 16px;
   }
 }
 

@@ -46,7 +46,7 @@ export const initialEventConfig: EventConfig = {
   enableGuestbook: true,
   enableTrivia: true,
   enableAI: true,
-  backgroundMusicUrl: 'https://cdn.pixabay.com/download/audio/2022/10/25/audio_a1cd1f5795.mp3?filename=retro-wave-style-track-112345.mp3',
+  backgroundMusicUrl: 'https://www.youtube.com/watch?v=nNEb2k_EmMg',
   customHashtag: '#Clara15Disco',
   rsvpDeadline: '2026-10-01',
   welcomeMessage: 'Un sueño de quince años que comenzó en familia y hoy quiero celebrar bailando contigo.',
