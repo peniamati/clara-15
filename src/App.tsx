@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { EventProvider, useEvent } from './context/EventContext';
 import { Navbar } from './components/Navbar';
 import { HeroWelcome } from './components/HeroWelcome';
@@ -24,7 +24,9 @@ import { BackgroundMusic } from './components/BackgroundMusic';
 const AppContent: React.FC = () => {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
-  const { config, isPlayingMusic, setIsPlayingMusic } = useEvent();
+  const { config, isConfigReady, isPlayingMusic, setIsPlayingMusic } = useEvent();
+  const [isInvitationReady, setIsInvitationReady] = useState(false);
+  const hasLoadedInitialInvitation = useRef(false);
 
   const fontMap: Record<string, string> = {
     'cormorant': '"Cormorant Garamond", serif',
@@ -53,6 +55,33 @@ const AppContent: React.FC = () => {
     '--font-body': fontMap[config.fontBody || 'jakarta'],
     fontSize: ({ compact: '15px', normal: '16px', large: '17px' } as const)[config.bodyScale || 'normal'],
   } as React.CSSProperties;
+
+  useEffect(() => {
+    if (!isConfigReady || hasLoadedInitialInvitation.current) return;
+
+    let cancelled = false;
+    const fontRoot = document.querySelector('#root > div') || document.documentElement;
+    const styles = getComputedStyle(fontRoot);
+    const heading = styles.getPropertyValue('--font-heading').trim();
+    const body = styles.getPropertyValue('--font-body').trim();
+
+    Promise.all([
+      document.fonts.ready,
+      document.fonts.load(`600 1em ${heading}`),
+      document.fonts.load(`400 1em ${body}`),
+    ]).catch(() => undefined).finally(() => {
+      if (!cancelled) {
+        hasLoadedInitialInvitation.current = true;
+        setIsInvitationReady(true);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [config.fontBody, config.fontHeading, isConfigReady]);
+
+  if (!isInvitationReady) {
+    return <div className="min-h-[100dvh] bg-[#050505]" style={rootStyle} aria-label="Cargando invitación" />;
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#C0C0C0] selection:text-black overflow-x-hidden" style={rootStyle}>

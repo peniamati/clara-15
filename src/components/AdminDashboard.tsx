@@ -216,7 +216,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     <div className="fixed inset-0 z-50 bg-black/95 p-0 backdrop-blur-2xl sm:p-6">
       <div className="relative h-full w-full overflow-y-auto overscroll-contain bg-[#0F0F0F] p-4 pt-5 shadow-2xl sm:mx-auto sm:max-h-[calc(100dvh-3rem)] sm:max-w-6xl sm:rounded-3xl sm:p-10">
         
-        <div className="sticky top-0 z-30 -mx-4 -mt-5 mb-6 bg-[#0F0F0F]/95 px-4 pt-5 shadow-[0_12px_20px_-20px_rgba(0,0,0,0.95)] backdrop-blur-xl sm:-mx-10 sm:-mt-10 sm:px-10 sm:pt-10">
+        <div className="sticky top-0 z-50 isolate -mx-4 -mt-5 mb-6 bg-[#0F0F0F] px-4 pt-5 shadow-[0_12px_20px_-12px_rgba(0,0,0,1)] sm:-mx-10 sm:-mt-10 sm:px-10 sm:pt-10">
         <div className="mb-5 flex items-center justify-end gap-2 sm:absolute sm:right-6 sm:top-6 sm:mb-0">
           <button
             onClick={handleLogout}
