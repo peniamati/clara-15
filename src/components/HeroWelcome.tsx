@@ -1,7 +1,7 @@
 import React from 'react';
 import { useEvent } from '../context/EventContext';
 import { Sparkles, Calendar, Clock, MapPin, ChevronDown } from 'lucide-react';
-import discoHero from '../assets/disco-hero-unsplash.jpg';
+import { resolveHeroImage } from '../lib/heroMedia';
 
 export const HeroWelcome: React.FC = () => {
   const { config } = useEvent();
@@ -17,9 +17,12 @@ export const HeroWelcome: React.FC = () => {
     hour: '2-digit',
     minute: '2-digit'
   });
-  const heroImage = config.heroImageUrl?.includes('photo-1511795409834-ef04bbd61622')
-    ? discoHero
-    : config.heroImageUrl || discoHero;
+  const heroImage = resolveHeroImage(config.heroImageUrl);
+  const headingSize = {
+    compact: 'text-5xl sm:text-7xl lg:text-8xl',
+    normal: 'text-6xl sm:text-8xl lg:text-9xl',
+    large: 'text-7xl sm:text-9xl lg:text-[10rem]',
+  }[config.headingScale || 'normal'];
 
   return (
     <section
@@ -31,9 +34,9 @@ export const HeroWelcome: React.FC = () => {
         <img
           src={heroImage}
           alt={config.honoree}
-          className="w-full h-full object-cover object-center filter brightness-40 contrast-125 saturate-90 transition-transform duration-10000"
+          className="h-full w-full object-cover object-center brightness-75 contrast-110 saturate-90"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/75 to-[#050505]/50" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/90 via-[#050505]/55 to-[#050505]/30" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.1)_0,transparent_70%)]" />
       </div>
 
@@ -50,7 +53,7 @@ export const HeroWelcome: React.FC = () => {
         </div>
 
         {/* Main Name Heading in Cormorant Garamond Luxury Serif */}
-        <h1 className="font-serif text-6xl sm:text-8xl lg:text-9xl font-semibold tracking-tight silver-gradient-text drop-shadow-2xl mb-4">
+        <h1 className={`max-w-[96vw] break-words pb-[0.16em] font-serif font-semibold leading-[1.08] tracking-tight silver-gradient-text drop-shadow-2xl ${headingSize}`}>
           {config.honoree}
         </h1>
 

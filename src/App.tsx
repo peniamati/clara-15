@@ -51,6 +51,7 @@ const AppContent: React.FC = () => {
   const rootStyle = {
     '--font-heading': fontMap[config.fontHeading || 'cormorant'],
     '--font-body': fontMap[config.fontBody || 'jakarta'],
+    fontSize: ({ compact: '15px', normal: '16px', large: '17px' } as const)[config.bodyScale || 'normal'],
   } as React.CSSProperties;
 
   return (

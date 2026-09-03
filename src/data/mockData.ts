@@ -13,7 +13,7 @@ import {
   FaqItem,
   TimeCapsuleMessage
 } from '../types';
-import discoHero from '../assets/disco-hero-unsplash.jpg';
+import { DEFAULT_HERO_IMAGE } from '../lib/heroMedia';
 
 export const initialEventConfig: EventConfig = {
   id: 'evt-clara-15',
@@ -39,6 +39,8 @@ export const initialEventConfig: EventConfig = {
   theme: 'silver-disco',
   fontHeading: 'cormorant',
   fontBody: 'jakarta',
+  headingScale: 'normal',
+  bodyScale: 'normal',
   enableHero: true,
   enableCountdown: true,
   enableTimeline: true,
@@ -50,7 +52,7 @@ export const initialEventConfig: EventConfig = {
   customHashtag: '#Clara15Disco',
   rsvpDeadline: '2026-10-01',
   welcomeMessage: 'Un sueño de quince años que comenzó en familia y hoy quiero celebrar bailando contigo.',
-  heroImageUrl: discoHero,
+  heroImageUrl: DEFAULT_HERO_IMAGE,
   adminEmails: ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'],
 };
 

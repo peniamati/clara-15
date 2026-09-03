@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import { auth } from '../lib/firebase';
 import { signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import discoHero from '../assets/disco-hero-unsplash.jpg';
+import { DEFAULT_HERO_IMAGE, resolveHeroImage } from '../lib/heroMedia';
 import {
   ShieldCheck,
   Users,
@@ -216,7 +216,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     <div className="fixed inset-0 z-50 bg-black/95 p-0 backdrop-blur-2xl sm:p-6">
       <div className="relative h-full w-full overflow-y-auto overscroll-contain bg-[#0F0F0F] p-4 pt-5 shadow-2xl sm:mx-auto sm:max-h-[calc(100dvh-3rem)] sm:max-w-6xl sm:rounded-3xl sm:p-10">
         
-        <div className="sticky top-0 z-30 -mx-4 -mt-5 mb-5 border-b border-white/10 bg-[#0F0F0F]/95 px-4 pt-5 backdrop-blur-xl sm:-mx-10 sm:-mt-10 sm:mb-6 sm:px-10 sm:pt-10">
+        <div className="-mx-4 -mt-5 mb-6 border-b border-white/10 bg-[#0F0F0F] px-4 pt-5 sm:-mx-10 sm:-mt-10 sm:px-10 sm:pt-10">
         <div className="mb-5 flex items-center justify-end gap-2 sm:absolute sm:right-6 sm:top-6 sm:mb-0">
           <button
             onClick={handleLogout}
@@ -383,24 +383,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         {/* Tab 3: Customizer */}
         {activeTab === 'customizer' && (
           <form onSubmit={handleSaveConfig} className="mx-auto max-w-3xl space-y-6 pb-24">
-            <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:justify-between sm:items-center">
+            <div className="mb-4">
               <h3 className="font-serif text-2xl font-semibold text-white">Personalización del Sitio</h3>
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsPreviewMode(true)}
-                  className="px-3 py-2.5 sm:px-5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-widest transition-colors flex items-center justify-center gap-2"
-                  title="Ocultar panel temporalmente para ver cómo luce el sitio"
-                >
-                  <span>👁️</span> Vista Previa
-                </button>
-                <button
-                  type="submit"
-                  className="px-3 py-2.5 sm:px-6 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-widest shadow-lg shadow-[#C0C0C0]/10 transition-colors"
-                >
-                  Guardar Cambios
-                </button>
-              </div>
             </div>
 
             {/* Customizer Sub-tabs */}
@@ -546,11 +530,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <button
                         type="button"
-                        onClick={() => handleLocalConfigChange('heroImageUrl', discoHero)}
-                        aria-pressed={localConfig.heroImageUrl === discoHero}
-                        className={`overflow-hidden rounded-2xl border-2 p-1 text-left ${localConfig.heroImageUrl === discoHero ? 'border-[#C0C0C0] shadow-lg shadow-[#C0C0C0]/10' : 'border-white/10'}`}
+                        onClick={() => handleLocalConfigChange('heroImageUrl', DEFAULT_HERO_IMAGE)}
+                        aria-pressed={localConfig.heroImageUrl === DEFAULT_HERO_IMAGE}
+                        className={`overflow-hidden rounded-2xl border-2 p-1 text-left ${localConfig.heroImageUrl === DEFAULT_HERO_IMAGE ? 'border-[#C0C0C0] shadow-lg shadow-[#C0C0C0]/10' : 'border-white/10'}`}
                       >
-                        <img src={discoHero} alt="Portada disco con bolas de espejo" className="h-28 w-full rounded-xl object-cover" />
+                        <img src={resolveHeroImage(DEFAULT_HERO_IMAGE)} alt="Portada disco con bolas de espejo" className="h-28 w-full rounded-xl object-cover" />
                         <span className="block px-2 pb-1 pt-2 text-xs font-semibold text-white">Bolas disco · recomendada</span>
                       </button>
                       <label className="cursor-pointer rounded-2xl border border-dashed border-white/20 bg-zinc-900/60 p-4 text-sm text-zinc-300 transition-colors hover:border-[#C0C0C0]/60">
@@ -582,6 +566,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                         {localConfig.theme === 'champagne' && ['#12100B', '#F7E7CE', '#FFFFF0', '#C2B280'].map(c => <div key={c} className="w-8 h-8 rounded-full border border-white/20" style={{ backgroundColor: c }} />)}
                       </div>
                     </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs uppercase tracking-wider text-zinc-300">Tamaño de títulos</label>
+                    <select value={localConfig.headingScale || 'normal'} onChange={e => handleLocalConfigChange('headingScale', e.target.value)} className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-[#C0C0C0]">
+                      <option value="compact">Compacto</option>
+                      <option value="normal">Normal</option>
+                      <option value="large">Grande</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Fuente de Títulos</label>
@@ -648,11 +640,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     </div>
                   </div>
                   <div className="md:col-span-2">
+                    <label className="mb-1.5 block text-xs uppercase tracking-wider text-zinc-300">Tamaño de textos</label>
+                    <select value={localConfig.bodyScale || 'normal'} onChange={e => handleLocalConfigChange('bodyScale', e.target.value)} className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-[#C0C0C0]">
+                      <option value="compact">Compacto</option>
+                      <option value="normal">Normal</option>
+                      <option value="large">Grande</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
                     <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">URL Imagen Principal (Portada)</label>
-                    <input type="url" value={localConfig.heroImageUrl} onChange={e => handleLocalConfigChange('heroImageUrl', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                    <input type="url" value={localConfig.heroImageUrl === DEFAULT_HERO_IMAGE ? '' : localConfig.heroImageUrl} onChange={e => handleLocalConfigChange('heroImageUrl', e.target.value || DEFAULT_HERO_IMAGE)} placeholder="https://ejemplo.com/mi-portada.jpg" className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
                     {localConfig.heroImageUrl && (
                       <div className="mt-2 w-full h-32 rounded-xl overflow-hidden border border-white/10">
-                        <img src={localConfig.heroImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                        <img src={resolveHeroImage(localConfig.heroImageUrl)} alt="Vista previa de portada" className="w-full h-full object-cover" />
                       </div>
                     )}
                   </div>
@@ -762,7 +762,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
 
         {activeTab === 'customizer' && (
           <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center border-t border-white/10 bg-[#0A0A0A]/95 p-3 backdrop-blur-xl sm:bottom-6 sm:border sm:rounded-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:p-2.5">
-            <div className="flex w-full max-w-md items-center justify-center gap-2 sm:w-auto">
+            <div className="flex w-full max-w-3xl flex-wrap items-center justify-center gap-2 sm:w-auto sm:flex-nowrap">
+              <select
+                aria-label="Sección del organizador"
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value as typeof activeTab)}
+                className="min-w-32 flex-1 rounded-full border border-white/10 bg-zinc-900 px-3 py-3 text-xs font-semibold text-white outline-none sm:flex-none"
+              >
+                <option value="stats">Estadísticas</option>
+                <option value="guests">Invitados</option>
+                <option value="moderation">Moderación</option>
+                <option value="customizer">Personalizar</option>
+                <option value="exports">Exportar</option>
+                <option value="collabs">Administradores</option>
+              </select>
+              <select
+                aria-label="Sección de personalización"
+                value={customizerTab}
+                onChange={(e) => setCustomizerTab(e.target.value as typeof customizerTab)}
+                className="min-w-32 flex-1 rounded-full border border-white/10 bg-zinc-900 px-3 py-3 text-xs font-semibold text-white outline-none sm:flex-none"
+              >
+                <option value="general">General</option>
+                <option value="location">Ubicación</option>
+                <option value="gifts">Regalos</option>
+                <option value="appearance">Apariencia</option>
+                <option value="modules">Módulos</option>
+              </select>
               <button
                 type="button"
                 onClick={() => setIsPreviewMode(true)}

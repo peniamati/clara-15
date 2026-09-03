@@ -1,6 +1,7 @@
 export type ThemeColor = 'gold-emerald' | 'rose-gold' | 'royal-violet' | 'midnight-silver' | 'champagne' | 'silver-disco';
 
 export type FontFamily = 'cormorant' | 'playfair' | 'montserrat' | 'lato' | 'inter' | 'jakarta' | 'roboto' | 'opensans' | 'poppins' | 'raleway' | 'nunito' | 'merriweather' | 'lora' | 'cinzel' | 'dancing' | 'greatvibes' | 'dmsans' | 'quicksand' | 'oswald';
+export type TextScale = 'compact' | 'normal' | 'large';
 
 export interface EventConfig {
   id: string;
@@ -26,6 +27,8 @@ export interface EventConfig {
   theme: ThemeColor;
   fontHeading?: FontFamily;
   fontBody?: FontFamily;
+  headingScale?: TextScale;
+  bodyScale?: TextScale;
   enableHero?: boolean;
   enableCountdown?: boolean;
   enableTimeline?: boolean;
