@@ -211,13 +211,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl p-4 sm:p-8 overflow-y-auto flex items-center justify-center">
-      <div className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-6 sm:p-10 max-w-6xl w-full shadow-2xl relative">
+    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl overflow-y-auto overscroll-contain sm:p-6">
+      <div className="min-h-full w-full bg-[#0F0F0F] border border-white/10 rounded-none p-4 pt-5 shadow-2xl sm:my-4 sm:min-h-0 sm:max-w-6xl sm:rounded-3xl sm:p-10 sm:mx-auto relative overflow-x-hidden">
         
-        <div className="absolute top-6 right-6 flex items-center gap-2">
+        <div className="mb-5 flex items-center justify-end gap-2 sm:absolute sm:top-6 sm:right-6 sm:mb-0">
           <button
             onClick={handleLogout}
-            className="p-2 px-4 flex items-center gap-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-xs font-semibold uppercase tracking-wider"
+            className="p-2 px-3 flex items-center gap-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-[10px] sm:text-xs font-semibold uppercase tracking-wider"
             title="Cerrar sesión"
           >
             <LogOut className="w-4 h-4" />
@@ -232,18 +232,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         </div>
 
         {/* Dashboard Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-6 border-b border-white/10">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col items-stretch gap-5 mb-6 pb-6 border-b border-white/10 sm:pr-32">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-12 h-12 rounded-2xl bg-[#C0C0C0]/20 border border-[#C0C0C0] flex items-center justify-center text-[#C0C0C0]">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="font-serif text-3xl font-semibold text-white">Panel Organizador · {config.honoree}</h2>
+              <h2 className="font-serif text-2xl leading-tight sm:text-3xl font-semibold text-white break-words">Panel Organizador · {config.honoree}</h2>
               <span className="text-xs text-zinc-400 block font-light">SaaS Event Platform · Nivel Empresa</span>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             {[
               { id: 'stats', label: '📊 Estadísticas' },
               { id: 'guests', label: '👥 Invitados' },
@@ -255,7 +255,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-all ${
+                className={`min-w-0 px-2 py-2.5 sm:px-4 rounded-xl sm:rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider transition-all ${
                   activeTab === tab.id
                     ? 'bg-[#C0C0C0] text-black font-bold shadow-lg shadow-[#C0C0C0]/10'
                     : 'bg-black border border-white/10 text-zinc-400 hover:text-white'
@@ -379,20 +379,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         {/* Tab 3: Customizer */}
         {activeTab === 'customizer' && (
           <form onSubmit={handleSaveConfig} className="space-y-6 max-w-3xl mx-auto">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:justify-between sm:items-center">
               <h3 className="font-serif text-2xl font-semibold text-white">Personalización del Sitio</h3>
-              <div className="flex gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setIsPreviewMode(true)}
-                  className="px-5 py-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs uppercase tracking-widest transition-colors flex items-center gap-2"
+                  className="px-3 py-2.5 sm:px-5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-widest transition-colors flex items-center justify-center gap-2"
                   title="Ocultar panel temporalmente para ver cómo luce el sitio"
                 >
                   <span>👁️</span> Vista Previa
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10 transition-colors"
+                  className="px-3 py-2.5 sm:px-6 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-[10px] sm:text-xs uppercase tracking-wide sm:tracking-widest shadow-lg shadow-[#C0C0C0]/10 transition-colors"
                 >
                   Guardar Cambios
                 </button>
@@ -400,11 +400,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
             </div>
 
             {/* Customizer Sub-tabs */}
-            <div className="flex overflow-x-auto pb-2 gap-2 border-b border-white/10 mb-6 no-scrollbar">
+            <div className="grid grid-cols-2 gap-1.5 border-b border-white/10 pb-3 mb-5 sm:flex sm:overflow-x-auto sm:pb-2 sm:gap-2 no-scrollbar">
               <button
                 type="button"
                 onClick={() => setCustomizerTab('general')}
-                className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-b-2 ${
+                className={`px-2 py-2 text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
                   customizerTab === 'general' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
                 }`}
               >
@@ -413,7 +413,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={() => setCustomizerTab('location')}
-                className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-b-2 ${
+                className={`px-2 py-2 text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
                   customizerTab === 'location' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
                 }`}
               >
@@ -422,7 +422,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={() => setCustomizerTab('gifts')}
-                className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-b-2 ${
+                className={`px-2 py-2 text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
                   customizerTab === 'gifts' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
                 }`}
               >
@@ -431,7 +431,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={() => setCustomizerTab('appearance')}
-                className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-b-2 ${
+                className={`px-2 py-2 text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
                   customizerTab === 'appearance' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
                 }`}
               >
@@ -440,7 +440,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={() => setCustomizerTab('modules')}
-                className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-b-2 ${
+                className={`col-span-2 px-2 py-2 text-[10px] sm:col-auto sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
                   customizerTab === 'modules' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
                 }`}
               >
@@ -448,7 +448,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               </button>
             </div>
 
-            <div className="bg-black border border-white/10 rounded-2xl p-6">
+            <div className="bg-black border border-white/10 rounded-2xl p-4 sm:p-6">
               {customizerTab === 'general' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -639,8 +639,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     <input type="text" value={localConfig.customHashtag} onChange={e => handleLocalConfigChange('customHashtag', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Música de Fondo (URL MP3)</label>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Música de Fondo (YouTube o MP3)</label>
                     <input type="url" value={localConfig.backgroundMusicUrl} onChange={e => handleLocalConfigChange('backgroundMusicUrl', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                    <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">Pegá un enlace de YouTube (youtube.com, youtu.be o embed) para reproducirlo solo como música, o una URL directa a MP3.</p>
                   </div>
                 </div>
               )}
