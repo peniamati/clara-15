@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { EventProvider, useEvent } from './context/EventContext';
 import { Navbar } from './components/Navbar';
 import { HeroWelcome } from './components/HeroWelcome';
@@ -20,22 +20,12 @@ import { ReceptionCheckInApp } from './components/ReceptionCheckInApp';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Footer } from './components/Footer';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { BackgroundMusic } from './components/BackgroundMusic';
 
 const AppContent: React.FC = () => {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
-  const { config, isPlayingMusic } = useEvent();
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      if (isPlayingMusic) {
-        audioRef.current.play().catch(e => console.log('Autoplay blocked:', e));
-      } else {
-        audioRef.current.pause();
-      }
-    }
-  }, [isPlayingMusic]);
+  const { config, isPlayingMusic, setIsPlayingMusic } = useEvent();
 
   const fontMap: Record<string, string> = {
     'cormorant': '"Cormorant Garamond", serif',
@@ -67,12 +57,10 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#C0C0C0] selection:text-black overflow-x-hidden" style={rootStyle}>
       
-      {/* Background audio loop simulator - Upbeat/Disco track */}
-      <audio
-        ref={audioRef}
-        id="bg-audio"
-        loop
-        src={config.backgroundMusicUrl || "https://cdn.pixabay.com/download/audio/2022/10/25/audio_a1cd1f5795.mp3?filename=retro-wave-style-track-112345.mp3"}
+      <BackgroundMusic
+        source={config.backgroundMusicUrl || "https://cdn.pixabay.com/download/audio/2022/10/25/audio_a1cd1f5795.mp3?filename=retro-wave-style-track-112345.mp3"}
+        isPlaying={isPlayingMusic}
+        onPlaybackError={() => setIsPlayingMusic(false)}
       />
 
       {/* Welcome Screen for Autoplay Audio */}
