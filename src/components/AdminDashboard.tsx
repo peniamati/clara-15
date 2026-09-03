@@ -246,7 +246,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
             </div>
           </div>
         </div>
-        </div>
 
         <div className="-mx-4 grid grid-cols-2 gap-2 border-y border-white/10 px-4 py-3 sm:-mx-10 sm:flex sm:flex-wrap sm:px-10">
             {[
