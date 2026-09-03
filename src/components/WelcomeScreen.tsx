@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useEvent } from '../context/EventContext';
 import { Volume2 } from 'lucide-react';
 
@@ -27,7 +27,7 @@ export const WelcomeScreen: React.FC = () => {
             transition={{ delay: 0.2, duration: 1 }}
             className="text-center"
           >
-            <h1 className="text-5xl md:text-7xl mb-6 text-[#C0C0C0]" style={{ fontFamily: 'var(--font-heading)' }}>
+            <h1 className="text-4xl sm:text-5xl md:text-7xl mb-6 px-4 text-[#C0C0C0] break-words" style={{ fontFamily: 'var(--font-heading)' }}>
               {config.eventTitle}
             </h1>
             <p className="text-zinc-400 mb-12 tracking-widest uppercase text-sm" style={{ fontFamily: 'var(--font-body)' }}>
