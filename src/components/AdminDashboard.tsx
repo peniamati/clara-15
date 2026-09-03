@@ -245,8 +245,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <span className="block text-xs font-light text-zinc-400">Panel de organización del evento</span>
             </div>
           </div>
+        </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <div className="sticky top-0 z-30 -mx-4 mb-6 grid grid-cols-2 gap-2 border-y border-white/10 bg-[#0F0F0F]/95 px-4 py-3 backdrop-blur-xl sm:-mx-10 sm:flex sm:flex-wrap sm:px-10">
             {[
               { id: 'stats', label: '📊 Estadísticas' },
               { id: 'guests', label: '👥 Invitados' },
@@ -267,8 +269,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                 {tab.label}
               </button>
             ))}
-          </div>
-        </div>
         </div>
 
         {/* Tab 1: Stats */}
@@ -761,33 +761,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         )}
 
         {activeTab === 'customizer' && (
-          <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center border-t border-white/10 bg-[#0A0A0A]/95 p-3 backdrop-blur-xl sm:bottom-6 sm:border sm:rounded-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:p-2.5">
-            <div className="flex w-full max-w-3xl flex-wrap items-center justify-center gap-2 sm:w-auto sm:flex-nowrap">
-              <select
-                aria-label="Sección del organizador"
-                value={activeTab}
-                onChange={(e) => setActiveTab(e.target.value as typeof activeTab)}
-                className="min-w-32 flex-1 rounded-full border border-white/10 bg-zinc-900 px-3 py-3 text-xs font-semibold text-white outline-none sm:flex-none"
-              >
-                <option value="stats">Estadísticas</option>
-                <option value="guests">Invitados</option>
-                <option value="moderation">Moderación</option>
-                <option value="customizer">Personalizar</option>
-                <option value="exports">Exportar</option>
-                <option value="collabs">Administradores</option>
-              </select>
-              <select
-                aria-label="Sección de personalización"
-                value={customizerTab}
-                onChange={(e) => setCustomizerTab(e.target.value as typeof customizerTab)}
-                className="min-w-32 flex-1 rounded-full border border-white/10 bg-zinc-900 px-3 py-3 text-xs font-semibold text-white outline-none sm:flex-none"
-              >
-                <option value="general">General</option>
-                <option value="location">Ubicación</option>
-                <option value="gifts">Regalos</option>
-                <option value="appearance">Apariencia</option>
-                <option value="modules">Módulos</option>
-              </select>
+          <div className="fixed bottom-3 left-3 right-3 z-40 flex justify-center rounded-2xl border border-white/10 bg-[#0A0A0A]/95 p-2.5 shadow-2xl backdrop-blur-xl sm:bottom-6 sm:left-1/2 sm:right-auto sm:-translate-x-1/2">
+            <div className="flex w-full max-w-md items-center justify-center gap-2 sm:w-auto">
               <button
                 type="button"
                 onClick={() => setIsPreviewMode(true)}
