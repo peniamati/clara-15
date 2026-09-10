@@ -1,3 +1,4 @@
+import { notify } from '../lib/notify';
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import { Camera, Download, Heart, Sparkles, Filter, Smile, Share2, Upload } from 'lucide-react';
@@ -26,25 +27,25 @@ export const PhotoboothCollabAlbum: React.FC = () => {
     }
   };
 
-  const handlePublishPhoto = (e: React.FormEvent) => {
+  const handlePublishPhoto = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imageUrl) {
-      alert('Por favor selecciona o sube una fotografía.');
+      notify('Por favor selecciona o sube una fotografía.');
       return;
     }
 
-    addPhotoboothImage({
+    if (!await addPhotoboothImage({
       guestName: guestName || 'Invitado Especial',
       imageUrl,
       filter: selectedFilter,
       sticker: selectedSticker,
       caption: caption || '¡Momentos inolvidables!'
-    });
+    })) return;
 
     setImageUrl('');
     setCaption('');
     setShowUploader(false);
-    alert('¡Tu selfie ha sido agregada a la Cabina de Fotos & Mosaico en Vivo!');
+    notify('Tu foto se guardó y está pendiente de aprobación del organizador.');
   };
 
   return (

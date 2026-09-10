@@ -1,3 +1,4 @@
+import { notify } from '../lib/notify';
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import { QrCode, Search, CheckCircle2, UserCheck, X, Clock, Users } from 'lucide-react';
@@ -17,13 +18,13 @@ export const ReceptionCheckInApp: React.FC<ReceptionCheckInAppProps> = ({ onClos
          g.qrCode.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSimulateScan = (qrCode: string) => {
+  const handleSimulateScan = async (qrCode: string) => {
     const target = guests.find(g => g.qrCode === qrCode);
     if (target) {
-      checkInGuest(target.id);
-      alert(`¡Check-in exitoso para ${target.name} ${target.lastName}! Asignado a Mesa #${target.tableNumber}`);
+      if (!await checkInGuest(target.id)) return;
+      notify(`¡Check-in exitoso para ${target.name} ${target.lastName}! Asignado a Mesa #${target.tableNumber}`);
     } else {
-      alert('Código QR no encontrado en la lista de registrados.');
+      notify('Código QR no encontrado en la lista de registrados.');
     }
   };
 

@@ -1,3 +1,4 @@
+import { notify } from '../lib/notify';
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import confetti from 'canvas-confetti';
@@ -33,6 +34,8 @@ export const RsvpForm: React.FC = () => {
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [confirmedGuest, setConfirmedGuest] = useState<any>(null);
   const [generatedQrDataUrl, setGeneratedQrDataUrl] = useState<string | null>(null);
@@ -67,16 +70,20 @@ export const RsvpForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !lastName.trim()) {
-      alert('Por favor completa tu nombre y apellido.');
+      notify('Por favor completa tu nombre y apellido.');
       return;
     }
 
     if (status === 'CONFIRMED' && isMinor && (!tutorName.trim() || !tutorPhone.trim())) {
-      alert('Al ser menor de 18 años, por favor ingresa el nombre y teléfono de contacto de tu padre, madre o tutor responsable.');
+      notify('Al ser menor de 18 años, por favor ingresa el nombre y teléfono de contacto de tu padre, madre o tutor responsable.');
       return;
     }
 
-    const savedGuest = addOrUpdateGuestRsvp({
+    if (saving) return;
+    setSaving(true);
+    setError('');
+    try {
+    const savedGuest = await addOrUpdateGuestRsvp({
       name: name.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
@@ -112,6 +119,8 @@ export const RsvpForm: React.FC = () => {
         origin: { y: 0.6 }
       });
     }
+    } catch { setError('No se pudo guardar la respuesta. Revisá tu conexión e intentá nuevamente.'); }
+    finally { setSaving(false); }
   };
 
   const currentGuest = confirmedGuest || activeGuest;
@@ -128,6 +137,8 @@ export const RsvpForm: React.FC = () => {
   return (
     <section id="rsvp" className="py-24 bg-[#050505] text-white relative">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        {error && <p role="alert" className="rounded-xl bg-red-950 p-4">{error}</p>}
+        {saving && <p role="status">Guardando tu respuesta…</p>}
         
         <div className="text-center max-w-2xl mx-auto mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900/80 border border-[#C0C0C0]/30 text-[#C0C0C0] text-xs uppercase tracking-widest mb-4">
@@ -292,7 +303,7 @@ export const RsvpForm: React.FC = () => {
 
               <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
-                  Email <span className="text-zinc-500 font-normal lowercase">(opcional, para enviarte el pase por correo)</span>
+                  Email <span className="text-zinc-500 font-normal lowercase">(opcional, como dato de contacto)</span>
                 </label>
                 <input
                   type="email"
@@ -396,7 +407,7 @@ export const RsvpForm: React.FC = () => {
 
             {/* Submit Button */}
             <button
-              type="submit"
+              type="submit" disabled={saving}
               className="w-full py-4 rounded-full bg-[#C0C0C0] text-black font-semibold text-xs tracking-widest uppercase hover:bg-[#E0E0E0] transition-all flex items-center justify-center gap-2 shadow-xl shadow-[#C0C0C0]/10"
             >
               <Send className="w-4 h-4" />

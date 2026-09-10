@@ -1,3 +1,4 @@
+import { notify } from '../lib/notify';
 import React from 'react';
 import { useEvent } from '../context/EventContext';
 import { Heart, Share2, Volume2 } from 'lucide-react';
@@ -14,7 +15,7 @@ export const Footer: React.FC = () => {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert('¡Enlace de la invitación copiado al portapapeles!');
+      notify('¡Enlace de la invitación copiado al portapapeles!');
     }
   };
 

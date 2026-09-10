@@ -137,7 +137,8 @@ export const InteractiveGames: React.FC = () => {
         </div>
 
         {/* Tab 1: Trivia */}
-        {activeGameTab === 'trivia' && (
+        {activeGameTab === 'trivia' && triviaQuestions.length === 0 && <p className="p-6 text-center">La organización todavía no publicó preguntas.</p>}
+        {activeGameTab === 'trivia' && triviaQuestions.length > 0 && (
           <div className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-6 sm:p-10 shadow-2xl max-w-2xl mx-auto">
             {!triviaFinished ? (
               <div>

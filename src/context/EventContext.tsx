@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, onSnapshot, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, updateDoc, query, where, runTransaction, increment } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+import { visitorId } from '../lib/visitor';
+import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, auth } from '../lib/firebase';
 import {
   EventConfig,
@@ -34,34 +36,37 @@ import {
 } from '../data/mockData';
 
 interface EventContextType {
+  syncError: string;
+  clearSyncError: () => void;
+  moderateContent: (group: string, id: string, approved: boolean) => Promise<boolean>;
   config: EventConfig;
   previewConfig: EventConfig | null;
   setPreviewConfig: (config: EventConfig | null) => void;
   activeConfig: EventConfig;
-  updateConfig: (newConfig: Partial<EventConfig>) => void;
+  updateConfig: (newConfig: Partial<EventConfig>) => Promise<void>;
   guests: Guest[];
-  addOrUpdateGuestRsvp: (guestData: Partial<Guest>) => Guest;
-  checkInGuest: (guestId: string) => void;
-  assignGuestTable: (guestId: string, tableNumber: number) => void;
+  addOrUpdateGuestRsvp: (guestData: Partial<Guest>) => Promise<Guest>;
+  checkInGuest: (guestId: string) => Promise<boolean>;
+  assignGuestTable: (guestId: string, tableNumber: number) => Promise<boolean>;
   timeline: TimelineItem[];
   schedule: ScheduleItem[];
   unlockScheduleStage: (index: number) => void;
   songs: SongRequest[];
-  addSongRequest: (song: { title: string; artist: string; submittedBy: string; spotifyUrl?: string }) => void;
-  voteSong: (songId: string) => void;
-  toggleApproveSong: (songId: string) => void;
+  addSongRequest: (song: { title: string; artist: string; submittedBy: string; spotifyUrl?: string }) => Promise<boolean>;
+  voteSong: (songId: string) => Promise<boolean>;
+  toggleApproveSong: (songId: string) => Promise<boolean>;
   guestbook: GuestbookMessage[];
-  addGuestbookMessage: (msg: { guestName: string; message: string; photoUrl?: string }) => void;
-  reactToMessage: (id: string, type: 'love' | 'sparkle' | 'cheer') => void;
+  addGuestbookMessage: (msg: { guestName: string; message: string; photoUrl?: string }) => Promise<boolean>;
+  reactToMessage: (id: string, type: 'love' | 'sparkle' | 'cheer') => Promise<boolean>;
   timeCapsule: TimeCapsuleMessage[];
-  addTimeCapsuleMessage: (msg: { author: string; message: string; unlockAge: 18 | 21 }) => void;
+  addTimeCapsuleMessage: (msg: { author: string; message: string; unlockAge: 18 | 21 }) => Promise<boolean>;
   photoboothImages: PhotoboothImage[];
-  addPhotoboothImage: (img: { guestName: string; imageUrl: string; filter: string; sticker: string; caption: string }) => void;
-  likePhotoboothImage: (id: string) => void;
+  addPhotoboothImage: (img: { guestName: string; imageUrl: string; filter: string; sticker: string; caption: string }) => Promise<boolean>;
+  likePhotoboothImage: (id: string) => Promise<boolean>;
   gifts: GiftIdea[];
   triviaQuestions: TriviaQuestion[];
   polls: Poll[];
-  votePoll: (pollId: string, optionId: string) => void;
+  votePoll: (pollId: string, optionId: string) => Promise<boolean>;
   tables: TableInfo[];
   faqs: FaqItem[];
   activeGuest: Guest | null;
@@ -86,11 +91,12 @@ interface EventContextType {
 const EventContext = createContext<EventContextType | undefined>(undefined);
 
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [syncError, setSyncError] = useState('');
   const [config, setConfig] = useState<EventConfig>(initialEventConfig);
   const [isConfigReady, setIsConfigReady] = useState(false);
   const [previewConfig, setPreviewConfig] = useState<EventConfig | null>(null);
   const activeConfig = previewConfig || config;
-  const [guests, setGuests] = useState<Guest[]>(initialGuests);
+  const [guests, setGuests] = useState<Guest[]>([]);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -121,13 +127,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (docSnapshot.exists()) {
         const fetchedConfig = docSnapshot.data() as EventConfig;
         setConfig({ ...initialEventConfig, ...fetchedConfig });
-      } else {
-        // If it doesn't exist in Firestore, initialize it
-        setDoc(configDocRef, initialEventConfig).catch(console.error);
       }
       setIsConfigReady(true);
     }, (error) => {
       console.error('Error fetching config:', error);
+      setSyncError('No pudimos cargar la configuración. Revisá conexión y permisos.');
       // Keep the invitation usable with bundled data if Firestore is unavailable.
       setIsConfigReady(true);
     });
@@ -136,36 +140,24 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Firestore synchronization for guests
   useEffect(() => {
+    if (!isAdminLoggedIn) { setGuests([]); return; }
     const guestsRef = collection(db, 'guests');
     const unsubscribe = onSnapshot(guestsRef, (snapshot) => {
       const fetchedGuests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Guest));
-      if (fetchedGuests.length > 0) {
-        setGuests(fetchedGuests);
-      }
+      setGuests(fetchedGuests);
     }, (error) => {
       console.error('Error fetching guests:', error);
+      setSyncError('No pudimos cargar las confirmaciones. Revisá los permisos de tu cuenta.');
     });
     return () => unsubscribe();
-  }, []);
+  }, [isAdminLoggedIn]);
 
   const [schedule, setSchedule] = useState<ScheduleItem[]>(initialSchedule);
-  const [songs, setSongs] = useState<SongRequest[]>(() => {
-    const saved = localStorage.getItem('maestro_songs');
-    return saved ? JSON.parse(saved) : initialSongs;
-  });
-
-  const [guestbook, setGuestbook] = useState<GuestbookMessage[]>(() => {
-    const saved = localStorage.getItem('maestro_guestbook');
-    return saved ? JSON.parse(saved) : initialGuestbook;
-  });
-
-  const [timeCapsule, setTimeCapsule] = useState<TimeCapsuleMessage[]>(initialTimeCapsule);
-  const [photoboothImages, setPhotoboothImages] = useState<PhotoboothImage[]>(() => {
-    const saved = localStorage.getItem('maestro_photobooth');
-    return saved ? JSON.parse(saved) : initialPhotobooth;
-  });
-
-  const [polls, setPolls] = useState<Poll[]>(initialPolls);
+  const [songs, setSongs] = useState<SongRequest[]>([]);
+  const [guestbook, setGuestbook] = useState<GuestbookMessage[]>([]);
+  const [timeCapsule, setTimeCapsule] = useState<TimeCapsuleMessage[]>([]);
+  const [photoboothImages, setPhotoboothImages] = useState<PhotoboothImage[]>([]);
+  const [polls, setPolls] = useState<Poll[]>([]);
   const [tables, setTables] = useState<TableInfo[]>(initialTables);
   const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
   const [isPlayingMusic, setIsPlayingMusic] = useState<boolean>(false);
@@ -181,222 +173,122 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   useEffect(() => {
-    localStorage.setItem('maestro_songs', JSON.stringify(songs));
-  }, [songs]);
-
-  useEffect(() => {
-    localStorage.setItem('maestro_guestbook', JSON.stringify(guestbook));
-  }, [guestbook]);
-
-  useEffect(() => {
-    localStorage.setItem('maestro_photobooth', JSON.stringify(photoboothImages));
-  }, [photoboothImages]);
-
-  const updateConfig = (newConfig: Partial<EventConfig>) => {
-    const updated = { ...config, ...newConfig };
-    setConfig(updated);
-    const configDocRef = doc(db, 'settings', 'config');
-    updateDoc(configDocRef, newConfig).catch((err) => {
-      console.error('Error updating config:', err);
+    const stops = [
+      ['songs', setSongs], ['guestbook', setGuestbook], ['photobooth', setPhotoboothImages],
+      ['polls', setPolls],
+    ].map(([name, setter]) => {
+      const source = collection(db, name as string);
+      const readable = name === 'polls' || isAdminLoggedIn ? source : query(source, where('approved', '==', true));
+      return onSnapshot(readable, snap => {
+        (setter as (items: any[]) => void)(snap.docs.map(d => ({ ...d.data(), id: d.id })));
+      }, () => setSyncError('No se pudieron sincronizar los contenidos. Revisá la conexión y los permisos.'));
     });
-  };
+    if (isAdminLoggedIn) stops.push(onSnapshot(collection(db, 'capsules'), snap => {
+      setTimeCapsule(snap.docs.map(d => ({ ...d.data(), id: d.id } as TimeCapsuleMessage)));
+    }, () => setSyncError('No se pudieron cargar las cápsulas.')));
+    else setTimeCapsule([]);
+    return () => stops.forEach(stop => stop());
+  }, [isAdminLoggedIn]);
 
-  const addOrUpdateGuestRsvp = (guestData: Partial<Guest>): Guest => {
-    const existingIndex = guests.findIndex(
-      g => (guestData.id && g.id === guestData.id) ||
-           (g.email.toLowerCase() === (guestData.email || '').toLowerCase())
-    );
-
-    let updatedGuest: Guest;
-    if (existingIndex >= 0) {
-      updatedGuest = {
-        ...guests[existingIndex],
-        ...guestData,
-        status: guestData.status || 'CONFIRMED'
-      };
-      
-      setGuests(prev => {
-        const next = [...prev];
-        next[existingIndex] = updatedGuest;
-        return next;
-      });
-
-      const guestDocRef = doc(db, 'guests', updatedGuest.id);
-      setDoc(guestDocRef, updatedGuest).catch((err) => {
-        console.warn('Firestore sync note:', err?.message || err);
-      });
-
-    } else {
-      const newId = `gst-${Date.now()}`;
-      const name = guestData.name || 'Invitado';
-      const lastName = guestData.lastName || '';
-      updatedGuest = {
-        id: newId,
-        name,
-        lastName,
-        email: guestData.email || '',
-        phone: guestData.phone || '',
-        age: guestData.age,
-        tutorName: guestData.tutorName || guestData.emergencyContactName,
-        tutorPhone: guestData.tutorPhone || guestData.emergencyContactPhone,
-        status: guestData.status || 'CONFIRMED',
-        adultsCount: guestData.adultsCount ?? 1,
-        kidsCount: guestData.kidsCount ?? 0,
-        tableNumber: Math.floor(Math.random() * 5) + 1,
-        dietaryRestrictions: guestData.dietaryRestrictions || [],
-        emergencyContactName: guestData.tutorName || guestData.emergencyContactName,
-        emergencyContactPhone: guestData.tutorPhone || guestData.emergencyContactPhone,
-        notes: guestData.notes || '',
-        qrCode: `QR-CLARA15-${newId}-${name.toUpperCase().replace(/\s+/g, '')}`,
-        uniqueInviteUrl: `/invitacion/${name.toLowerCase().replace(/\s+/g, '-')}-${lastName.toLowerCase().replace(/\s+/g, '-')}`
-      };
-      
-      setGuests(prev => [updatedGuest, ...prev]);
-
-      const guestDocRef = doc(db, 'guests', updatedGuest.id);
-      setDoc(guestDocRef, updatedGuest).catch((err) => {
-        console.warn('Firestore sync note:', err?.message || err);
-      });
+  const persist = async (operation: () => Promise<unknown>): Promise<boolean> => {
+    try { await operation(); return true; }
+    catch (error) {
+      console.error(error);
+      setSyncError('No se guardó la operación. Conservá tus datos y reintentá; si persiste, contactá al organizador.');
+      return false;
     }
+  };
+  const moderateContent = (group: string, id: string, approved: boolean) =>
+    persist(() => updateDoc(doc(db, group, id), { approved }));
 
-    setActiveGuest(updatedGuest);
-    return updatedGuest;
+  const updateConfig = async (newConfig: Partial<EventConfig>) => {
+    await setDoc(doc(db, 'settings', 'config'), newConfig, { merge: true });
+    setConfig(prev => ({ ...prev, ...newConfig }));
   };
 
-  const checkInGuest = (guestId: string) => {
-    const nowTime = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-    setGuests(prev =>
-      prev.map(g => g.id === guestId ? { ...g, status: 'CHECKED_IN', checkInTime: nowTime } : g)
-    );
-    const guestDocRef = doc(db, 'guests', guestId);
-    updateDoc(guestDocRef, {
-      status: 'CHECKED_IN',
-      checkInTime: nowTime
-    }).catch((err) => {
-      console.warn('Firestore check-in sync note:', err?.message || err);
-    });
+  const addOrUpdateGuestRsvp = async (guestData: Partial<Guest>): Promise<Guest> => {
+    // Never match on an optional email: two empty emails are different guests.
+    const ownerUid = await visitorId();
+    const id = crypto.randomUUID();
+    const guest: Guest = {
+      id, name: guestData.name || '', lastName: guestData.lastName || '',
+      email: guestData.email || '', phone: guestData.phone || '',
+      status: guestData.status || 'CONFIRMED', adultsCount: 1, kidsCount: 0,
+      tableNumber: 0, dietaryRestrictions: [], notes: '',
+      ...guestData,
+      qrCode: id, uniqueInviteUrl: '',
+    };
+    const clean = JSON.parse(JSON.stringify({ ...guest, ownerUid, createdAt: new Date().toISOString() }));
+    await setDoc(doc(db, 'guests', id), clean);
+    setActiveGuest(clean);
+    return clean;
   };
 
-  const assignGuestTable = (guestId: string, tableNumber: number) => {
-    setGuests(prev =>
-      prev.map(g => g.id === guestId ? { ...g, tableNumber } : g)
-    );
-    const guestDocRef = doc(db, 'guests', guestId);
-    updateDoc(guestDocRef, { tableNumber }).catch((err) => {
-      console.warn('Firestore table assign sync note:', err?.message || err);
-    });
-  };
-
+  const checkInGuest = (guestId: string) => persist(() => updateDoc(doc(db, 'guests', guestId), {
+    status: 'CHECKED_IN', checkInTime: new Date().toISOString()
+  }));
+  const assignGuestTable = (guestId: string, tableNumber: number) =>
+    persist(() => updateDoc(doc(db, 'guests', guestId), { tableNumber }));
   const unlockScheduleStage = (index: number) => {
-    setSchedule(prev =>
-      prev.map((item, idx) => idx === index ? { ...item, isUnlocked: true } : item)
-    );
+    setSchedule(prev => prev.map((item, idx) => idx === index ? { ...item, isUnlocked: true } : item));
   };
+  const createContent = (group: string, data: object) => persist(async () => {
+    const ownerUid = await visitorId();
+    await setDoc(doc(collection(db, group)), JSON.parse(JSON.stringify({
+      ...data, ownerUid, createdAt: new Date().toISOString()
+    })));
+  });
+  const addSongRequest = (song: { title: string; artist: string; submittedBy: string; spotifyUrl?: string }) =>
+    createContent('songs', { ...song, votes: 0, approved: false });
+  const addGuestbookMessage = (msg: { guestName: string; message: string; photoUrl?: string }) =>
+    createContent('guestbook', { ...msg, reactions: { love: 0, sparkle: 0, cheer: 0 }, approved: false });
+  const addTimeCapsuleMessage = (msg: { author: string; message: string; unlockAge: 18 | 21 }) =>
+    createContent('capsules', msg);
+  const addPhotoboothImage = (img: { guestName: string; imageUrl: string; filter: string; sticker: string; caption: string }) =>
+    persist(async () => {
+      const ownerUid = await visitorId();
+      const id = crypto.randomUUID();
+      const target = ref(getStorage(), 'guest-photos/' + ownerUid + '/' + id);
+      if (!img.imageUrl.startsWith('data:image/')) throw new Error('Seleccioná una imagen.');
+      if (img.imageUrl.length > 6500000) throw new Error('La foto supera 5 MB.');
+      await uploadString(target, img.imageUrl, 'data_url');
+      const imageUrl = await getDownloadURL(target);
+      await setDoc(doc(db, 'photobooth', id), { ...img, imageUrl, ownerUid, approved: false, likes: 0, createdAt: new Date().toISOString() });
+    });
+  const vote = (group: string, id: string, field: string) => persist(async () => {
+    const uid = await visitorId();
+    const target = doc(db, group, id);
+    const receipt = doc(db, group, id, 'votes', uid + '-' + field.replaceAll('.', '-'));
+    await runTransaction(db, async tx => {
+      const existing = await tx.get(receipt);
+      if (existing.exists()) return;
+      tx.set(receipt, { ownerUid: uid, field });
+      tx.update(target, { [field]: increment(1) });
+    });
+  });
+  const voteSong = (id: string) => vote('songs', id, 'votes');
+  const toggleApproveSong = (id: string) => moderateContent('songs', id, !songs.find(s => s.id === id)?.approved);
+  const reactToMessage = (id: string, type: 'love' | 'sparkle' | 'cheer') => vote('guestbook', id, 'reactions.' + type);
+  const likePhotoboothImage = (id: string) => vote('photobooth', id, 'likes');
+  const votePoll = (id: string, optionId: string) => persist(async () => {
+    const uid = await visitorId();
+    await setDoc(doc(db, 'polls', id, 'votes', uid), { ownerUid: uid, optionId });
+  });
 
-  const addSongRequest = (songData: { title: string; artist: string; submittedBy: string; spotifyUrl?: string }) => {
-    const newSong: SongRequest = {
-      id: `s-${Date.now()}`,
-      title: songData.title,
-      artist: songData.artist,
-      submittedBy: songData.submittedBy || 'Invitado',
-      votes: 1,
-      approved: true,
-      spotifyUrl: songData.spotifyUrl
-    };
-    setSongs(prev => [newSong, ...prev]);
-  };
-
-  const voteSong = (songId: string) => {
-    setSongs(prev =>
-      prev.map(s => s.id === songId ? { ...s, votes: s.votes + 1 } : s)
-    );
-  };
-
-  const toggleApproveSong = (songId: string) => {
-    setSongs(prev =>
-      prev.map(s => s.id === songId ? { ...s, approved: !s.approved } : s)
-    );
-  };
-
-  const addGuestbookMessage = (msg: { guestName: string; message: string; photoUrl?: string }) => {
-    const newMsg: GuestbookMessage = {
-      id: `gb-${Date.now()}`,
-      guestName: msg.guestName || `Amigo de ${config.honoree}`,
-      message: msg.message,
-      reactions: { love: 1, sparkle: 1, cheer: 1 },
-      photoUrl: msg.photoUrl,
-      createdAt: new Date().toISOString(),
-      approved: true
-    };
-    setGuestbook(prev => [newMsg, ...prev]);
-  };
-
-  const reactToMessage = (id: string, type: 'love' | 'sparkle' | 'cheer') => {
-    setGuestbook(prev =>
-      prev.map(item => {
-        if (item.id === id) {
-          return {
-            ...item,
-            reactions: {
-              ...item.reactions,
-              [type]: item.reactions[type] + 1
-            }
-          };
-        }
-        return item;
-      })
-    );
-  };
-
-  const addTimeCapsuleMessage = (msg: { author: string; message: string; unlockAge: 18 | 21 }) => {
-    const newCapsule: TimeCapsuleMessage = {
-      id: `tc-${Date.now()}`,
-      author: msg.author,
-      message: msg.message,
-      unlockAge: msg.unlockAge,
-      createdAt: new Date().toISOString()
-    };
-    setTimeCapsule(prev => [newCapsule, ...prev]);
-  };
-
-  const addPhotoboothImage = (img: { guestName: string; imageUrl: string; filter: string; sticker: string; caption: string }) => {
-    const newImg: PhotoboothImage = {
-      id: `pb-${Date.now()}`,
-      guestName: img.guestName || `Invitado de ${config.honoree}`,
-      imageUrl: img.imageUrl,
-      filter: img.filter,
-      sticker: img.sticker,
-      caption: img.caption,
-      createdAt: new Date().toISOString(),
-      likes: 1,
-      approved: true
-    };
-    setPhotoboothImages(prev => [newImg, ...prev]);
-  };
-
-  const likePhotoboothImage = (id: string) => {
-    setPhotoboothImages(prev =>
-      prev.map(item => item.id === id ? { ...item, likes: item.likes + 1 } : item)
-    );
-  };
-
-  const votePoll = (pollId: string, optionId: string) => {
-    setPolls(prev =>
-      prev.map(p => {
-        if (p.id === pollId) {
-          return {
-            ...p,
-            options: p.options.map(opt => opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt)
-          };
-        }
-        return p;
-      })
-    );
-  };
+  const pollIds = polls.map(p => p.id).join(',');
+  useEffect(() => {
+    if (!pollIds) return;
+    const stops = pollIds.split(',').map(id => onSnapshot(collection(db, 'polls', id, 'votes'), snap => {
+      const votes = snap.docs.map(d => d.data().optionId);
+      setPolls(prev => prev.map(p => p.id === id ? { ...p, options: p.options.map(o => ({ ...o, votes: votes.filter(v => v === o.id).length })) } : p));
+    }));
+    return () => stops.forEach(stop => stop());
+  }, [pollIds]);
 
   return (
     <EventContext.Provider
       value={{
+        syncError, clearSyncError: () => setSyncError(''), moderateContent,
         config: activeConfig,
         previewConfig,
         setPreviewConfig,
@@ -406,8 +298,8 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addOrUpdateGuestRsvp,
         checkInGuest,
         assignGuestTable,
-        timeline: initialTimeline,
-        schedule,
+        timeline: config.timeline || [],
+        schedule: config.schedule || [],
         unlockScheduleStage,
         songs,
         addSongRequest,
@@ -421,11 +313,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         photoboothImages,
         addPhotoboothImage,
         likePhotoboothImage,
-        gifts: initialGifts,
-        triviaQuestions: initialTrivia,
+        gifts: config.gifts || [],
+        triviaQuestions: config.trivia || [],
         polls,
         votePoll,
-        tables,
+        tables: (config.tables || []).map(t => ({ ...t, assignedGuests: guests.filter(g => g.tableNumber === t.number).map(g => g.id) })),
         faqs: initialFaqs,
         activeGuest,
         setActiveGuest,

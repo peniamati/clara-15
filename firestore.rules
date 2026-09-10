@@ -1,8 +1,89 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    function signed() { return request.auth != null; }
+    function admin() {
+      return signed() && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in get(/databases/$(database)/documents/settings/config).data.adminEmails;
+    }
+    function ownerCreate() { return signed() && request.resource.data.ownerUid == request.auth.uid; }
+    function counter(group, id, field, before, after) {
+      let receipt = /databases/$(database)/documents/$(group)/$(id)/votes/$(request.auth.uid + '-' + field);
+      return signed() && !exists(receipt) && existsAfter(receipt)
+        && getAfter(receipt).data.ownerUid == request.auth.uid
+        && after == before + 1;
+    }
+    match /settings/config {
+      allow read: if true;
+      allow create: if signed() && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
+      allow update: if admin() && request.resource.data.adminEmails.size() > 0;
+    }
+    match /guests/{id} {
+      allow read: if admin();
+      allow create: if ownerCreate()
+        && request.resource.data.status in ['CONFIRMED', 'DECLINED']
+        && request.resource.data.tableNumber == 0
+        && request.resource.data.name is string && request.resource.data.name.size() <= 150
+        && request.resource.data.lastName is string && request.resource.data.lastName.size() <= 150
+        && request.resource.data.phone is string && request.resource.data.phone.size() <= 50
+        && request.resource.data.notes.size() <= 4000;
+      allow update, delete: if admin();
+    }
+    match /songs/{id} {
+      allow read: if resource.data.approved == true || admin();
+      allow create: if ownerCreate() && request.resource.data.approved == false && request.resource.data.votes == 0
+        && request.resource.data.title.size() <= 300 && request.resource.data.artist.size() <= 300;
+      allow update: if admin() || (resource.data.approved == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes'])
+        && counter('songs', id, 'votes', resource.data.votes, request.resource.data.votes));
+      allow delete: if admin();
+    }
+    match /guestbook/{id} {
+      allow read: if resource.data.approved == true || admin();
+      allow create: if ownerCreate() && request.resource.data.approved == false
+        && request.resource.data.message.size() <= 4000
+        && request.resource.data.reactions == {'love': 0, 'sparkle': 0, 'cheer': 0};
+      allow update: if admin() || (resource.data.approved == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+        && (
+          (request.resource.data.reactions.diff(resource.data.reactions).affectedKeys().hasOnly(['love'])
+            && counter('guestbook', id, 'reactions-love', resource.data.reactions.love, request.resource.data.reactions.love))
+          || (request.resource.data.reactions.diff(resource.data.reactions).affectedKeys().hasOnly(['sparkle'])
+            && counter('guestbook', id, 'reactions-sparkle', resource.data.reactions.sparkle, request.resource.data.reactions.sparkle))
+          || (request.resource.data.reactions.diff(resource.data.reactions).affectedKeys().hasOnly(['cheer'])
+            && counter('guestbook', id, 'reactions-cheer', resource.data.reactions.cheer, request.resource.data.reactions.cheer))
+        ));
+      allow delete: if admin();
+    }
+    match /photobooth/{id} {
+      allow read: if resource.data.approved == true || admin();
+      allow create: if ownerCreate() && request.resource.data.approved == false
+        && request.resource.data.likes == 0 && request.resource.data.caption.size() <= 2000
+        && request.resource.data.imageUrl is string;
+      allow update: if admin() || (resource.data.approved == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        && counter('photobooth', id, 'likes', resource.data.likes, request.resource.data.likes));
+      allow delete: if admin();
+    }
+    match /capsules/{id} {
+      allow read, update, delete: if admin();
+      allow create: if ownerCreate() && request.resource.data.unlockAge in [18, 21]
+        && request.resource.data.message.size() <= 4000;
+    }
+    match /polls/{id} {
+      allow read: if true;
+      allow write: if admin();
+      match /votes/{uid} {
+        allow read: if true;
+        allow create: if ownerCreate() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['ownerUid', 'optionId']);
+      }
+    }
+    match /{group}/{id}/votes/{voteId} {
+      allow read: if signed();
+      allow create: if group in ['songs', 'guestbook', 'photobooth']
+        && ownerCreate() && voteId.matches(request.auth.uid + '.*');
     }
   }
 }
