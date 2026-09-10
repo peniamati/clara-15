@@ -1,3 +1,4 @@
+import { notify } from '../lib/notify';
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import { Music, ThumbsUp, Plus, Search, Disc } from 'lucide-react';
@@ -9,18 +10,18 @@ export const CollaborativePlaylist: React.FC = () => {
   const [submittedBy, setSubmittedBy] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const handleAddSong = (e: React.FormEvent) => {
+  const handleAddSong = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!songTitle || !artist) {
-      alert('Por favor ingresa el título de la canción y el artista.');
+      notify('Por favor ingresa el título de la canción y el artista.');
       return;
     }
 
-    addSongRequest({
+    if (!await addSongRequest({
       title: songTitle,
       artist,
       submittedBy: submittedBy || 'Invitado'
-    });
+    })) return;
 
     setSongTitle('');
     setArtist('');

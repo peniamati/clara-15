@@ -20,11 +20,18 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { Footer } from './components/Footer';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { BackgroundMusic } from './components/BackgroundMusic';
+import { Notice } from './components/Notice';
 
 const AppContent: React.FC = () => {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
-  const [showAdminModal, setShowAdminModal] = useState(false);
-  const { config, isConfigReady, isPlayingMusic, setIsPlayingMusic } = useEvent();
+  const [showAdminModal, setShowAdminModal] = useState(window.location.hash === '#organizador');
+  const [adminPreview, setAdminPreview] = useState(false);
+  useEffect(() => {
+    const navigate = () => setShowAdminModal(window.location.hash === '#organizador');
+    window.addEventListener('hashchange', navigate);
+    return () => window.removeEventListener('hashchange', navigate);
+  }, []);
+  const { config, isConfigReady, isPlayingMusic, setIsPlayingMusic, syncError, clearSyncError } = useEvent();
   const [isInvitationReady, setIsInvitationReady] = useState(false);
   const hasLoadedInitialInvitation = useRef(false);
 
@@ -86,19 +93,22 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#C0C0C0] selection:text-black overflow-x-hidden" style={rootStyle}>
       
+      {syncError && <div role="alert" className="fixed bottom-4 left-4 right-4 z-[200] rounded-xl border border-red-400 bg-red-950 p-4 text-white"><p>{syncError}</p><button className="mt-2 underline" onClick={clearSyncError}>Entendido</button></div>}
+      <Notice />
+      <div hidden={showAdminModal && !adminPreview}>
       <BackgroundMusic
         source={config.backgroundMusicUrl || "https://cdn.pixabay.com/download/audio/2022/10/25/audio_a1cd1f5795.mp3?filename=retro-wave-style-track-112345.mp3"}
-        isPlaying={isPlayingMusic}
+        isPlaying={isPlayingMusic && !showAdminModal}
         onPlaybackError={() => setIsPlayingMusic(false)}
       />
 
       {/* Welcome Screen for Autoplay Audio */}
-      <WelcomeScreen />
+      {!showAdminModal && <WelcomeScreen />}
 
       {/* Navigation Bar */}
       <Navbar
         onOpenCheckIn={() => setShowCheckInModal(true)}
-        onOpenAdmin={() => setShowAdminModal(true)}
+        onOpenAdmin={() => { window.location.hash = 'organizador'; }}
       />
 
       {/* Main Sections Stack */}
@@ -124,13 +134,13 @@ const AppContent: React.FC = () => {
         <ReceptionCheckInApp onClose={() => setShowCheckInModal(false)} />
       )}
 
-      {/* SaaS Admin Control Dashboard */}
+      <Footer />
+      </div>
+      {/* Independent organizer screen */}
       {showAdminModal && (
-        <AdminDashboard onClose={() => setShowAdminModal(false)} />
+        <AdminDashboard onClose={() => { window.location.hash = 'inicio'; }} onPreviewChange={setAdminPreview} />
       )}
 
-      {/* Footer & Credits */}
-      <Footer />
     </div>
   );
 };

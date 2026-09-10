@@ -4,6 +4,12 @@ export type FontFamily = 'cormorant' | 'playfair' | 'montserrat' | 'lato' | 'int
 export type TextScale = 'compact' | 'normal' | 'large';
 
 export interface EventConfig {
+  timeline?: TimelineItem[];
+  gallery?: { id: number; category: string; title: string; url: string; size: string }[];
+  schedule?: ScheduleItem[];
+  gifts?: GiftIdea[];
+  trivia?: TriviaQuestion[];
+  tables?: TableInfo[];
   id: string;
   honoree: string;
   eventType: string; // "Mis 15" | "Boda" | "Cumpleaños"

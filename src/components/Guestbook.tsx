@@ -1,3 +1,4 @@
+import { notify } from '../lib/notify';
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import { MessageSquare, Heart, Sparkles, Send, Lock, Clock, Image as ImageIcon } from 'lucide-react';
@@ -15,34 +16,34 @@ export const Guestbook: React.FC = () => {
   const [unlockAge, setUnlockAge] = useState<18 | 21>(18);
   const [activeSubTab, setActiveSubTab] = useState<'guestbook' | 'capsule'>('guestbook');
 
-  const handleGuestbookSubmit = (e: React.FormEvent) => {
+  const handleGuestbookSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message) return;
 
-    addGuestbookMessage({
+    if (!await addGuestbookMessage({
       guestName: guestName || `Amigo de ${config.honoree}`,
       message,
       photoUrl: photoUrl || undefined
-    });
+    })) return;
 
     setGuestName('');
     setMessage('');
     setPhotoUrl('');
   };
 
-  const handleCapsuleSubmit = (e: React.FormEvent) => {
+  const handleCapsuleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!capsuleMsg) return;
 
-    addTimeCapsuleMessage({
+    if (!await addTimeCapsuleMessage({
       author: capsuleAuthor || 'Anónimo',
       message: capsuleMsg,
       unlockAge
-    });
+    })) return;
 
     setCapsuleAuthor('');
     setCapsuleMsg('');
-    alert(`¡Tu mensaje ha sido sellado en la Cápsula del Tiempo! Se abrirá cuando ${config.honoree} cumpla ${unlockAge} años.`);
+    notify(`¡Tu mensaje ha sido sellado en la Cápsula del Tiempo! Se abrirá cuando ${config.honoree} cumpla ${unlockAge} años.`);
   };
 
   return (

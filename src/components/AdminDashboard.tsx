@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
+import { ContentEditor } from './ContentEditor';
+import { OrganizerHelp } from './OrganizerHelp';
 import { auth } from '../lib/firebase';
 import { signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { DEFAULT_HERO_IMAGE, resolveHeroImage } from '../lib/heroMedia';
@@ -25,9 +27,10 @@ import {
 
 interface AdminDashboardProps {
   onClose: () => void;
+  onPreviewChange: (preview: boolean) => void;
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPreviewChange }) => {
   const {
     config,
     setPreviewConfig,
@@ -40,11 +43,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     photoboothImages,
     gifts,
     tables,
-    isAdminLoggedIn
+    isAdminLoggedIn, moderateContent, timeCapsule, assignGuestTable, checkInGuest
   } = useEvent();
 
   const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports' | 'collabs'>('stats');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  React.useEffect(() => {
+    onPreviewChange(isPreviewMode);
+    return () => onPreviewChange(false);
+  }, [isPreviewMode, onPreviewChange]);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ title: string; message: string; tone?: 'success' | 'error' } | null>(null);
 
   // Customizer state
@@ -93,7 +103,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     const email = newAdminEmail.trim().toLowerCase();
     const currentAdmins = config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
     if (!currentAdmins.includes(email)) {
-      updateConfig({ adminEmails: [...currentAdmins, email] });
+      void updateConfig({ adminEmails: [...currentAdmins, email] }).catch(() => setNotice({ title: 'No se pudo guardar', message: 'No se agregó el administrador.', tone: 'error' }));
     }
     setNewAdminEmail('');
   };
@@ -104,7 +114,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
       setNotice({ title: 'No se puede quitar', message: 'Debe haber al menos un administrador en la plataforma.', tone: 'error' });
       return;
     }
-    updateConfig({ adminEmails: currentAdmins.filter(e => e !== emailToRemove) });
+    void updateConfig({ adminEmails: currentAdmins.filter(e => e !== emailToRemove) }).catch(() => setNotice({ title: 'No se pudo guardar', message: 'No se quitó el administrador.', tone: 'error' }));
   };
 
   const fontMap: Record<string, string> = {
@@ -129,40 +139,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     'oswald': '"Oswald", sans-serif',
   };
 
-  const handleSaveConfig = (e: React.FormEvent) => {
+  const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateConfig(localConfig);
-    setNotice({ title: 'Cambios guardados', message: 'La configuración se actualizó correctamente para tus invitados.', tone: 'success' });
+    if (saving) return;
+    setSaving(true);
+    try {
+      await updateConfig(localConfig);
+      setNotice({ title: 'Cambios guardados', message: 'La configuración quedó guardada en la base de datos.', tone: 'success' });
+    } catch {
+      setNotice({ title: 'No se pudo guardar', message: 'Tus cambios siguen en el editor. Revisá la conexión y los permisos de Firebase antes de reintentar.', tone: 'error' });
+    } finally { setSaving(false); }
   };
 
   const exportCsv = () => {
     const headers = ['Nombre', 'Apellido', 'Edad', 'MenorDeEdad', 'TutorNombre', 'TutorTelefono', 'Telefono', 'Email', 'Estado', 'Mesa', 'MenuEspecial', 'Notas'];
-    const rows = guests.map(g => {
-      const isMinor = g.age ? g.age < 18 : false;
-      return [
-        `"${g.name}"`,
-        `"${g.lastName}"`,
-        g.age || '',
-        isMinor ? 'SI' : 'NO',
-        `"${g.tutorName || g.emergencyContactName || ''}"`,
-        `"${g.tutorPhone || g.emergencyContactPhone || ''}"`,
-        `"${g.phone}"`,
-        `"${g.email}"`,
-        g.status,
-        g.tableNumber,
-        `"${g.dietaryRestrictions.join(', ')}"`,
-        `"${(g.notes || '').replace(/"/g, '""')}"`
-      ];
-    });
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const cell = (value: unknown) => {
+      const raw = String(value ?? '');
+      const safe = /^[=+@\\-\\t\\r]/.test(raw) ? "'" + raw : raw;
+      return '"' + safe.replaceAll('"', '""') + '"';
+    };
+    const rows = guests.map(g => [
+      g.name, g.lastName, g.age, g.age && g.age < 18 ? 'SI' : 'NO',
+      g.tutorName || g.emergencyContactName, g.tutorPhone || g.emergencyContactPhone,
+      g.phone, g.email, g.status, g.tableNumber || 'Sin asignar',
+      g.dietaryRestrictions.join(', '), g.notes
+    ].map(cell).join(','));
+    const csvContent = 'data:text/csv;charset=utf-8,' + '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    const encodedUri = URL.createObjectURL(new Blob([csvContent.slice(csvContent.indexOf(',') + 1)], { type: 'text/csv;charset=utf-8;' }));
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
     link.setAttribute('download', `Lista_Invitados_${config.honoree.replace(/\s+/g, '_')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(encodedUri), 1000);
   };
 
   if (!isAdminLoggedIn) {
@@ -205,7 +215,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         <button onClick={() => setIsPreviewMode(false)} className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs uppercase tracking-wider rounded-full transition-colors">
           Volver al Editor
         </button>
-        <button onClick={handleSaveConfig} className="px-5 py-2.5 bg-[#C0C0C0] hover:bg-white text-black font-bold text-xs uppercase tracking-wider rounded-full transition-colors shadow-lg shadow-[#C0C0C0]/20">
+        <button onClick={handleSaveConfig} disabled={saving} className="px-5 py-2.5 bg-[#C0C0C0] hover:bg-white text-black font-bold text-xs uppercase tracking-wider rounded-full transition-colors shadow-lg shadow-[#C0C0C0]/20">
           Guardar Cambios
         </button>
       </div>
@@ -213,11 +223,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 p-0 backdrop-blur-2xl sm:p-6">
-      <div className="relative h-full w-full overflow-y-auto overscroll-contain bg-[#0F0F0F] p-4 pt-5 shadow-2xl sm:mx-auto sm:max-h-[calc(100dvh-3rem)] sm:max-w-6xl sm:rounded-3xl sm:p-10">
+    <div className="organizer fixed inset-0 z-50 bg-[#0F0F0F] text-white">
+      <div className="flex h-[100dvh] w-full flex-col overflow-hidden">
         
-        <div className="sticky top-0 z-50 isolate -mx-4 -mt-5 mb-6 bg-[#0F0F0F] px-4 pt-5 shadow-[0_12px_20px_-12px_rgba(0,0,0,1)] sm:-mx-10 sm:-mt-10 sm:px-10 sm:pt-10">
-        <div className="mb-5 flex items-center justify-end gap-2 sm:absolute sm:right-6 sm:top-6 sm:mb-0">
+        <div className="relative z-30 shrink-0 border-b border-white/10 bg-[#151515] px-4 pt-3 sm:px-8 sm:pt-5">
+        <div className="mb-2 flex items-center justify-end gap-2 sm:absolute sm:right-6 sm:top-4 sm:mb-0">
           <button
             onClick={handleLogout}
             className="p-2 px-3 flex items-center gap-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-[10px] sm:text-xs font-semibold uppercase tracking-wider"
@@ -235,7 +245,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         </div>
 
         {/* Dashboard Header */}
-        <div className="flex flex-col items-stretch pb-5 sm:pr-32">
+        <div className="flex flex-col items-stretch pb-3 sm:pr-64">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-12 h-12 rounded-2xl bg-[#C0C0C0]/20 border border-[#C0C0C0] flex items-center justify-center text-[#C0C0C0]">
               <ShieldCheck className="w-6 h-6" />
@@ -247,10 +257,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
           </div>
         </div>
 
-        <div className="-mx-4 grid grid-cols-2 gap-2 border-y border-white/10 px-4 py-3 sm:-mx-10 sm:flex sm:flex-wrap sm:px-10">
+        <div className="flex gap-2 overflow-x-auto py-3" role="navigation" aria-label="Secciones del organizador">
             {[
               { id: 'stats', label: '📊 Estadísticas' },
-              { id: 'guests', label: '👥 Invitados' },
+              { id: 'guests', label: '👥 Confirmaciones' },
               { id: 'moderation', label: '🎵 Moderación' },
               { id: 'customizer', label: '🎨 Personalizar' },
               { id: 'exports', label: '📥 Exportar' },
@@ -259,7 +269,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex min-w-0 items-center justify-center px-2 py-2.5 text-center sm:px-4 rounded-xl sm:rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider transition-all ${
+                className={`flex shrink-0 items-center justify-center px-4 py-3 text-center rounded-xl text-xs font-semibold transition-all ${
                   activeTab === tab.id
                     ? 'bg-[#C0C0C0] text-black font-bold shadow-lg shadow-[#C0C0C0]/10'
                     : 'bg-black border border-white/10 text-zinc-400 hover:text-white'
@@ -272,8 +282,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         </div>
 
         {/* Tab 1: Stats */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 pb-28 sm:px-8">
+        <div className="mx-auto max-w-6xl">
         {activeTab === 'stats' && (
           <div className="space-y-6">
+            <OrganizerHelp />
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="p-5 rounded-2xl bg-black border border-white/10">
                 <span className="text-xs text-zinc-400 font-light uppercase tracking-wider">Total Registrados</span>
@@ -325,7 +338,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         {activeTab === 'guests' && (
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="font-serif text-2xl font-semibold text-white">Lista Completa de Invitados</h3>
+              <h3 className="font-serif text-2xl font-semibold text-white">Confirmaciones y detalles</h3>
               <button
                 onClick={exportCsv}
                 className="px-4 py-2 rounded-full bg-[#C0C0C0] text-black font-semibold text-xs uppercase tracking-wider flex items-center gap-1.5"
@@ -334,8 +347,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               </button>
             </div>
 
-            <div className="space-y-2 max-h-[360px] overflow-y-auto pr-2">
-              {guests.map(g => {
+            <p className="text-sm text-zinc-400">Respuestas guardadas en Firebase. Podés consultarlas desde cualquier dispositivo con tu cuenta autorizada.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input aria-label="Buscar invitado" placeholder="Nombre, teléfono o correo" value={search} onChange={e => setSearch(e.target.value)} className="rounded-xl bg-zinc-900 p-3" />
+              <select aria-label="Estado de respuesta" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="rounded-xl bg-zinc-900 p-3"><option value="ALL">Todas las respuestas</option><option value="CONFIRMED">Confirmaron</option><option value="DECLINED">No asistirán</option><option value="CHECKED_IN">Ingresaron</option></select>
+            </div>
+            {guests.length === 0 && <p className="p-6">No hay respuestas cargadas. No se muestran invitados de ejemplo.</p>}
+            <div className="space-y-2">
+              {guests.filter(g => (statusFilter === 'ALL' || g.status === statusFilter) && `${g.name} ${g.lastName} ${g.phone} ${g.email}`.toLowerCase().includes(search.toLowerCase())).map(g => {
                 const isMinor = g.age ? g.age < 18 : false;
                 const tutor = g.tutorName || g.emergencyContactName;
                 const tutorTel = g.tutorPhone || g.emergencyContactPhone;
@@ -356,21 +375,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                         )}
                       </div>
                       <span className="text-zinc-400 font-light block mt-0.5">
-                        {g.phone ? `WhatsApp: ${g.phone} · ` : ''}Mesa #{g.tableNumber} · Menú: {g.dietaryRestrictions.join(', ') || 'Estándar'}
+                        {g.phone ? `WhatsApp: ${g.phone} · ` : ''}Mesa: {g.tableNumber || 'Sin asignar'} · Menú: {g.dietaryRestrictions.join(', ') || 'Estándar'}
                       </span>
+                      <p className="mt-2">Correo: {g.email || 'No informado'} · Mensaje: {g.notes || 'Sin mensaje'}</p>
                       {isMinor && tutor && (
                         <span className="text-zinc-400 text-[11px] block mt-0.5 text-amber-200/90">
                           Tutor Responsable: <strong>{tutor}</strong> {tutorTel && `(${tutorTel})`}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label>Mesa <input type="number" min="0" aria-label={'Mesa de ' + g.name} defaultValue={g.tableNumber} onBlur={e => { const n = Number(e.target.value); if (Number.isInteger(n) && n >= 0 && n !== g.tableNumber) void assignGuestTable(g.id, n); }} className="w-16 rounded bg-zinc-800 p-2" /></label>
+                      {g.status === 'CONFIRMED' && <button className="rounded border p-2" onClick={() => checkInGuest(g.id)}>Registrar ingreso</button>}
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                         g.status === 'CONFIRMED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 
                         g.status === 'CHECKED_IN' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
                         'bg-[#C0C0C0]/20 text-[#C0C0C0] border border-[#C0C0C0]/30'
                       }`}>
-                        {g.status}
+                        {{CONFIRMED: 'Confirmó', DECLINED: 'No asistirá', CHECKED_IN: 'Ingresó', PENDING: 'Pendiente'}[g.status]}
                       </span>
                     </div>
                   </div>
@@ -380,6 +402,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
           </div>
         )}
 
+        {activeTab === 'moderation' && <section className="space-y-6">
+          <h3 className="text-2xl font-semibold">Contenido de los invitados</h3>
+          <p className="text-zinc-400">Aprobá el contenido para que aparezca en la invitación. Ocultar no elimina el registro.</p>
+          {[
+            { group: 'songs', title: 'Canciones', items: songs },
+            { group: 'guestbook', title: 'Firmas', items: guestbook },
+            { group: 'photobooth', title: 'Fotos', items: photoboothImages }
+          ].map(section => <div key={section.group} className="space-y-3">
+            <h4 className="text-lg font-semibold">{section.title}</h4>
+            {section.items.length === 0 && <p className="text-zinc-400">Todavía no hay contenido.</p>}
+            {section.items.map((item: any) => <article key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-zinc-900 p-4">
+              <div><p>{item.title || item.guestName}</p><p className="text-sm text-zinc-400">{item.artist || item.message || item.caption}</p>{item.imageUrl && <img src={item.imageUrl} alt="Foto enviada" className="mt-2 h-32 rounded-lg" />}</div>
+              <button className="rounded-lg border border-white/20 p-3" onClick={() => moderateContent(section.group, item.id, !item.approved)}>{item.approved ? 'Ocultar' : 'Aprobar'}</button>
+            </article>)}
+          </div>)}
+          <h4 className="text-lg font-semibold">Cápsulas del tiempo · privadas</h4>
+          <p className="text-sm text-zinc-400">La apertura a los 18 o 21 años es una indicación para la organización, no un envío automático.</p>
+          {timeCapsule.map(item => <article key={item.id} className="rounded-xl bg-zinc-900 p-4"><strong>{item.author} · {item.unlockAge} años</strong><p>{item.message}</p></article>)}
+        </section>}
         {/* Tab 3: Customizer */}
         {activeTab === 'customizer' && (
           <form onSubmit={handleSaveConfig} className="mx-auto max-w-3xl space-y-6 pb-24">
@@ -387,6 +428,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <h3 className="font-serif text-2xl font-semibold text-white">Personalización del Sitio</h3>
             </div>
 
+            <ContentEditor config={localConfig} onChange={handleLocalConfigChange} />
             {/* Customizer Sub-tabs */}
             <div className="grid grid-cols-2 gap-1.5 border-b border-white/10 pb-3 mb-5 sm:flex sm:overflow-x-auto sm:pb-2 sm:gap-2 no-scrollbar">
               <button
@@ -709,7 +751,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
           <div className="text-center py-8 max-w-md mx-auto space-y-4">
             <FileSpreadsheet className="w-12 h-12 text-[#C0C0C0] mx-auto" />
             <h3 className="font-serif text-2xl font-semibold text-white">Exportación de Reportes</h3>
-            <p className="text-xs text-zinc-400 font-light">Descargá reportes completos en formato CSV o PDF para catering y recepción.</p>
+            <p className="text-xs text-zinc-400 font-light">Descargá reportes completos en formato CSV para catering y recepción.</p>
 
             <button
               onClick={exportCsv}
@@ -772,15 +814,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               </button>
               <button
                 type="button"
-                onClick={handleSaveConfig}
+                onClick={handleSaveConfig} disabled={saving}
                 className="flex-1 rounded-full bg-[#C0C0C0] px-5 py-3 text-center text-xs font-bold uppercase tracking-wider text-black shadow-lg shadow-[#C0C0C0]/20 sm:flex-none"
               >
-                Guardar cambios
+                {saving ? "Guardando…" : "Guardar cambios"}
               </button>
             </div>
           </div>
         )}
 
+        </div>
+        </div>
         {notice && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="notice-title">
             <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#121212] p-6 text-center shadow-2xl">

@@ -1,3 +1,4 @@
+import { notify } from '../lib/notify';
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import { Camera, ZoomIn, Download, Share2, Heart, X, Sparkles } from 'lucide-react';
@@ -7,14 +8,7 @@ export const GalleryMasonry: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'books' | 'backstage' | 'fiesta'>('all');
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
-  const galleryImages = [
-    { id: 1, category: 'books', title: 'Sesión de Gala en Palacio', url: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=80', size: 'tall' },
-    { id: 2, category: 'books', title: 'Book de Producción Jardines', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80', size: 'wide' },
-    { id: 3, category: 'backstage', title: 'Prueba de Vestido & Corte', url: 'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=800&q=80', size: 'normal' },
-    { id: 4, category: 'books', title: 'Amanecer dorado', url: 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=800&q=80', size: 'tall' },
-    { id: 5, category: 'fiesta', title: 'Preparativos con las Amigas', url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&q=80', size: 'wide' },
-    { id: 6, category: 'backstage', title: 'Detalles & Joyas de Gala', url: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80', size: 'normal' }
-  ];
+  const galleryImages = config.gallery || [];
 
   const filtered = activeTab === 'all'
     ? galleryImages
@@ -25,7 +19,7 @@ export const GalleryMasonry: React.FC = () => {
       navigator.share({ title: `Galería ${config.honoree}`, url });
     } else {
       navigator.clipboard.writeText(url);
-      alert('¡Enlace de imagen copiado al portapapeles!');
+      notify('¡Enlace de imagen copiado al portapapeles!');
     }
   };
 

@@ -41,6 +41,10 @@ button, [role="button"] {
   transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, background-color 150ms ease, color 150ms ease;
 }
 
+.organizer, .organizer h1, .organizer h2, .organizer h3, .organizer h4 {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
 button:hover:not(:disabled), [role="button"]:hover:not([aria-disabled="true"]) {
   transform: translateY(-1px);
 }
