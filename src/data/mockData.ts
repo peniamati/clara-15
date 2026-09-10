@@ -48,7 +48,7 @@ export const initialEventConfig: EventConfig = {
   enableGifts: true,
   enableGuestbook: true,
   enableTrivia: true,
-  backgroundMusicUrl: 'https://www.youtube.com/watch?v=nNEb2k_EmMg',
+  backgroundMusicUrl: 'https://www.youtube.com/watch?v=ru0K8uYEZWw',
   customHashtag: '#Clara15Disco',
   rsvpDeadline: '2026-10-01',
   welcomeMessage: 'Un sueño de quince años que comenzó en familia y hoy quiero celebrar bailando contigo.',
