@@ -1,5 +1,12 @@
 # Producto de invitaciones digitales
 
+## Marca y contacto
+
+- Marca: Evently.
+- Web: a definir.
+- WhatsApp comercial: +54 9 291 644-6200.
+- Correo comercial y cuenta de Mercado Pago: pena_matias@hotmail.com.
+
 ## Propuesta
 
 Una plataforma de autoservicio que permita pasar de nombre, fecha, lugar y estilo a una invitación publicable en menos de diez minutos. La promesa no es solamente diseño: incluye la operación del evento antes, durante y después.
@@ -113,9 +120,8 @@ Objetivo: WCAG 2.2 AA.
 
 ## Próximas decisiones comerciales necesarias
 
-- nombre definitivo y dominio;
-- número de WhatsApp y correo de ventas;
-- titular/cuenta de Mercado Pago;
+- dominio definitivo;
+- credenciales de aplicación y webhook de Mercado Pago (nunca se publican en el frontend);
 - vigencia de cada invitación y política de devolución;
 - si los precios incluyen diseño asistido e impuestos;
 - textos legales de privacidad, términos y tratamiento de datos de menores.
