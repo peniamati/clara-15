@@ -41,10 +41,15 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_DATABASE_ID: ${{ secrets.VITE_FIREBASE_DATABASE_ID }}
-        run: npx vite build
+        run: |
+          test "$VITE_FIREBASE_PROJECT_ID" = "foton-8d1e5"
+          test "$VITE_FIREBASE_APP_ID" = "1:853190635698:web:10f77fb1b10ac78ffdd9ab"
+          test "$VITE_FIREBASE_AUTH_DOMAIN" = "foton-8d1e5.firebaseapp.com"
+          test "$VITE_FIREBASE_MESSAGING_SENDER_ID" = "853190635698"
+          test -n "$VITE_FIREBASE_API_KEY"
+          npx vite build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

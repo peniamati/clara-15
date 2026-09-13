@@ -11,7 +11,7 @@ export function OrganizerHelp() {
       <li><strong>Administradores:</strong> agregá únicamente las cuentas de las personas que gestionan el evento.</li>
     </ol>
     <h4 className="mb-2 mt-5 font-semibold">Dónde quedan los datos</h4>
-    <p>Las respuestas se guardan en Firebase, colección guests. La configuración está en settings/config; canciones, firmas y fotos están en songs, guestbook y photobooth. Los archivos de fotos se guardan en Firebase Storage. Las cápsulas están en capsules y sólo las consulta la organización.</p>
+    <p>Las respuestas se guardan en Firebase, colección guests. La configuración está en settings/config; canciones, firmas y fotos están en songs, guestbook y photobooth. Las fotos se comprimen antes de guardarse para funcionar con el plan gratuito. Las cápsulas están en capsules y sólo las consulta la organización.</p>
     <p className="mt-2">No necesitás entrar a Firebase para el trabajo diario. Usá esta pantalla con tu cuenta de Google autorizada. El correo es un dato de contacto: no se envían emails automáticos. Los enlaces de regalos abren el proveedor de pago y no acreditan transferencias automáticamente.</p>
   </section>;
 }
