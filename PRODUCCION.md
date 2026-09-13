@@ -2,7 +2,7 @@
 
 ## Estado de esta revisión
 
-La compilación y TypeScript pasan. Esta rama no acredita todavía una puesta en producción: falta desplegar y probar las reglas contra el proyecto real, verificar Authentication/Storage y ejecutar una prueba con una cuenta de invitado y una de organizador. No se han borrado ni migrado datos de Firebase.
+La compilación y TypeScript pasan. Esta rama no acredita todavía una puesta en producción: falta desplegar y probar las reglas contra el proyecto real, activar Authentication anónimo y ejecutar una prueba con una cuenta de invitado y una de organizador. No se han borrado ni migrado datos de Firebase.
 
 ## Uso diario
 
@@ -22,8 +22,7 @@ La compilación y TypeScript pasan. Esta rama no acredita todavía una puesta en
 | Canciones | Firestore: songs |
 | Firmas | Firestore: guestbook |
 | Cápsulas privadas | Firestore: capsules |
-| Datos de las fotos y moderación | Firestore: photobooth |
-| Archivos de fotos (máximo 5 MB) | Storage: guest-photos/UID/ID |
+| Fotos comprimidas y moderación | Firestore: photobooth |
 | Encuestas y votos | Firestore: polls y subcolecciones votes |
 
 Los datos anteriores que sólo estaban en localStorage no se importan automáticamente: cada dispositivo tenía su propia copia, mezclada con ejemplos. Los registros reales existentes en Firestore se conservan. Las historias, galerías y mesas de ejemplo dejan de aparecer: hay que cargar el contenido real desde el editor.
@@ -34,8 +33,8 @@ Los datos anteriores que sólo estaban en localStorage no se importan automátic
 2. Authentication → Sign-in method: Google para organizadores y Anonymous para invitados. Verificar el dominio peniamati.github.io en Authorized domains.
 3. Crear/verificar Firestore y su identificador. La aplicación usa VITE_FIREBASE_DATABASE_ID o (default).
 4. En settings/config, comprobar adminEmails (minúsculas) antes de publicar reglas: debe contener la cuenta de quien administra. No quitar la última cuenta. La configuración inicial, si falta, debe guardarla una de las dos cuentas de arranque presentes en firestore.rules.
-5. Activar Storage y comprobar que VITE_FIREBASE_STORAGE_BUCKET coincide con el bucket real. Verificar en la consola los requisitos de facturación del proyecto antes de activar un plan.
-6. Autenticar Firebase CLI con una cuenta que tenga permisos del proyecto. Revisar y publicar firestore.rules y storage.rules para el proyecto/base correctos. firebase.json apunta a la base predeterminada; si se usa una base con nombre, ajustar esa selección antes de desplegar.
+5. Las fotos se comprimen en el navegador y se guardan en Firestore para mantener el proyecto en el plan gratuito. No hace falta activar Storage.
+6. Autenticar Firebase CLI con una cuenta que tenga permisos del proyecto. Revisar y publicar firestore.rules para el proyecto/base correctos. firebase.json apunta a la base predeterminada; si se usa una base con nombre, ajustar esa selección antes de desplegar.
 7. Probar primero las reglas en emulador/staging. El workflow de GitHub Pages publica sólo la web: NO publica las reglas ni activa servicios Firebase.
 
 ## Prueba obligatoria antes del lanzamiento
@@ -45,7 +44,7 @@ Los datos anteriores que sólo estaban en localStorage no se importan automátic
 - Visitante: comprobar que no puede listar guests, leer cápsulas, cambiar settings/config ni aprobar contenido.
 - Enviar canción/firma/foto, verificar que no aparecen públicamente hasta aprobarlas. Verificar persistencia al recargar y en otro dispositivo.
 - Votar y recargar; un mismo usuario anónimo no debe repetir su voto. Borrar datos del navegador crea otra identidad: para protección adicional contra abuso hace falta App Check/controles de servidor.
-- Probar foto JPEG/PNG/WebP menor a 5 MB y rechazo de archivos mayores.
+- Probar foto JPEG/PNG/WebP, su compresión, moderación y descarga. Se rechazan originales mayores a 12 MB.
 - Probar navegación, edición, guardar y vista previa a 360 px, 390 px y escritorio; verificar que no hay scroll de la invitación detrás del panel.
 - Revisar los datos reales del evento, fotos autorizadas, horario, mapas, enlaces bancarios y canciones de YouTube que permitan reproducción integrada.
 

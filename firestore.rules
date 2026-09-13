@@ -4,7 +4,7 @@ service cloud.firestore {
     function signed() { return request.auth != null; }
     function admin() {
       return signed() && request.auth.token.email_verified == true
-        && request.auth.token.email.lower() in get(/databases/$(database)/documents/settings/config).data.adminEmails;
+        && request.auth.token.email in get(/databases/$(database)/documents/settings/config).data.adminEmails;
     }
     function ownerCreate() { return signed() && request.resource.data.ownerUid == request.auth.uid; }
     function counter(group, id, field, before, after) {
@@ -16,7 +16,7 @@ service cloud.firestore {
     match /settings/config {
       allow read: if true;
       allow create: if signed() && request.auth.token.email_verified == true
-        && request.auth.token.email.lower() in ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
+        && request.auth.token.email in ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
       allow update: if admin() && request.resource.data.adminEmails.size() > 0;
     }
     match /guests/{id} {
@@ -60,7 +60,10 @@ service cloud.firestore {
       allow read: if resource.data.approved == true || admin();
       allow create: if ownerCreate() && request.resource.data.approved == false
         && request.resource.data.likes == 0 && request.resource.data.caption.size() <= 2000
-        && request.resource.data.imageUrl is string;
+        && request.resource.data.guestName.size() <= 150
+        && request.resource.data.imageUrl is string
+        && request.resource.data.imageUrl.size() <= 750000
+        && request.resource.data.imageUrl.matches('data:image/.*');
       allow update: if admin() || (resource.data.approved == true
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
         && counter('photobooth', id, 'likes', resource.data.likes, request.resource.data.likes));

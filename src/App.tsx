@@ -97,7 +97,7 @@ const AppContent: React.FC = () => {
       <Notice />
       <div hidden={showAdminModal && !adminPreview}>
       <BackgroundMusic
-        source={config.backgroundMusicUrl || "https://cdn.pixabay.com/download/audio/2022/10/25/audio_a1cd1f5795.mp3?filename=retro-wave-style-track-112345.mp3"}
+        source={config.backgroundMusicUrl}
         isPlaying={isPlayingMusic && !showAdminModal}
         onPlaybackError={() => setIsPlayingMusic(false)}
       />

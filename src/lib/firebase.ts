@@ -15,13 +15,18 @@ import {
   getDoc
 } from 'firebase/firestore';
 
+const required = (name: string, value?: string) => {
+  const clean = value?.trim();
+  if (!clean) throw new Error(`Falta configurar ${name}. Revisá los secrets del despliegue.`);
+  return clean;
+};
+
 const firebaseConfig = {
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "gen-lang-client-0219785326",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:614613073026:web:acf601be5b10ff74c3889b",
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDZW7-QOy2LaSgpSxDtG4JVhrn1rdfSals",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gen-lang-client-0219785326.firebaseapp.com",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gen-lang-client-0219785326.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "614613073026",
+  projectId: required('VITE_FIREBASE_PROJECT_ID', import.meta.env.VITE_FIREBASE_PROJECT_ID),
+  appId: required('VITE_FIREBASE_APP_ID', import.meta.env.VITE_FIREBASE_APP_ID),
+  apiKey: required('VITE_FIREBASE_API_KEY', import.meta.env.VITE_FIREBASE_API_KEY),
+  authDomain: required('VITE_FIREBASE_AUTH_DOMAIN', import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
+  messagingSenderId: required('VITE_FIREBASE_MESSAGING_SENDER_ID', import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
 };
 
 export const app = initializeApp(firebaseConfig);

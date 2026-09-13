@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, updateDoc, query, where, runTransaction, increment } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { visitorId } from '../lib/visitor';
-import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, auth } from '../lib/firebase';
 import {
   EventConfig,
@@ -248,12 +247,9 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     persist(async () => {
       const ownerUid = await visitorId();
       const id = crypto.randomUUID();
-      const target = ref(getStorage(), 'guest-photos/' + ownerUid + '/' + id);
       if (!img.imageUrl.startsWith('data:image/')) throw new Error('Seleccioná una imagen.');
-      if (img.imageUrl.length > 6500000) throw new Error('La foto supera 5 MB.');
-      await uploadString(target, img.imageUrl, 'data_url');
-      const imageUrl = await getDownloadURL(target);
-      await setDoc(doc(db, 'photobooth', id), { ...img, imageUrl, ownerUid, approved: false, likes: 0, createdAt: new Date().toISOString() });
+      if (img.imageUrl.length > 750000) throw new Error('No se pudo comprimir la foto al tamaño permitido.');
+      await setDoc(doc(db, 'photobooth', id), { ...img, ownerUid, approved: false, likes: 0, createdAt: new Date().toISOString() });
     });
   const vote = (group: string, id: string, field: string) => persist(async () => {
     const uid = await visitorId();

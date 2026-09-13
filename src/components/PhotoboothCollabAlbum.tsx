@@ -3,6 +3,50 @@ import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import { Camera, Download, Heart, Sparkles, Filter, Smile, Share2, Upload } from 'lucide-react';
 
+const MAX_PHOTO_DATA_LENGTH = 700000;
+
+const compressPhoto = (file: File): Promise<string> => new Promise((resolve, reject) => {
+  if (!file.type.startsWith('image/')) {
+    reject(new Error('El archivo seleccionado no es una imagen.'));
+    return;
+  }
+  if (file.size > 12 * 1024 * 1024) {
+    reject(new Error('La foto original supera 12 MB. Elegí una imagen más liviana.'));
+    return;
+  }
+
+  const source = URL.createObjectURL(file);
+  const image = new Image();
+  image.onload = () => {
+    try {
+      let scale = Math.min(1, 1200 / Math.max(image.naturalWidth, image.naturalHeight));
+      let result = '';
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Este navegador no pudo preparar la foto.');
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        result = canvas.toDataURL('image/webp', Math.max(0.42, 0.78 - attempt * 0.07));
+        if (result.length <= MAX_PHOTO_DATA_LENGTH) break;
+        scale *= 0.82;
+      }
+      if (!result || result.length > MAX_PHOTO_DATA_LENGTH) throw new Error('No se pudo comprimir la foto. Probá con otra imagen.');
+      resolve(result);
+    } catch (error) {
+      reject(error);
+    } finally {
+      URL.revokeObjectURL(source);
+    }
+  };
+  image.onerror = () => {
+    URL.revokeObjectURL(source);
+    reject(new Error('No pudimos leer esa imagen. Probá con JPG, PNG o WebP.'));
+  };
+  image.src = source;
+});
+
 export const PhotoboothCollabAlbum: React.FC = () => {
   const { photoboothImages, addPhotoboothImage, likePhotoboothImage, config } = useEvent();
 
@@ -12,18 +56,23 @@ export const PhotoboothCollabAlbum: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState('Golden Hour');
   const [selectedSticker, setSelectedSticker] = useState(`✨ Mis 15 ${config.honoree}`);
   const [showUploader, setShowUploader] = useState(false);
+  const [isPreparingPhoto, setIsPreparingPhoto] = useState(false);
 
   const filters = ['Normal', 'Golden Hour', 'Glamour B&W', 'Hollywood Glow', 'Neon Party'];
   const stickers = [`✨ Mis 15 ${config.honoree}`, '👑 Noche Mágica', '🥂 Brindis Disco', '🎉 Party Mode', `❤️ Te Queremos ${config.honoree.split(' ')[0]}`];
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    setIsPreparingPhoto(true);
+    try {
+      setImageUrl(await compressPhoto(file));
+    } catch (error) {
+      setImageUrl('');
+      notify(error instanceof Error ? error.message : 'No pudimos preparar la foto.');
+    } finally {
+      setIsPreparingPhoto(false);
+      e.target.value = '';
     }
   };
 
@@ -88,6 +137,7 @@ export const PhotoboothCollabAlbum: React.FC = () => {
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
+                  disabled={isPreparingPhoto}
                   className="block w-full text-xs text-zinc-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#C0C0C0] file:text-black hover:file:bg-[#E0E0E0] cursor-pointer"
                 />
               </div>
@@ -114,7 +164,7 @@ export const PhotoboothCollabAlbum: React.FC = () => {
               ) : (
                 <div className="w-full h-48 border-2 border-dashed border-zinc-800 rounded-2xl flex flex-col items-center justify-center text-zinc-500 text-xs">
                   <Upload className="w-8 h-8 mb-2 text-[#C0C0C0]" />
-                  <span>Sube una foto desde tu dispositivo</span>
+                  <span>{isPreparingPhoto ? 'Preparando la foto…' : 'Sube una foto desde tu dispositivo'}</span>
                 </div>
               )}
 
@@ -180,9 +230,10 @@ export const PhotoboothCollabAlbum: React.FC = () => {
 
               <button
                 type="submit"
+                disabled={isPreparingPhoto}
                 className="w-full py-4 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10"
               >
-                🚀 Publicar en Mosaico en Vivo
+                {isPreparingPhoto ? 'Preparando foto…' : '🚀 Publicar en Mosaico en Vivo'}
               </button>
             </form>
           </div>
