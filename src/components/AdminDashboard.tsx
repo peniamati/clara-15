@@ -43,7 +43,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     photoboothImages,
     gifts,
     tables,
-    isAdminLoggedIn, moderateContent, timeCapsule, assignGuestTable, checkInGuest
+    isAdminLoggedIn, moderateContent, timeCapsule, assignGuestTable, checkInGuest, analyticsEvents
   } = useEvent();
 
   const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports' | 'collabs'>('stats');
@@ -204,6 +204,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
 
   // Calculated Stats
   const totalGuests = guests.length;
+  const invitationViews = analyticsEvents.filter(event => event.type === 'invitation_view').length;
+  const uniqueVisitors = new Set(analyticsEvents.filter(event => event.type === 'invitation_view').map(event => event.ownerUid)).size;
+  const invitationOpens = analyticsEvents.filter(event => event.type === 'invitation_open').length;
+  const rsvpStarts = analyticsEvents.filter(event => event.type === 'rsvp_start').length;
+  const rsvpCompletions = analyticsEvents.filter(event => event.type === 'rsvp_complete' || event.type === 'rsvp_declined').length;
+  const conversion = invitationOpens ? Math.round((rsvpCompletions / invitationOpens) * 100) : 0;
+  const publicationChecks = [
+    ['Nombre y tipo de evento', Boolean(config.honoree && config.eventType)],
+    ['Fecha y límite RSVP', Boolean(config.date && config.rsvpDeadline)],
+    ['Lugar y mapa', Boolean(config.venue && config.address && config.googleMapsUrl)],
+    ['Portada', Boolean(config.heroImageUrl)],
+    ['Música de apertura', /^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(config.backgroundMusicUrl || '')],
+    ['Administradores', Boolean(config.adminEmails?.length)],
+  ] as const;
+  const readyChecks = publicationChecks.filter(([, ready]) => ready).length;
   const confirmedGuests = guests.filter(g => g.status === 'CONFIRMED' || g.status === 'CHECKED_IN').length;
   const checkedInGuests = guests.filter(g => g.status === 'CHECKED_IN').length;
   const dietaryCount = guests.filter(g => g.dietaryRestrictions.length > 0 && !g.dietaryRestrictions.includes('Ninguna')).length;
@@ -287,6 +302,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
         {activeTab === 'stats' && (
           <div className="space-y-6">
             <OrganizerHelp />
+            <section className="rounded-2xl border border-white/10 bg-black p-5" aria-labelledby="publication-title">
+              <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-xs uppercase tracking-widest text-[#C0C0C0]">Estado de publicación</p><h3 id="publication-title" className="text-xl font-semibold">{readyChecks === publicationChecks.length ? 'La información esencial está completa' : `${readyChecks} de ${publicationChecks.length} puntos listos`}</h3></div><button onClick={() => setActiveTab('customizer')} className="min-h-11 rounded-full bg-white px-5 text-xs font-bold uppercase tracking-wider text-black">Revisar datos</button></div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{publicationChecks.map(([label,ready]) => <div key={label} className="flex items-center gap-2 rounded-xl bg-zinc-900 p-3 text-sm">{ready ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> : <XCircle className="h-5 w-5 text-amber-300" />}<span className={ready ? 'text-zinc-200' : 'text-amber-100'}>{label}</span></div>)}</div>
+            </section>
+            <section className="rounded-2xl border border-violet-400/20 bg-violet-400/[.06] p-5" aria-labelledby="funnel-title">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-2"><div><p className="text-xs uppercase tracking-widest text-violet-300">Trazabilidad de la invitación</p><h3 id="funnel-title" className="text-xl font-semibold">Embudo de interacción</h3></div><p className="text-xs text-zinc-400">No incluye nombres ni mensajes</p></div>
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+                {[['Visitas', invitationViews], ['Personas únicas', uniqueVisitors], ['Aperturas', invitationOpens], ['Iniciaron RSVP', rsvpStarts], ['Respondieron', rsvpCompletions], ['Conversión', `${conversion}%`]].map(([label,value]) => <div key={label} className="rounded-xl border border-white/10 bg-black/50 p-4"><span className="block text-[11px] uppercase tracking-wide text-zinc-400">{label}</span><strong className="mt-1 block text-2xl text-white">{value}</strong></div>)}
+              </div>
+            </section>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="p-5 rounded-2xl bg-black border border-white/10">
                 <span className="text-xs text-zinc-400 font-light uppercase tracking-wider">Total Registrados</span>

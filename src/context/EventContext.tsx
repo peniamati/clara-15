@@ -16,7 +16,9 @@ import {
   Poll,
   TableInfo,
   FaqItem,
-  TimeCapsuleMessage
+  TimeCapsuleMessage,
+  AnalyticsEvent,
+  AnalyticsEventType
 } from '../types';
 import {
   initialEventConfig,
@@ -85,6 +87,8 @@ interface EventContextType {
   isAdminLoggedIn: boolean;
   setIsAdminLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
   isConfigReady: boolean;
+  analyticsEvents: AnalyticsEvent[];
+  trackEvent: (type: AnalyticsEventType) => Promise<boolean>;
 }
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
@@ -157,6 +161,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [timeCapsule, setTimeCapsule] = useState<TimeCapsuleMessage[]>([]);
   const [photoboothImages, setPhotoboothImages] = useState<PhotoboothImage[]>([]);
   const [polls, setPolls] = useState<Poll[]>([]);
+  const [analyticsEvents, setAnalyticsEvents] = useState<AnalyticsEvent[]>([]);
   const [tables, setTables] = useState<TableInfo[]>(initialTables);
   const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
   const [isPlayingMusic, setIsPlayingMusic] = useState<boolean>(false);
@@ -187,6 +192,13 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, () => setSyncError('No se pudieron cargar las cápsulas.')));
     else setTimeCapsule([]);
     return () => stops.forEach(stop => stop());
+  }, [isAdminLoggedIn]);
+
+  useEffect(() => {
+    if (!isAdminLoggedIn) { setAnalyticsEvents([]); return; }
+    return onSnapshot(collection(db, 'analytics'), snap => {
+      setAnalyticsEvents(snap.docs.map(item => ({ id: item.id, ...item.data() } as AnalyticsEvent)));
+    }, () => setSyncError('No se pudieron cargar las métricas de la invitación.'));
   }, [isAdminLoggedIn]);
 
   const persist = async (operation: () => Promise<unknown>): Promise<boolean> => {
@@ -236,6 +248,15 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await setDoc(doc(collection(db, group)), JSON.parse(JSON.stringify({
       ...data, ownerUid, createdAt: new Date().toISOString()
     })));
+  });
+  const trackEvent = (type: AnalyticsEventType) => persist(async () => {
+    const ownerUid = await visitorId();
+    let sessionId = sessionStorage.getItem('invitation-session-id');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem('invitation-session-id', sessionId);
+    }
+    await setDoc(doc(collection(db, 'analytics')), { type, ownerUid, sessionId, createdAt: new Date().toISOString() });
   });
   const addSongRequest = (song: { title: string; artist: string; submittedBy: string; spotifyUrl?: string }) =>
     createContent('songs', { ...song, votes: 0, approved: false });
@@ -323,6 +344,8 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setAccessibility,
         isAdminLoggedIn,
         isConfigReady,
+        analyticsEvents,
+        trackEvent,
         setIsAdminLoggedIn
       }}
     >

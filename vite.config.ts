@@ -7,6 +7,14 @@ export default defineConfig(({ mode }) => {
   return {
     base: process.env.GITHUB_PAGES === 'true' ? '/clara-15/' : './',
     plugins: [react(), tailwindcss()],
+    build: {
+      rollupOptions: {
+        input: {
+          invitation: path.resolve(__dirname, 'index.html'),
+          product: path.resolve(__dirname, 'producto.html'),
+        },
+      },
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

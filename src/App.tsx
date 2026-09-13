@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { EventProvider, useEvent } from './context/EventContext';
 import { Navbar } from './components/Navbar';
 import { HeroWelcome } from './components/HeroWelcome';
@@ -15,12 +15,13 @@ import { GiftsSection } from './components/GiftsSection';
 import { DressCodeMoodboard } from './components/DressCodeMoodboard';
 import { PhotoboothCollabAlbum } from './components/PhotoboothCollabAlbum';
 import { InteractiveGames } from './components/InteractiveGames';
-import { ReceptionCheckInApp } from './components/ReceptionCheckInApp';
-import { AdminDashboard } from './components/AdminDashboard';
 import { Footer } from './components/Footer';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { BackgroundMusic } from './components/BackgroundMusic';
 import { Notice } from './components/Notice';
+
+const AdminDashboard = React.lazy(() => import('./components/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const ReceptionCheckInApp = React.lazy(() => import('./components/ReceptionCheckInApp').then(module => ({ default: module.ReceptionCheckInApp })));
 
 const AppContent: React.FC = () => {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
@@ -31,9 +32,16 @@ const AppContent: React.FC = () => {
     window.addEventListener('hashchange', navigate);
     return () => window.removeEventListener('hashchange', navigate);
   }, []);
-  const { config, isConfigReady, isPlayingMusic, setIsPlayingMusic, syncError, clearSyncError } = useEvent();
+  const { config, isConfigReady, isPlayingMusic, setIsPlayingMusic, syncError, clearSyncError, trackEvent } = useEvent();
   const [isInvitationReady, setIsInvitationReady] = useState(false);
   const hasLoadedInitialInvitation = useRef(false);
+  const hasTrackedView = useRef(false);
+
+  useEffect(() => {
+    if (!isConfigReady || showAdminModal || hasTrackedView.current) return;
+    hasTrackedView.current = true;
+    void trackEvent('invitation_view');
+  }, [isConfigReady, showAdminModal, trackEvent]);
 
   const fontMap: Record<string, string> = {
     'cormorant': '"Cormorant Garamond", serif',
@@ -131,14 +139,14 @@ const AppContent: React.FC = () => {
 
       {/* Reception Check-In App Drawer */}
       {showCheckInModal && (
-        <ReceptionCheckInApp onClose={() => setShowCheckInModal(false)} />
+        <Suspense fallback={<div role="status" className="fixed inset-0 z-50 grid place-items-center bg-black text-white">Abriendo ingreso…</div>}><ReceptionCheckInApp onClose={() => setShowCheckInModal(false)} /></Suspense>
       )}
 
       <Footer />
       </div>
       {/* Independent organizer screen */}
       {showAdminModal && (
-        <AdminDashboard onClose={() => { window.location.hash = 'inicio'; }} onPreviewChange={setAdminPreview} />
+        <Suspense fallback={<div role="status" className="fixed inset-0 z-50 grid place-items-center bg-black text-white">Abriendo panel…</div>}><AdminDashboard onClose={() => { window.location.hash = 'inicio'; }} onPreviewChange={setAdminPreview} /></Suspense>
       )}
 
     </div>

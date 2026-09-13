@@ -24,6 +24,7 @@ La compilación y TypeScript pasan. Esta rama no acredita todavía una puesta en
 | Cápsulas privadas | Firestore: capsules |
 | Fotos comprimidas y moderación | Firestore: photobooth |
 | Encuestas y votos | Firestore: polls y subcolecciones votes |
+| Métricas anónimas de interacción | Firestore: analytics |
 
 Los datos anteriores que sólo estaban en localStorage no se importan automáticamente: cada dispositivo tenía su propia copia, mezclada con ejemplos. Los registros reales existentes en Firestore se conservan. Las historias, galerías y mesas de ejemplo dejan de aparecer: hay que cargar el contenido real desde el editor.
 

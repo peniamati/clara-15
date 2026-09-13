@@ -34,6 +34,21 @@ button, a, input, textarea, select {
   touch-action: manipulation;
 }
 
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 999;
+  transform: translateY(-200%);
+  border-radius: 999px;
+  background: white;
+  color: black;
+  padding: .75rem 1rem;
+  font-weight: 700;
+}
+
+.skip-link:focus { transform: translateY(0); }
+
 button, [role="button"] {
   -webkit-user-select: none;
   user-select: none;
@@ -74,6 +89,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 
   input, textarea, select {
     font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

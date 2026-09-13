@@ -1,5 +1,5 @@
 import { notify } from '../lib/notify';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import confetti from 'canvas-confetti';
 import {
@@ -21,7 +21,8 @@ import {
 import QRCode from 'qrcode';
 
 export const RsvpForm: React.FC = () => {
-  const { config, addOrUpdateGuestRsvp, activeGuest } = useEvent();
+  const { config, addOrUpdateGuestRsvp, activeGuest, trackEvent } = useEvent();
+  const hasTrackedStart = useRef(false);
 
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -111,6 +112,7 @@ export const RsvpForm: React.FC = () => {
     }
 
     setSubmitted(true);
+    void trackEvent(status === 'CONFIRMED' ? 'rsvp_complete' : 'rsvp_declined');
 
     if (status === 'CONFIRMED') {
       confetti({
@@ -216,7 +218,7 @@ export const RsvpForm: React.FC = () => {
           </div>
         ) : (
           /* RSVP Form */
-          <form onSubmit={handleSubmit} className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 backdrop-blur-xl">
+          <form onSubmit={handleSubmit} onFocusCapture={() => { if (!hasTrackedStart.current) { hasTrackedStart.current = true; void trackEvent('rsvp_start'); } }} className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 backdrop-blur-xl">
             
             {/* Status Selector */}
             <div className="grid grid-cols-2 gap-4">
