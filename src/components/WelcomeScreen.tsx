@@ -5,11 +5,13 @@ import { Volume2 } from 'lucide-react';
 
 export const WelcomeScreen: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { config, setIsPlayingMusic } = useEvent();
+  const { config, setIsPlayingMusic, trackEvent } = useEvent();
 
   const handleEnter = () => {
     setIsPlayingMusic(true);
     setIsOpen(true);
+    void trackEvent('invitation_open');
+    void trackEvent('music_play');
   };
 
   return (

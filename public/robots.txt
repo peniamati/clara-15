@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /clara-15/producto.html
+Disallow: /clara-15/index.html
+Disallow: /clara-15/?
+
+Sitemap: https://peniamati.github.io/clara-15/sitemap.xml

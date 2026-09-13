@@ -162,6 +162,16 @@ export interface Poll {
   options: PollOption[];
 }
 
+export type AnalyticsEventType = 'invitation_view' | 'invitation_open' | 'rsvp_start' | 'rsvp_complete' | 'rsvp_declined' | 'share_click' | 'map_click' | 'music_play' | 'checkin_complete';
+
+export interface AnalyticsEvent {
+  id: string;
+  type: AnalyticsEventType;
+  ownerUid: string;
+  sessionId: string;
+  createdAt: string;
+}
+
 export interface TableInfo {
   number: number;
   name: string;

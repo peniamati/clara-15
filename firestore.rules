@@ -8,7 +8,8 @@ service cloud.firestore {
     }
     function ownerCreate() { return signed() && request.resource.data.ownerUid == request.auth.uid; }
     function counter(group, id, field, before, after) {
-      let receipt = /databases/$(database)/documents/$(group)/$(id)/votes/$(request.auth.uid + '-' + field);
+      let receiptId = request.auth.uid + '-' + field;
+      let receipt = /databases/$(database)/documents/$(group)/$(id)/votes/$(receiptId);
       return signed() && !exists(receipt) && existsAfter(receipt)
         && getAfter(receipt).data.ownerUid == request.auth.uid
         && after == before + 1;
@@ -73,6 +74,14 @@ service cloud.firestore {
       allow read, update, delete: if admin();
       allow create: if ownerCreate() && request.resource.data.unlockAge in [18, 21]
         && request.resource.data.message.size() <= 4000;
+    }
+    match /analytics/{id} {
+      allow read, delete: if admin();
+      allow create: if ownerCreate()
+        && request.resource.data.keys().hasOnly(['type', 'ownerUid', 'sessionId', 'createdAt'])
+        && request.resource.data.type in ['invitation_view', 'invitation_open', 'rsvp_start', 'rsvp_complete', 'rsvp_declined', 'share_click', 'map_click', 'music_play', 'checkin_complete']
+        && request.resource.data.sessionId is string
+        && request.resource.data.sessionId.size() <= 80;
     }
     match /polls/{id} {
       allow read: if true;
