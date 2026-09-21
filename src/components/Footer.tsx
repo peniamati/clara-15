@@ -32,7 +32,7 @@ export const Footer: React.FC = () => {
           {config.honoree} · Mis 15 Años
         </h3>
         <p className="text-xs text-zinc-400 max-w-md mx-auto mb-8 font-light">
-          Una celebración inolvidable. Gracias por formar parte de nuestra historia y acompañarnos en esta gala.
+          Una celebración inolvidable. Gracias por formar parte de nuestra historia y acompañarnos en esta fiesta.
         </p>
 
         {/* Action Buttons */}

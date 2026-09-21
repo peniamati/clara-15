@@ -3,7 +3,7 @@ import { useEvent } from '../context/EventContext';
 import {
   Volume2,
   VolumeX,
-  QrCode,
+  CheckCircle2,
   ShieldCheck,
   Type,
   Eye,
@@ -58,7 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {config.honoree}
             </span>
             <span className="whitespace-nowrap text-[8px] font-semibold uppercase tracking-[0.16em] text-[#C0C0C0] sm:text-[9px] sm:tracking-widest">
-              {config.eventType} · Gala VIP
+              {config.eventType}
             </span>
           </div>
         </a>
@@ -154,8 +154,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             href="#rsvp"
             className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-[#C0C0C0]/10 to-white/10 border border-[#C0C0C0]/40 text-[#C0C0C0] hover:bg-[#C0C0C0]/20 text-xs font-semibold tracking-wide transition-all"
           >
-            <QrCode className="w-3.5 h-3.5 text-[#C0C0C0]" />
-            <span>Confirmar / Mi Pase</span>
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#C0C0C0]" />
+            <span>Confirmar asistencia</span>
           </a>
 
           {/* SaaS Admin / Staff Shortcut */}
@@ -203,7 +203,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setMobileMenuOpen(false)}
               className="py-2.5 rounded-xl bg-[#C0C0C0]/20 border border-[#C0C0C0]/40 text-[#C0C0C0] text-xs font-semibold flex items-center justify-center gap-2"
             >
-              <QrCode className="w-4 h-4" /> Confirmar / Mi Pase
+              <CheckCircle2 className="w-4 h-4" /> Confirmar asistencia
             </a>
             <div className="flex flex-wrap gap-2">
               <button

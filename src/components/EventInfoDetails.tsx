@@ -6,7 +6,6 @@ import {
   Clock,
   Shirt,
   Navigation,
-  CloudSun,
   GlassWater,
   Sparkles,
   Utensils,
@@ -135,17 +134,6 @@ export const EventInfoDetails: React.FC = () => {
               </p>
             </div>
 
-            {/* Weather Widget Preview */}
-            <div className="mt-6 p-4 rounded-2xl bg-zinc-900/80 border border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CloudSun className="w-7 h-7 text-[#C0C0C0]" />
-                <div>
-                  <span className="text-xs text-zinc-400 block font-medium">Pronóstico de la noche</span>
-                  <span className="text-white text-sm font-semibold">22°C · Noche Despejada</span>
-                </div>
-              </div>
-              <span className="text-[10px] text-[#C0C0C0] bg-[#C0C0C0]/10 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">Clima Ideal</span>
-            </div>
           </div>
 
           {/* Card 3: Dress Code */}
@@ -163,20 +151,20 @@ export const EventInfoDetails: React.FC = () => {
               </p>
             </div>
 
-            <div className="pt-4 border-t border-white/10">
+            {config.enableDressCode !== false && <div className="pt-4 border-t border-white/10">
               <a
                 href="#dresscode"
                 className="inline-flex items-center gap-2 text-xs text-[#C0C0C0] font-bold hover:underline tracking-wider uppercase"
               >
                 <span>Ver moodboard de sugerencias y colores</span> →
               </a>
-            </div>
+            </div>}
           </div>
 
         </div>
 
         {/* Schedule / Cronograma Timeline */}
-        <div className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-8 sm:p-12 shadow-2xl">
+        {schedule.length > 0 && <div className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-8 sm:p-12 shadow-2xl">
           <div className="text-center mb-10">
             <h3 className="font-serif text-3xl sm:text-4xl font-semibold silver-gradient-text">
               Cronograma Interactivo de la Fiesta
@@ -207,13 +195,13 @@ export const EventInfoDetails: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* Google Maps iFrame Placeholder */}
         <div className="mt-12 rounded-3xl overflow-hidden border border-white/10 shadow-2xl h-80 bg-[#0F0F0F] relative">
           <iframe
             title="Google Maps Location"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3289.475482930219!2d-58.5398284847741!3d-34.46543198049581!2m3!1f0!0f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bcb01e8a93d0d5%3A0x6b453915155e8888!2sPalacio%20Sans%20Souci!5e0!3m2!1ses!2sar!4v1689000000000!5m2!1ses!2sar"
+            src={`https://www.google.com/maps?q=${encodeURIComponent(`${config.venue}, ${config.address}, ${config.city}`)}&output=embed`}
             className="w-full h-full border-0 filter grayscale invert contrast-125 opacity-80 hover:opacity-100 transition-opacity"
             loading="lazy"
           />

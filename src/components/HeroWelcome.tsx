@@ -49,11 +49,11 @@ export const HeroWelcome: React.FC = () => {
         {/* Subtitle Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900/80 border border-[#C0C0C0]/30 text-[#C0C0C0] text-xs tracking-widest uppercase mb-6 backdrop-blur-md">
           <Sparkles className="w-3.5 h-3.5 text-[#C0C0C0]" />
-          <span>{config.eventType} · Gala de Quince Años</span>
+          <span>{config.eventType}</span>
         </div>
 
         {/* Main Name Heading in Cormorant Garamond Luxury Serif */}
-        <h1 className={`max-w-[96vw] break-words pb-[0.16em] font-serif font-semibold leading-[1.08] tracking-tight silver-gradient-text drop-shadow-2xl ${headingSize}`}>
+        <h1 className={`max-w-[96vw] break-words pb-[0.16em] font-normal leading-[1.08] tracking-normal silver-gradient-text drop-shadow-2xl ${headingSize}`} style={{ fontFamily: 'var(--font-hero)' }}>
           {config.honoree}
         </h1>
 
@@ -79,11 +79,11 @@ export const HeroWelcome: React.FC = () => {
 
         {/* CTA Primary Button */}
         <a
-          href="#historia"
+          href="#cuenta-regresiva"
           className="group relative inline-flex items-center justify-center px-10 py-4 rounded-full bg-[#C0C0C0] text-black font-semibold text-sm uppercase tracking-widest hover:bg-[#E0E0E0] transition-all duration-300 shadow-xl shadow-[#C0C0C0]/10 hover:scale-105"
         >
           <span className="flex items-center gap-2">
-            Ver Historia & Gala
+            Ver invitación
           </span>
         </a>
 

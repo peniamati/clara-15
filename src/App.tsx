@@ -7,7 +7,6 @@ import { LifeTimeline } from './components/LifeTimeline';
 import { GalleryMasonry } from './components/GalleryMasonry';
 import { VideoSection } from './components/VideoSection';
 import { EventInfoDetails } from './components/EventInfoDetails';
-import { SeatingChart } from './components/SeatingChart';
 import { RsvpForm } from './components/RsvpForm';
 import { CollaborativePlaylist } from './components/CollaborativePlaylist';
 import { Guestbook } from './components/Guestbook';
@@ -45,6 +44,7 @@ const AppContent: React.FC = () => {
 
   const fontMap: Record<string, string> = {
     'cormorant': '"Cormorant Garamond", serif',
+    'eyesome': '"Eyesome Script", cursive',
     'playfair': '"Playfair Display", serif',
     'montserrat': '"Montserrat", sans-serif',
     'lato': '"Lato", sans-serif',
@@ -66,6 +66,7 @@ const AppContent: React.FC = () => {
   };
 
   const rootStyle = {
+    '--font-hero': fontMap[config.heroFont || 'eyesome'],
     '--font-heading': fontMap[config.fontHeading || 'cormorant'],
     '--font-body': fontMap[config.fontBody || 'jakarta'],
     fontSize: ({ compact: '15px', normal: '16px', large: '17px' } as const)[config.bodyScale || 'normal'],
@@ -78,11 +79,13 @@ const AppContent: React.FC = () => {
     const fontRoot = document.querySelector('#root > div') || document.documentElement;
     const styles = getComputedStyle(fontRoot);
     const heading = styles.getPropertyValue('--font-heading').trim();
+    const hero = styles.getPropertyValue('--font-hero').trim();
     const body = styles.getPropertyValue('--font-body').trim();
 
     Promise.all([
       document.fonts.ready,
       document.fonts.load(`600 1em ${heading}`),
+      document.fonts.load(`400 1em ${hero}`),
       document.fonts.load(`400 1em ${body}`),
     ]).catch(() => undefined).finally(() => {
       if (!cancelled) {
@@ -92,7 +95,7 @@ const AppContent: React.FC = () => {
     });
 
     return () => { cancelled = true; };
-  }, [config.fontBody, config.fontHeading, isConfigReady]);
+  }, [config.fontBody, config.fontHeading, config.heroFont, isConfigReady]);
 
   if (!isInvitationReady) {
     return <div className="min-h-[100dvh] bg-[#050505]" style={rootStyle} aria-label="Cargando invitación" />;
@@ -127,7 +130,6 @@ const AppContent: React.FC = () => {
         <GalleryMasonry />
         <VideoSection />
         <EventInfoDetails />
-        <SeatingChart />
         <RsvpForm />
         <CollaborativePlaylist />
         {config.enableGuestbook !== false && <Guestbook />}

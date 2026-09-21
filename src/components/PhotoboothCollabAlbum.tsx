@@ -110,7 +110,7 @@ export const PhotoboothCollabAlbum: React.FC = () => {
             Cabina de Fotos Virtual en Vivo
           </h2>
           <p className="text-zinc-400 text-sm sm:text-base font-light">
-            Sacate una selfie, aplicá filtros de gala, pegale un sticker oficial y compartila en el mosaico gigante del evento.
+            Sacate una selfie, aplicá un filtro, sumale un sticker y compartila en el mosaico del evento.
           </p>
 
           <button
@@ -126,7 +126,7 @@ export const PhotoboothCollabAlbum: React.FC = () => {
         {showUploader && (
           <div className="max-w-2xl mx-auto bg-[#0F0F0F] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl mb-12 animate-fade-in">
             <h3 className="font-serif text-3xl font-semibold text-white mb-6 text-center">
-              Personalizar tu Foto de Gala
+              Personalizar tu foto
             </h3>
 
             <form onSubmit={handlePublishPhoto} className="space-y-6">

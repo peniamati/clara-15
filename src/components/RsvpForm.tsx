@@ -5,7 +5,6 @@ import confetti from 'canvas-confetti';
 import {
   CheckCircle2,
   XCircle,
-  QrCode,
   Share2,
   Send,
   Calendar,
@@ -18,10 +17,9 @@ import {
   User,
   HeartHandshake
 } from 'lucide-react';
-import QRCode from 'qrcode';
 
 export const RsvpForm: React.FC = () => {
-  const { config, addOrUpdateGuestRsvp, activeGuest, trackEvent } = useEvent();
+  const { config, addOrUpdateGuestRsvp, trackEvent } = useEvent();
   const hasTrackedStart = useRef(false);
 
   const [name, setName] = useState('');
@@ -38,8 +36,6 @@ export const RsvpForm: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [confirmedGuest, setConfirmedGuest] = useState<any>(null);
-  const [generatedQrDataUrl, setGeneratedQrDataUrl] = useState<string | null>(null);
 
   const numericAge = parseInt(age, 10) || 0;
   const isMinor = numericAge > 0 && numericAge < 18;
@@ -84,7 +80,7 @@ export const RsvpForm: React.FC = () => {
     setSaving(true);
     setError('');
     try {
-    const savedGuest = await addOrUpdateGuestRsvp({
+    await addOrUpdateGuestRsvp({
       name: name.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
@@ -101,16 +97,6 @@ export const RsvpForm: React.FC = () => {
       notes: notes.trim()
     });
 
-    setConfirmedGuest(savedGuest);
-
-    // Generate QR Code data URL
-    try {
-      const qrUrl = await QRCode.toDataURL(savedGuest.qrCode, { width: 300, margin: 2 });
-      setGeneratedQrDataUrl(qrUrl);
-    } catch (err) {
-      console.error(err);
-    }
-
     setSubmitted(true);
     void trackEvent(status === 'CONFIRMED' ? 'rsvp_complete' : 'rsvp_declined');
 
@@ -125,12 +111,10 @@ export const RsvpForm: React.FC = () => {
     finally { setSaving(false); }
   };
 
-  const currentGuest = confirmedGuest || activeGuest;
-
   const sendWhatsAppConfirmation = () => {
     const text = `¡Hola ${config.honoree}! Soy ${name} ${lastName}${numericAge ? ` (${numericAge} años)` : ''}. ${
       status === 'CONFIRMED'
-        ? `¡Confirmé mi asistencia para tu fiesta de 15! ${isMinor ? `(Contacto tutor: ${tutorName} - ${tutorPhone}). ` : ''}Mi código de pase de ingreso es: ${currentGuest?.qrCode || 'QR-PASS'}`
+        ? `¡Confirmé mi asistencia para tu fiesta de 15! ${isMinor ? `(Contacto tutor: ${tutorName} - ${tutorPhone}).` : ''}`
         : 'Lamentablemente no podré asistir a tus 15 años, ¡te deseo una noche fantástica e inolvidable!'
     }`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
@@ -151,12 +135,12 @@ export const RsvpForm: React.FC = () => {
             Confirmar Asistencia (RSVP)
           </h2>
           <p className="text-zinc-400 text-sm sm:text-base font-light">
-            Por favor confirma tu presencia antes del <strong className="text-[#C0C0C0] font-semibold">{config.rsvpDeadline}</strong> para la asignación de tu mesa y selección de menú.
+            Por favor confirmá tu presencia antes del <strong className="text-[#C0C0C0] font-semibold">{new Date(`${config.rsvpDeadline}T12:00:00`).toLocaleDateString('es-AR')}</strong> y contanos si necesitás un menú especial.
           </p>
         </div>
 
         {submitted ? (
-          /* Confirmation Pass Screen */
+          /* Confirmation Screen */
           <div className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-8 sm:p-12 text-center shadow-2xl backdrop-blur-xl animate-fade-in">
             <div className="w-16 h-16 rounded-full bg-[#C0C0C0]/20 border border-[#C0C0C0] text-[#C0C0C0] flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-8 h-8 text-[#C0C0C0]" />
@@ -167,39 +151,9 @@ export const RsvpForm: React.FC = () => {
             </h3>
             <p className="text-zinc-300 text-sm max-w-md mx-auto mb-8 font-light">
               {status === 'CONFIRMED'
-                ? `¡Nos emociona contar contigo ${name}! A continuación tienes tu Pase Digital Inteligente de Ingreso.`
+                ? `¡Nos emociona contar con vos, ${name}! Tu respuesta quedó guardada correctamente.`
                 : 'Agradecemos que nos hayas avisado. ¡Te enviaremos las fotos y el resumen de la fiesta!'}
             </p>
-
-            {status === 'CONFIRMED' && (
-              <div className="max-w-sm mx-auto bg-[#050505] border border-[#C0C0C0]/40 rounded-3xl p-6 shadow-2xl relative overflow-hidden mb-8">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-[#C0C0C0]" />
-                
-                <span className="text-[10px] text-[#C0C0C0] uppercase tracking-widest font-bold block mb-1">Pase Digital VIP</span>
-                <h4 className="font-serif text-2xl font-semibold text-white">{config.honoree} · Mis 15</h4>
-                <p className="text-xs text-zinc-400 mb-4">{config.venue} · {config.address}</p>
-
-                {generatedQrDataUrl && (
-                  <img src={generatedQrDataUrl} alt="QR Pass" className="w-48 h-48 mx-auto rounded-xl border border-white/10 p-2 bg-white my-3 shadow-md" />
-                )}
-
-                <div className="text-left text-xs bg-zinc-900/90 p-4 rounded-2xl border border-white/10 space-y-1.5 my-3">
-                  <div><strong className="text-[#C0C0C0]">Invitado:</strong> {name} {lastName}</div>
-                  {numericAge > 0 && (
-                    <div><strong className="text-[#C0C0C0]">Edad:</strong> {numericAge} años {isMinor && <span className="text-zinc-400 font-normal">(Menor de 18)</span>}</div>
-                  )}
-                  {isMinor && tutorName && (
-                    <div className="pt-1 border-t border-white/10">
-                      <strong className="text-[#C0C0C0]">Tutor / Contacto:</strong> {tutorName} ({tutorPhone})
-                    </div>
-                  )}
-                  <div><strong className="text-[#C0C0C0]">Mesa Asignada:</strong> #{currentGuest?.tableNumber || 1}</div>
-                  <div><strong className="text-[#C0C0C0]">Menú:</strong> {selectedDietary.length > 0 ? selectedDietary.join(', ') : 'Estándar'}</div>
-                </div>
-
-                <span className="text-[10px] font-mono text-zinc-500 uppercase">{currentGuest?.qrCode}</span>
-              </div>
-            )}
 
             <div className="flex flex-wrap items-center justify-center gap-4">
               <button
@@ -413,7 +367,7 @@ export const RsvpForm: React.FC = () => {
               className="w-full py-4 rounded-full bg-[#C0C0C0] text-black font-semibold text-xs tracking-widest uppercase hover:bg-[#E0E0E0] transition-all flex items-center justify-center gap-2 shadow-xl shadow-[#C0C0C0]/10"
             >
               <Send className="w-4 h-4" />
-              <span>Confirmar Asistencia & Obtener Mi Pase QR</span>
+              <span>Confirmar asistencia</span>
             </button>
 
           </form>

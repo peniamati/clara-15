@@ -1,6 +1,6 @@
 export type ThemeColor = 'gold-emerald' | 'rose-gold' | 'royal-violet' | 'midnight-silver' | 'champagne' | 'silver-disco';
 
-export type FontFamily = 'cormorant' | 'playfair' | 'montserrat' | 'lato' | 'inter' | 'jakarta' | 'roboto' | 'opensans' | 'poppins' | 'raleway' | 'nunito' | 'merriweather' | 'lora' | 'cinzel' | 'dancing' | 'greatvibes' | 'dmsans' | 'quicksand' | 'oswald';
+export type FontFamily = 'eyesome' | 'cormorant' | 'playfair' | 'montserrat' | 'lato' | 'inter' | 'jakarta' | 'roboto' | 'opensans' | 'poppins' | 'raleway' | 'nunito' | 'merriweather' | 'lora' | 'cinzel' | 'dancing' | 'greatvibes' | 'dmsans' | 'quicksand' | 'oswald';
 export type TextScale = 'compact' | 'normal' | 'large';
 
 export interface EventConfig {
@@ -31,6 +31,7 @@ export interface EventConfig {
   mpQrUrl: string;
   payPalUrl: string;
   theme: ThemeColor;
+  heroFont?: FontFamily;
   fontHeading?: FontFamily;
   fontBody?: FontFamily;
   headingScale?: TextScale;
@@ -46,6 +47,7 @@ export interface EventConfig {
   customHashtag: string;
   rsvpDeadline: string;
   welcomeMessage: string;
+  eventAlbumUrl?: string;
   heroVideoUrl?: string;
   heroImageUrl: string;
   adminEmails?: string[];
