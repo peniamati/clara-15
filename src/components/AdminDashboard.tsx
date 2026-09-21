@@ -41,9 +41,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     toggleApproveSong,
     guestbook,
     photoboothImages,
-    gifts,
-    tables,
-    isAdminLoggedIn, moderateContent, timeCapsule, assignGuestTable, checkInGuest, analyticsEvents
+    isAdminLoggedIn, moderateContent, timeCapsule, checkInGuest, analyticsEvents
   } = useEvent();
 
   const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports' | 'collabs'>('stats');
@@ -118,6 +116,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   };
 
   const fontMap: Record<string, string> = {
+    'eyesome': '"Eyesome Script", cursive',
     'cormorant': '"Cormorant Garamond", serif',
     'playfair': '"Playfair Display", serif',
     'montserrat': '"Montserrat", sans-serif',
@@ -331,7 +330,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               <div className="p-6 rounded-2xl bg-black border border-white/10">
                 <h4 className="font-serif text-xl font-semibold text-white mb-3">Canciones Recomendadas ({songs.length})</h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -344,17 +343,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                 </div>
               </div>
 
-              <div className="p-6 rounded-2xl bg-black border border-white/10">
-                <h4 className="font-serif text-xl font-semibold text-white mb-3">Resumen de Mesas ({tables.length})</h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {tables.map(t => (
-                    <div key={t.number} className="text-xs text-zinc-300 flex justify-between p-2.5 bg-zinc-900 rounded-lg">
-                      <span>{t.name}</span>
-                      <span className="text-[#C0C0C0] font-bold">{t.assignedGuests.length}/{t.capacity}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -400,7 +388,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                         )}
                       </div>
                       <span className="text-zinc-400 font-light block mt-0.5">
-                        {g.phone ? `WhatsApp: ${g.phone} · ` : ''}Mesa: {g.tableNumber || 'Sin asignar'} · Menú: {g.dietaryRestrictions.join(', ') || 'Estándar'}
+                        {g.phone ? `WhatsApp: ${g.phone} · ` : ''}Menú: {g.dietaryRestrictions.join(', ') || 'Estándar'}
                       </span>
                       <p className="mt-2">Correo: {g.email || 'No informado'} · Mensaje: {g.notes || 'Sin mensaje'}</p>
                       {isMinor && tutor && (
@@ -410,7 +398,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                      <label>Mesa <input type="number" min="0" aria-label={'Mesa de ' + g.name} defaultValue={g.tableNumber} onBlur={e => { const n = Number(e.target.value); if (Number.isInteger(n) && n >= 0 && n !== g.tableNumber) void assignGuestTable(g.id, n); }} className="w-16 rounded bg-zinc-800 p-2" /></label>
                       {g.status === 'CONFIRMED' && <button className="rounded border p-2" onClick={() => checkInGuest(g.id)}>Registrar ingreso</button>}
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                         g.status === 'CONFIRMED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 
@@ -577,15 +564,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                   </div>
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">CBU / CVU</label>
-                    <input type="text" value={localConfig.cbu} onChange={e => handleLocalConfigChange('cbu', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                    <input type="text" value={localConfig.cvu} onChange={e => handleLocalConfigChange('cvu', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Link de MercadoPago (URL o QR)</label>
-                    <input type="url" value={localConfig.mpQrUrl} onChange={e => handleLocalConfigChange('mpQrUrl', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Link de PayPal</label>
-                    <input type="url" value={localConfig.payPalUrl || ''} onChange={e => handleLocalConfigChange('payPalUrl', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Álbum compartido de Google Fotos (cuando esté disponible)</label>
+                    <input type="url" value={localConfig.eventAlbumUrl || ''} onChange={e => handleLocalConfigChange('eventAlbumUrl', e.target.value)} placeholder="https://photos.app.goo.gl/..." className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
                   </div>
                 </div>
               )}
@@ -635,6 +618,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                     </div>
                   </div>
                   <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Fuente del nombre principal</label>
+                    <select value={localConfig.heroFont || 'eyesome'} onChange={e => handleLocalConfigChange('heroFont', e.target.value as any)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none">
+                      <option value="eyesome">Eyesome Script</option>
+                      <option value="greatvibes">Great Vibes</option>
+                      <option value="cormorant">Cormorant Garamond</option>
+                    </select>
+                    <p className="mt-3 break-words text-4xl text-white" style={{ fontFamily: fontMap[localConfig.heroFont || 'eyesome'] }}>Clara Hoggan</p>
+                  </div>
+                  <div>
                     <label className="mb-1.5 block text-xs uppercase tracking-wider text-zinc-300">Tamaño de títulos</label>
                     <select value={localConfig.headingScale || 'normal'} onChange={e => handleLocalConfigChange('headingScale', e.target.value)} className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-[#C0C0C0]">
                       <option value="compact">Compacto</option>
@@ -649,6 +641,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                       onChange={e => handleLocalConfigChange('fontHeading', e.target.value as any)}
                       className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
                     >
+                      <option value="eyesome">Eyesome Script (Firma Elegante)</option>
                       <option value="cormorant">Cormorant Garamond (Elegante Clásica)</option>
                       <option value="playfair">Playfair Display (Premium Editorial)</option>
                       <option value="merriweather">Merriweather (Clásica y Formal)</option>
@@ -745,8 +738,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                     {[
                       { id: 'enableHero', label: 'Cabecera Principal (Portada)' },
                       { id: 'enableCountdown', label: 'Cuenta Regresiva' },
-                      { id: 'enableTimeline', label: 'Cronograma del Evento' },
-                      { id: 'enableDressCode', label: 'Dress Code & Outfit' },
+                      { id: 'enableTimeline', label: 'Historia / Trayectoria' },
+                      { id: 'enableDressCode', label: 'Guía visual de vestimenta' },
                       { id: 'enableGifts', label: 'Sección de Regalos' },
                       { id: 'enableGuestbook', label: 'Libro de Firmas Virtual' },
                       { id: 'enableTrivia', label: 'Juegos & Trivia' },

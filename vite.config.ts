@@ -9,10 +9,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss()],
     build: {
       rollupOptions: {
-        input: {
-          invitation: path.resolve(__dirname, 'index.html'),
-          product: path.resolve(__dirname, 'producto.html'),
-        },
+        input: path.resolve(__dirname, 'index.html'),
       },
     },
     resolve: {

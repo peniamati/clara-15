@@ -43,7 +43,7 @@ export const Countdown: React.FC = () => {
     const endDate = new Date(new Date(config.date).getTime() + 8 * 60 * 60 * 1000);
     const end = endDate.toISOString().replace(/-|:|\.\d\d\d/g, '');
     const title = encodeURIComponent(`${config.eventType} ${config.honoree}`);
-    const details = encodeURIComponent(`Noche de Gala en ${config.venue}. Dress code: ${config.dressCode}`);
+    const details = encodeURIComponent(`Fiesta de 15 en ${config.venue}. Vestimenta: ${config.dressCode}`);
     const location = encodeURIComponent(`${config.venue}, ${config.address}`);
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`;
   };
@@ -55,7 +55,7 @@ VERSION:2.0
 PRODID:-//Maestro15//EN
 BEGIN:VEVENT
 SUMMARY:${config.eventType} ${config.honoree}
-DESCRIPTION:Celebración de Gala de 15 Años. Dress code: ${config.dressCode}
+DESCRIPTION:Fiesta de 15 años. Vestimenta: ${config.dressCode}
 LOCATION:${config.venue}, ${config.address}
 DTSTART:${new Date(config.date).toISOString().replace(/-|:|\.\d\d\d/g, '')}
 END:VEVENT

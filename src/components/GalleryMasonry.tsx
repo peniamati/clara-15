@@ -5,14 +5,9 @@ import { Camera, ZoomIn, Download, Share2, Heart, X, Sparkles } from 'lucide-rea
 
 export const GalleryMasonry: React.FC = () => {
   const { config } = useEvent();
-  const [activeTab, setActiveTab] = useState<'all' | 'books' | 'backstage' | 'fiesta'>('all');
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   const galleryImages = config.gallery || [];
-
-  const filtered = activeTab === 'all'
-    ? galleryImages
-    : galleryImages.filter(img => img.category === activeTab);
 
   const handleShare = (url: string) => {
     if (navigator.share) {
@@ -36,35 +31,14 @@ export const GalleryMasonry: React.FC = () => {
             Galería Fotográfica
           </h2>
           <p className="text-zinc-400 text-sm sm:text-base font-light">
-            Instantes capturados por lentes profesionales reflejando la magia previa a la gran noche.
+            Muy pronto vamos a compartir las fotos del book de Clara.
           </p>
-
-          {/* Gallery Category Tabs */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
-            {[
-              { id: 'all', label: 'Todas las Fotos' },
-              { id: 'books', label: 'Book de 15' },
-              { id: 'backstage', label: 'Backstage & Preparación' },
-              { id: 'fiesta', label: 'Corte de Honor' },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`px-5 py-2.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-[#C0C0C0] text-black shadow-lg shadow-[#C0C0C0]/20 font-bold'
-                    : 'bg-zinc-900/80 border border-white/10 text-zinc-400 hover:text-white hover:border-[#C0C0C0]/30'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <div className="mt-8 inline-flex rounded-full border border-white/10 bg-zinc-900/80 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#C0C0C0]">Book de 15</div>
         </div>
 
         {/* Masonry Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(img => (
+          {galleryImages.map(img => (
             <div
               key={img.id}
               onClick={() => setSelectedPhoto(img.url)}
@@ -84,6 +58,11 @@ export const GalleryMasonry: React.FC = () => {
               </div>
             </div>
           ))}
+          {galleryImages.length === 0 && (
+            <div className="col-span-full rounded-3xl border border-dashed border-white/15 bg-[#0F0F0F] px-6 py-14 text-center text-sm text-zinc-400">
+              Las fotos del book se publicarán acá cuando estén listas.
+            </div>
+          )}
         </div>
 
       </div>

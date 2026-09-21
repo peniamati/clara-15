@@ -1,131 +1,60 @@
 import React, { useState } from 'react';
+import { Check, Copy, Gift, Mail } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
-import { Gift, Copy, Check, ExternalLink } from 'lucide-react';
 
 export const GiftsSection: React.FC = () => {
-  const { config, gifts } = useEvent();
+  const { config } = useEvent();
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text: string, label: string) => {
+    await navigator.clipboard.writeText(text);
     setCopiedField(label);
     setTimeout(() => setCopiedField(null), 2500);
   };
 
+  const bankDetails = [
+    { label: 'Alias', value: config.alias },
+    { label: 'CVU', value: config.cvu || config.cbu },
+    { label: 'Nombre', value: config.honoree },
+  ].filter(item => item.value);
+
   return (
-    <section id="regalos" className="py-24 bg-[#050505] text-white relative">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900/80 border border-[#C0C0C0]/30 text-[#C0C0C0] text-xs uppercase tracking-widest mb-4">
-            <Gift className="w-3.5 h-3.5 text-[#C0C0C0]" />
-            <span>Mesa de Regalos & Experiencias</span>
+    <section id="regalos" className="relative bg-[#050505] py-24 text-white">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6">
+        <div className="mx-auto mb-10 max-w-2xl text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#C0C0C0]/30 bg-zinc-900/80 px-4 py-1.5 text-xs uppercase tracking-widest text-[#C0C0C0]">
+            <Gift className="h-3.5 w-3.5" />
+            <span>Regalos</span>
           </div>
-          <h2 className="font-serif text-4xl sm:text-6xl font-semibold silver-gradient-text mb-3">
-            El Mejor Regalo es tu Presencia
-          </h2>
-          <p className="text-zinc-400 text-sm sm:text-base font-light">
-            Si deseas hacerme un obsequio para colaborar con mi viaje y proyectos de futuro, podés hacerlo mediante transferencia o lista de sueños.
+          <h2 className="mb-4 font-serif text-4xl font-semibold silver-gradient-text sm:text-6xl">Tu presencia es lo más importante</h2>
+          <p className="text-sm font-light leading-relaxed text-zinc-300 sm:text-base">
+            Para mí lo más importante es tu presencia, pero si quisieras hacerme un regalo, te dejo mis datos bancarios.
           </p>
         </div>
 
-        {/* Bank & Payment Details Card */}
-        <div className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-6 sm:p-10 shadow-2xl mb-16 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-          
-          <div className="space-y-4">
-            <h3 className="font-serif text-3xl font-semibold text-white">Datos Bancarios para Transferencia</h3>
-            
-            <div className="p-4 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider block">Alias Bancario</span>
-                <span className="font-mono text-[#C0C0C0] font-bold text-base">{config.alias}</span>
-              </div>
-              <button
-                onClick={() => copyToClipboard(config.alias, 'Alias')}
-                className="px-4 py-2 rounded-full bg-[#C0C0C0]/20 border border-[#C0C0C0] text-[#C0C0C0] hover:bg-[#C0C0C0]/30 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5"
-              >
-                {copiedField === 'Alias' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedField === 'Alias' ? '¡Copiado!' : 'Copiar'}</span>
-              </button>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider block">CBU / CVU</span>
-                <span className="font-mono text-white font-semibold text-sm">{config.cbu}</span>
-              </div>
-              <button
-                onClick={() => copyToClipboard(config.cbu, 'CBU')}
-                className="px-4 py-2 rounded-full bg-[#C0C0C0]/20 border border-[#C0C0C0] text-[#C0C0C0] hover:bg-[#C0C0C0]/30 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5"
-              >
-                {copiedField === 'CBU' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedField === 'CBU' ? '¡Copiado!' : 'Copiar'}</span>
-              </button>
-            </div>
-
-            <div className="pt-2 flex flex-wrap gap-3">
-              <a
-                href={config.payPalUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="px-5 py-2.5 rounded-full bg-zinc-900 border border-white/10 text-[#C0C0C0] hover:border-[#C0C0C0]/40 text-xs font-semibold uppercase tracking-wider flex items-center gap-2"
-              >
-                <ExternalLink className="w-3.5 h-3.5" /> Regalito por PayPal
-              </a>
-            </div>
-          </div>
-
-          {/* Mercado Pago QR */}
-          <div className="text-center p-6 rounded-2xl bg-zinc-900/60 border border-white/10 flex flex-col items-center">
-            <span className="text-xs text-[#C0C0C0] font-semibold uppercase tracking-widest mb-2">Escaneo Mercado Pago</span>
-            <img src={config.mpQrUrl} alt="Mercado Pago QR" className="w-44 h-44 rounded-xl border border-white/10 p-2 bg-white mb-3" />
-            <span className="text-[10px] text-zinc-400 font-light">Escaneá directamente desde tu app bancaria o Mercado Pago</span>
-          </div>
-
-        </div>
-
-        {/* Wishlist Dreams Grid */}
-        <div className="mb-16">
-          <h3 className="font-serif text-3xl font-semibold silver-gradient-text text-center mb-8">
-            Lista de Sueños & Experiencias
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {gifts.map((item) => {
-              const progressPct = Math.min(100, Math.round((item.currentAmount / item.targetAmount) * 100));
-              return (
-                <div key={item.id} className="bg-[#0F0F0F] border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-between hover:border-[#C0C0C0]/30 transition-all">
-                  <div>
-                    <img src={item.imageUrl} alt={item.title} className="w-full h-40 object-cover" />
-                    <div className="p-5">
-                      <span className="text-[10px] text-[#C0C0C0] uppercase tracking-widest font-bold">{item.category}</span>
-                      <h4 className="font-serif text-xl font-semibold text-white mt-1 mb-2">{item.title}</h4>
-                      
-                      {/* Progress Bar */}
-                      <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden my-2">
-                        <div className="h-full bg-[#C0C0C0]" style={{ width: `${progressPct}%` }} />
-                      </div>
-                      <div className="flex justify-between text-xs text-zinc-400 font-medium">
-                        <span>Alcanzado: {progressPct}%</span>
-                        <span className="text-[#C0C0C0] font-bold">${item.currentAmount.toLocaleString('es-AR')}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-5 pt-0">
-                    <button
-                      onClick={() => copyToClipboard(config.alias, item.title)}
-                      className="w-full py-2.5 rounded-full bg-zinc-900 border border-white/10 text-[#C0C0C0] hover:border-[#C0C0C0]/40 text-xs font-semibold uppercase tracking-wider transition-all"
-                    >
-                      {copiedField === item.title ? '¡Alias Copiado!' : 'Regalar este Sueño'}
-                    </button>
-                  </div>
+        <div className="rounded-3xl border border-white/10 bg-[#0F0F0F] p-6 shadow-2xl sm:p-10">
+          <div className="grid gap-3">
+            {bankDetails.map(item => (
+              <div key={item.label} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-900 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">{item.label}</span>
+                  <span className="break-all font-mono text-base font-bold text-white">{item.value}</span>
                 </div>
-              );
-            })}
+                {item.label !== 'Nombre' && (
+                  <button type="button" onClick={() => copyToClipboard(item.value, item.label)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#C0C0C0] bg-[#C0C0C0]/20 px-4 text-xs font-semibold uppercase tracking-wider text-[#C0C0C0]">
+                    {copiedField === item.label ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copiedField === item.label ? 'Copiado' : 'Copiar'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#C0C0C0]/20 bg-[#C0C0C0]/5 p-5 text-sm leading-relaxed text-zinc-200">
+            <Mail className="mt-0.5 h-5 w-5 shrink-0 text-[#C0C0C0]" />
+            <p>En el salón habrá una urna por si preferís dejar un sobre.</p>
           </div>
         </div>
-
       </div>
     </section>
   );
