@@ -89,7 +89,7 @@ END:VCALENDAR`;
           <span>Faltan muy pocos días</span>
         </div>
 
-        <h2 className="font-serif text-4xl sm:text-6xl font-semibold silver-gradient-text mb-3">
+        <h2 className="heading-safe mx-auto max-w-5xl font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold silver-gradient-text mb-3">
           Cuenta Regresiva para la Gran Noche
         </h2>
         <p className="text-zinc-400 text-sm sm:text-base max-w-xl mx-auto mb-14 font-light">

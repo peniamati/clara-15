@@ -8,8 +8,7 @@ import {
   Type,
   Eye,
   Menu,
-  X,
-  Sparkles
+  X
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -50,7 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <a href="#inicio" className="group flex shrink-0 items-center gap-2 sm:gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#C0C0C0] via-amber-200 to-[#997A15] flex items-center justify-center p-[1px] shadow-lg shadow-[#C0C0C0]/10 group-hover:scale-105 transition-transform">
             <div className="w-full h-full bg-[#050505] rounded-full flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-[#C0C0C0]" />
+              <span className="font-serif text-sm font-semibold text-[#C0C0C0]" aria-hidden="true">C</span>
             </div>
           </div>
           <div className="flex flex-col">
