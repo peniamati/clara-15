@@ -39,6 +39,24 @@
 
   .hero-title {
     font-family: var(--font-hero) !important;
+    font-size: clamp(3.25rem, 8vw, 7rem);
+    line-height: 1.24;
+    padding: 0.12em 0.16em 0.24em;
+    overflow: visible;
+  }
+
+  .hero-title.hero-title-compact {
+    font-size: clamp(2.9rem, 7vw, 6.25rem);
+  }
+
+  .hero-title.hero-title-large {
+    font-size: clamp(3.5rem, 8.8vw, 7.75rem);
+  }
+
+  .heading-safe {
+    line-height: 1.18;
+    padding: 0.1em 0.08em 0.16em;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -119,6 +137,21 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   background: linear-gradient(135deg, #FFFFFF 0%, #E0E0E0 50%, #808080 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+h1.silver-gradient-text,
+h2.silver-gradient-text,
+h3.silver-gradient-text {
+  line-height: 1.16;
+  padding: 0.08em 0.06em 0.14em;
+  overflow-wrap: anywhere;
+}
+
+h1.hero-title.silver-gradient-text {
+  line-height: 1.24;
+  padding: 0.12em 0.16em 0.24em;
 }
 
 .silver-gradient-bg {

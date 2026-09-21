@@ -29,7 +29,7 @@ export const WelcomeScreen: React.FC = () => {
             transition={{ delay: 0.2, duration: 1 }}
             className="mx-auto my-auto w-full max-w-md text-center"
           >
-            <h1 className="mb-6 break-words px-4 text-4xl text-[#C0C0C0] sm:text-5xl md:text-7xl" style={{ fontFamily: 'var(--font-heading)' }}>
+            <h1 className="heading-safe mb-6 break-words px-4 text-4xl text-[#C0C0C0] sm:text-5xl md:text-6xl" style={{ fontFamily: 'var(--font-heading)' }}>
               {config.eventType} de {config.honoree}
             </h1>
             <p className="text-zinc-400 mb-12 tracking-widest uppercase text-sm" style={{ fontFamily: 'var(--font-body)' }}>

@@ -1,23 +1,9 @@
-import { notify } from '../lib/notify';
 import React from 'react';
 import { useEvent } from '../context/EventContext';
-import { Heart, Share2, Volume2 } from 'lucide-react';
+import { Heart } from 'lucide-react';
 
 export const Footer: React.FC = () => {
-  const { config, isAudioPlaying, setIsAudioPlaying } = useEvent();
-
-  const handleShareApp = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `${config.title} · Invitación Web`,
-        text: `¡Estás invitado a la fiesta de 15 años de ${config.honoree}! Confirmá tu presencia aquí:`,
-        url: window.location.href
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      notify('¡Enlace de la invitación copiado al portapapeles!');
-    }
-  };
+  const { config } = useEvent();
 
   return (
     <footer className="bg-[#050505] text-white border-t border-white/10 py-16 relative overflow-hidden">
@@ -28,31 +14,14 @@ export const Footer: React.FC = () => {
           {config.honoree ? config.honoree.charAt(0).toUpperCase() : 'C'}
         </div>
 
-        <h3 className="font-serif text-4xl sm:text-5xl font-semibold silver-gradient-text mb-2">
+        <h3 className="heading-safe mx-auto max-w-4xl font-serif text-3xl sm:text-5xl font-semibold silver-gradient-text mb-2">
           {config.honoree} · Mis 15 Años
         </h3>
         <p className="text-xs text-zinc-400 max-w-md mx-auto mb-8 font-light">
           Una celebración inolvidable. Gracias por formar parte de nuestra historia y acompañarnos en esta fiesta.
         </p>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
-          <button
-            onClick={handleShareApp}
-            className="px-6 py-2.5 rounded-full bg-zinc-900 border border-white/10 text-[#C0C0C0] hover:border-[#C0C0C0]/40 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-all"
-          >
-            <Share2 className="w-4 h-4" /> Compartir Invitación
-          </button>
-
-          <button
-            onClick={() => setIsAudioPlaying(!isAudioPlaying)}
-            className="px-6 py-2.5 rounded-full bg-zinc-900 border border-white/10 text-[#C0C0C0] hover:border-[#C0C0C0]/40 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-all"
-          >
-            <Volume2 className="w-4 h-4" /> {isAudioPlaying ? 'Pausar Música de Fondo' : 'Reproducir Vals'}
-          </button>
-        </div>
-
-        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 font-light">
+        <div className="mt-10 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 font-light">
           <div>
             © 2026 {config.honoree} 15 Years. Todos los derechos reservados.
           </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEvent } from '../context/EventContext';
-import { Sparkles, Calendar, Clock, MapPin, ChevronDown } from 'lucide-react';
+import { Calendar, Clock, MapPin, ChevronDown } from 'lucide-react';
 import { resolveHeroImage } from '../lib/heroMedia';
 
 export const HeroWelcome: React.FC = () => {
@@ -19,9 +19,9 @@ export const HeroWelcome: React.FC = () => {
   });
   const heroImage = resolveHeroImage(config.heroImageUrl);
   const headingSize = {
-    compact: 'text-5xl sm:text-7xl lg:text-8xl',
-    normal: 'text-6xl sm:text-8xl lg:text-9xl',
-    large: 'text-7xl sm:text-9xl lg:text-[10rem]',
+    compact: 'hero-title-compact',
+    normal: '',
+    large: 'hero-title-large',
   }[config.headingScale || 'normal'];
 
   return (
@@ -47,13 +47,12 @@ export const HeroWelcome: React.FC = () => {
       <div className="relative z-10 max-w-4xl mx-auto px-6 text-center flex flex-col items-center py-20">
         
         {/* Subtitle Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900/80 border border-[#C0C0C0]/30 text-[#C0C0C0] text-xs tracking-widest uppercase mb-6 backdrop-blur-md">
-          <Sparkles className="w-3.5 h-3.5 text-[#C0C0C0]" />
+        <div className="inline-flex items-center px-5 py-1.5 rounded-full bg-zinc-900/80 border border-[#C0C0C0]/30 text-[#C0C0C0] text-xs tracking-widest uppercase mb-6 backdrop-blur-md">
           <span>{config.eventType}</span>
         </div>
 
         {/* Main Name Heading in Cormorant Garamond Luxury Serif */}
-        <h1 className={`hero-title max-w-[96vw] break-words pb-[0.16em] font-normal leading-[1.08] tracking-normal silver-gradient-text drop-shadow-2xl ${headingSize}`}>
+        <h1 className={`hero-title max-w-[92vw] break-words font-normal tracking-normal silver-gradient-text drop-shadow-2xl ${headingSize}`}>
           {config.honoree}
         </h1>
 
