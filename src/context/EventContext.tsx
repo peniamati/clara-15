@@ -261,7 +261,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addSongRequest = (song: { title: string; artist: string; submittedBy: string; spotifyUrl?: string }) =>
     createContent('songs', { ...song, votes: 0, approved: false });
   const addGuestbookMessage = (msg: { guestName: string; message: string; photoUrl?: string }) =>
-    createContent('guestbook', { ...msg, reactions: { love: 0, sparkle: 0, cheer: 0 }, approved: false });
+    createContent('guestbook', { ...msg, reactions: { love: 0, sparkle: 0, cheer: 0 }, approved: true });
   const addTimeCapsuleMessage = (msg: { author: string; message: string; unlockAge: 18 | 21 }) =>
     createContent('capsules', msg);
   const addPhotoboothImage = (img: { guestName: string; imageUrl: string; filter: string; sticker: string; caption: string }) =>
@@ -270,7 +270,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const id = crypto.randomUUID();
       if (!img.imageUrl.startsWith('data:image/')) throw new Error('Seleccioná una imagen.');
       if (img.imageUrl.length > 750000) throw new Error('No se pudo comprimir la foto al tamaño permitido.');
-      await setDoc(doc(db, 'photobooth', id), { ...img, ownerUid, approved: false, likes: 0, createdAt: new Date().toISOString() });
+      await setDoc(doc(db, 'photobooth', id), { ...img, ownerUid, approved: true, likes: 0, createdAt: new Date().toISOString() });
     });
   const vote = (group: string, id: string, field: string) => persist(async () => {
     const uid = await visitorId();

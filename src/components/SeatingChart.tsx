@@ -59,7 +59,7 @@ export const SeatingChart: React.FC = () => {
               <span className="flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-[#C0C0C0]" /> Escenario Principal</span>
               <span className="flex items-center gap-1.5"><Music className="w-4 h-4 text-[#C0C0C0]" /> Cabina DJ</span>
               <span className="flex items-center gap-1.5"><Wine className="w-4 h-4 text-[#C0C0C0]" /> Barra Premium</span>
-              <span className="flex items-center gap-1.5"><Camera className="w-4 h-4 text-[#C0C0C0]" /> Photobooth</span>
+              <span className="flex items-center gap-1.5"><Camera className="w-4 h-4 text-[#C0C0C0]" /> Espacio Recuerdos</span>
             </div>
 
             {/* Tables Layout Grid */}

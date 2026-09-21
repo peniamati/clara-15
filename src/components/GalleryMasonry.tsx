@@ -6,6 +6,7 @@ import { Camera, ZoomIn, Download, Share2, Heart, X, Sparkles } from 'lucide-rea
 export const GalleryMasonry: React.FC = () => {
   const { config } = useEvent();
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
 
   const galleryImages = config.gallery || [];
 
@@ -31,9 +32,9 @@ export const GalleryMasonry: React.FC = () => {
             Galería Fotográfica
           </h2>
           <p className="text-zinc-400 text-sm sm:text-base font-light">
-            Muy pronto vamos a compartir las fotos del book de Clara.
+            Recorré las fotos oficiales del book de 15 de Clara. Hacé clic para verlas en alta definición.
           </p>
-          <div className="mt-8 inline-flex rounded-full border border-white/10 bg-zinc-900/80 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#C0C0C0]">Book de 15</div>
+          <div className="mt-8 inline-flex rounded-full border border-white/10 bg-zinc-900/80 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#C0C0C0]">Book de 15 · {galleryImages.length} Fotos</div>
         </div>
 
         {/* Masonry Grid */}
@@ -41,20 +42,38 @@ export const GalleryMasonry: React.FC = () => {
           {galleryImages.map(img => (
             <div
               key={img.id}
-              onClick={() => setSelectedPhoto(img.url)}
+              onClick={() => {
+                if (!failedImages[img.id]) setSelectedPhoto(img.url);
+              }}
               className="relative group overflow-hidden rounded-2xl border border-white/10 bg-[#0F0F0F] cursor-pointer shadow-2xl hover:border-[#C0C0C0]/40 transition-all duration-300"
             >
-              <img
-                src={img.url}
-                alt={img.title}
-                className="w-full h-80 object-cover object-center group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-6 flex flex-col justify-end">
+              {!failedImages[img.id] ? (
+                <img
+                  src={img.url}
+                  alt={img.title}
+                  onError={() => setFailedImages(prev => ({ ...prev, [img.id]: true }))}
+                  className="w-full h-80 object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
+              ) : (
+                <div className="w-full h-80 bg-gradient-to-b from-zinc-900 to-black flex flex-col items-center justify-center p-6 text-center border border-white/5">
+                  <div className="w-14 h-14 rounded-full bg-[#C0C0C0]/10 border border-[#C0C0C0]/30 flex items-center justify-center text-[#C0C0C0] mb-3 group-hover:scale-110 transition-transform">
+                    <Camera className="w-6 h-6 text-[#C0C0C0]" />
+                  </div>
+                  <span className="text-zinc-200 font-serif text-base font-semibold">{img.title}</span>
+                  <span className="text-[11px] text-[#C0C0C0]/80 mt-1 font-mono bg-zinc-950/80 px-3 py-1 rounded-full border border-white/10">
+                    public{img.url}
+                  </span>
+                  <span className="text-[10px] text-zinc-500 mt-2">Copia la foto a esta ruta para verla acá</span>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-6 flex flex-col justify-end pointer-events-none">
                 <span className="text-[#C0C0C0] text-xs font-semibold uppercase tracking-widest">{img.category}</span>
                 <h3 className="font-serif text-2xl font-semibold text-white mt-1">{img.title}</h3>
-                <div className="flex items-center gap-3 mt-3 text-[#C0C0C0] text-xs uppercase tracking-wider font-semibold">
-                  <span className="flex items-center gap-1"><ZoomIn className="w-3.5 h-3.5"/> Ampliar</span>
-                </div>
+                {!failedImages[img.id] && (
+                  <div className="flex items-center gap-3 mt-3 text-[#C0C0C0] text-xs uppercase tracking-wider font-semibold">
+                    <span className="flex items-center gap-1"><ZoomIn className="w-3.5 h-3.5"/> Ampliar</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}

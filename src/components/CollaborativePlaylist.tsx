@@ -1,7 +1,7 @@
 import { notify } from '../lib/notify';
 import React, { useState } from 'react';
 import { useEvent } from '../context/EventContext';
-import { Music, ThumbsUp, Plus, Search, Disc } from 'lucide-react';
+import { Music, ThumbsUp, Plus, Search, Disc, ExternalLink } from 'lucide-react';
 
 export const CollaborativePlaylist: React.FC = () => {
   const { songs, addSongRequest, voteSong, config } = useEvent();
@@ -48,8 +48,53 @@ export const CollaborativePlaylist: React.FC = () => {
             Armemos la Playlist de la Fiesta
           </h2>
           <p className="text-zinc-400 text-sm sm:text-base font-light">
-            Proponé tus temas favoritos y votá los de los demás. ¡Las canciones más votadas sonarán en la pista principal!
+            Sumá tus canciones favoritas a la lista oficial de Spotify o proponé temas para que el DJ los haga sonar en la pista.
           </p>
+        </div>
+
+        {/* Spotify Collaborative Playlist Embed & Action */}
+        <div className="mb-12 bg-[#0F0F0F] border border-[#C0C0C0]/20 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-[#1DB954]/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1DB954]/10 border border-[#1DB954]/30 text-[#1DB954] text-xs font-semibold uppercase tracking-wider mb-2">
+                <span>🟢 Playlist Oficial de Spotify</span>
+              </div>
+              <h3 className="font-serif text-2xl sm:text-3xl font-semibold text-white">
+                Escuchá y agregá canciones a la lista
+              </h3>
+              <p className="text-zinc-400 text-xs sm:text-sm font-light mt-1 max-w-xl">
+                Hacé clic en el botón para abrir la lista en Spotify y agregar directamente las canciones que querés bailar en la fiesta.
+              </p>
+            </div>
+
+            <a
+              href="https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL?si=3b44a51ff97744da"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 px-6 py-3.5 rounded-full bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold text-xs uppercase tracking-widest shadow-xl shadow-[#1DB954]/20 transition-all inline-flex items-center gap-2.5 active:scale-95"
+            >
+              <Music className="w-4 h-4" />
+              <span>Abrir y Sumar en Spotify</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+
+          <div className="w-full rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black/40">
+            <iframe
+              data-testid="embed-iframe"
+              style={{ borderRadius: '12px' }}
+              src="https://open.spotify.com/embed/playlist/408drhVBzu4Jxrt501CwOL?utm_source=generator&si=3b44a51ff97744da"
+              width="100%"
+              height="352"
+              frameBorder="0"
+              allowFullScreen
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              title="Playlist Spotify Clara 15"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

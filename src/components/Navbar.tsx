@@ -37,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { name: 'Playlist', href: '#playlist', condition: true },
     { name: 'Firmas', href: '#firmas', condition: config.enableGuestbook !== false },
     { name: 'Regalos', href: '#regalos', condition: config.enableGifts !== false },
-    { name: 'Photobooth', href: '#photobooth', condition: true },
+    { name: 'Recuerdos', href: '#recuerdos', condition: true },
     { name: 'Juegos', href: '#juegos', condition: config.enableTrivia !== false },
   ].filter(link => link.condition);
 
@@ -84,7 +84,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={toggleMusic}
             aria-pressed={isPlayingMusic}
             title={isPlayingMusic ? 'Pausar música ambiental' : 'Reproducir música ambiental'}
-            className={`min-h-11 min-w-11 touch-manipulation rounded-full border p-2.5 transition-all active:scale-95 ${
+            className={`min-h-11 min-w-11 w-11 h-11 flex items-center justify-center touch-manipulation rounded-full border transition-all active:scale-95 ${
               isPlayingMusic
                 ? 'bg-[#C0C0C0]/20 border-[#C0C0C0] text-[#C0C0C0] animate-pulse'
                 : 'bg-zinc-900/80 border-white/10 text-zinc-400 hover:text-white'
@@ -99,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={() => setAccMenuOpen(!accMenuOpen)}
               title="Ajustes de accesibilidad"
-              className="min-h-11 min-w-11 touch-manipulation rounded-full border border-white/10 bg-zinc-900/80 p-2.5 text-zinc-400 transition-colors active:scale-95 hover:text-[#C0C0C0]"
+              className="min-h-11 min-w-11 w-11 h-11 flex items-center justify-center touch-manipulation rounded-full border border-white/10 bg-zinc-900/80 text-zinc-400 transition-colors active:scale-95 hover:text-[#C0C0C0]"
             >
               <Eye className="w-4 h-4" />
             </button>
@@ -173,7 +173,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-expanded={mobileMenuOpen}
             aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
-            className="min-h-11 min-w-11 touch-manipulation rounded-full border border-white/10 bg-zinc-900 p-2.5 text-zinc-300 active:scale-95 xl:hidden"
+            className="min-h-11 min-w-11 w-11 h-11 flex items-center justify-center touch-manipulation rounded-full border border-white/10 bg-zinc-900 text-zinc-300 active:scale-95 xl:hidden"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
