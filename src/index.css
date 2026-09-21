@@ -36,6 +36,10 @@
   h1, h2, h3, .font-serif-luxury {
     font-family: var(--font-heading) !important;
   }
+
+  .hero-title {
+    font-family: var(--font-hero) !important;
+  }
 }
 
 button, a, input, textarea, select {

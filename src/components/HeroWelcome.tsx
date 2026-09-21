@@ -53,7 +53,7 @@ export const HeroWelcome: React.FC = () => {
         </div>
 
         {/* Main Name Heading in Cormorant Garamond Luxury Serif */}
-        <h1 className={`max-w-[96vw] break-words pb-[0.16em] font-normal leading-[1.08] tracking-normal silver-gradient-text drop-shadow-2xl ${headingSize}`} style={{ fontFamily: 'var(--font-hero)' }}>
+        <h1 className={`hero-title max-w-[96vw] break-words pb-[0.16em] font-normal leading-[1.08] tracking-normal silver-gradient-text drop-shadow-2xl ${headingSize}`}>
           {config.honoree}
         </h1>
 
