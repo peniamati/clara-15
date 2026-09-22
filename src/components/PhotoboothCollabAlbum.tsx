@@ -82,31 +82,33 @@ const composeBrandedPhoto = (imageSrc: string, filter: string, sticker: string, 
         ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size);
         ctx.restore();
 
-        // Top sticker pill
-        ctx.save();
-        ctx.font = 'bold 32px sans-serif';
-        const textWidth = ctx.measureText(sticker).width;
-        const pillX = size - textWidth - 80;
-        const pillY = 40;
-        const pillW = textWidth + 48;
-        const pillH = 56;
-        
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
-        ctx.beginPath();
-        if (typeof ctx.roundRect === 'function') {
-          ctx.roundRect(pillX, pillY, pillW, pillH, 28);
-        } else {
-          ctx.rect(pillX, pillY, pillW, pillH);
-        }
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(192, 192, 192, 0.5)';
-        ctx.lineWidth = 3;
-        ctx.stroke();
+        // Top sticker pill (optional, skip if 'Sin sticker')
+        if (sticker && sticker !== 'Sin sticker') {
+          ctx.save();
+          ctx.font = 'bold 32px sans-serif';
+          const textWidth = ctx.measureText(sticker).width;
+          const pillX = size - textWidth - 80;
+          const pillY = 40;
+          const pillW = textWidth + 48;
+          const pillH = 56;
+          
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
+          ctx.beginPath();
+          if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(pillX, pillY, pillW, pillH, 28);
+          } else {
+            ctx.rect(pillX, pillY, pillW, pillH);
+          }
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(192, 192, 192, 0.5)';
+          ctx.lineWidth = 3;
+          ctx.stroke();
 
-        ctx.fillStyle = '#C0C0C0';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(sticker, pillX + 24, pillY + pillH / 2);
-        ctx.restore();
+          ctx.fillStyle = '#C0C0C0';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(sticker, pillX + 24, pillY + pillH / 2);
+          ctx.restore();
+        }
 
         // Bottom footer watermark
         ctx.save();
@@ -127,7 +129,13 @@ const composeBrandedPhoto = (imageSrc: string, filter: string, sticker: string, 
         ctx.fillText(`${honoree} · Mis 15`, size / 2, size - frameH / 2);
         ctx.restore();
 
-        resolve(canvas.toDataURL('image/jpeg', 0.88));
+        let quality = 0.82;
+        let finalData = canvas.toDataURL('image/jpeg', quality);
+        while (finalData.length > 650000 && quality > 0.4) {
+          quality -= 0.08;
+          finalData = canvas.toDataURL('image/jpeg', quality);
+        }
+        resolve(finalData);
       } catch {
         resolve(imageSrc);
       }
@@ -144,7 +152,7 @@ export const PhotoboothCollabAlbum: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [caption, setCaption] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('Golden Hour');
-  const [selectedSticker, setSelectedSticker] = useState(`✨ Mis 15 ${config.honoree}`);
+  const [selectedSticker, setSelectedSticker] = useState('Sin sticker');
   const [showUploader, setShowUploader] = useState(false);
   const [isPreparingPhoto, setIsPreparingPhoto] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
@@ -154,6 +162,7 @@ export const PhotoboothCollabAlbum: React.FC = () => {
 
   const filters = ['Normal', 'Golden Hour', 'Glamour B&W', 'Hollywood Glow', 'Neon Party'];
   const stickers = [
+    'Sin sticker',
     `✨ Mis 15 ${config.honoree}`,
     '👑 Noche Mágica',
     '🥂 Brindis Disco',
@@ -391,9 +400,11 @@ export const PhotoboothCollabAlbum: React.FC = () => {
                     }`}
                   />
                   {/* Sticker Overlay */}
-                  <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-md border border-[#C0C0C0]/50 text-[#C0C0C0] px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                    {selectedSticker}
-                  </div>
+                  {selectedSticker && selectedSticker !== 'Sin sticker' && (
+                    <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-md border border-[#C0C0C0]/50 text-[#C0C0C0] px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                      {selectedSticker}
+                    </div>
+                  )}
                   {/* Footer Frame */}
                   <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-md p-3 text-center border-t border-white/10">
                     <span className="font-serif text-xs font-bold text-white">{config.honoree} · Mis 15</span>

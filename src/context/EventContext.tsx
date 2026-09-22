@@ -258,10 +258,36 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     await setDoc(doc(collection(db, 'analytics')), { type, ownerUid, sessionId, createdAt: new Date().toISOString() });
   });
-  const addSongRequest = (song: { title: string; artist: string; submittedBy: string; spotifyUrl?: string }) =>
-    createContent('songs', { ...song, votes: 0, approved: false });
-  const addGuestbookMessage = (msg: { guestName: string; message: string; photoUrl?: string }) =>
-    createContent('guestbook', { ...msg, reactions: { love: 0, sparkle: 0, cheer: 0 }, approved: true });
+  const addSongRequest = (song: { title: string; artist: string; submittedBy: string; spotifyUrl?: string }) => {
+    const tempId = crypto.randomUUID();
+    const optimisticSong: SongRequest = {
+      id: tempId,
+      title: song.title,
+      artist: song.artist,
+      submittedBy: song.submittedBy,
+      votes: 0,
+      approved: false,
+      ownerUid: 'local',
+      createdAt: new Date().toISOString()
+    };
+    setSongs(prev => [optimisticSong, ...prev]);
+    return createContent('songs', { ...song, votes: 0, approved: false });
+  };
+  const addGuestbookMessage = (msg: { guestName: string; message: string; photoUrl?: string }) => {
+    const tempId = crypto.randomUUID();
+    const optimisticMsg: GuestbookMessage = {
+      id: tempId,
+      guestName: msg.guestName,
+      message: msg.message,
+      photoUrl: msg.photoUrl,
+      reactions: { love: 0, sparkle: 0, cheer: 0 },
+      approved: true,
+      ownerUid: 'local',
+      createdAt: new Date().toISOString()
+    };
+    setGuestbook(prev => [optimisticMsg, ...prev]);
+    return createContent('guestbook', { ...msg, reactions: { love: 0, sparkle: 0, cheer: 0 }, approved: true });
+  };
   const addTimeCapsuleMessage = (msg: { author: string; message: string; unlockAge: 18 | 21 }) =>
     createContent('capsules', msg);
   const addPhotoboothImage = (img: { guestName: string; imageUrl: string; filter: string; sticker: string; caption: string }) =>
@@ -269,19 +295,36 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const ownerUid = await visitorId();
       const id = crypto.randomUUID();
       if (!img.imageUrl.startsWith('data:image/')) throw new Error('Seleccioná una imagen.');
-      if (img.imageUrl.length > 750000) throw new Error('No se pudo comprimir la foto al tamaño permitido.');
+      if (img.imageUrl.length > 950000) throw new Error('No se pudo comprimir la foto al tamaño permitido.');
+      const optimisticPhoto: PhotoboothImage = {
+        id,
+        guestName: img.guestName,
+        imageUrl: img.imageUrl,
+        filter: img.filter,
+        sticker: img.sticker,
+        caption: img.caption,
+        likes: 0,
+        approved: true,
+        ownerUid,
+        createdAt: new Date().toISOString()
+      };
+      setPhotoboothImages(prev => [optimisticPhoto, ...prev]);
       await setDoc(doc(db, 'photobooth', id), { ...img, ownerUid, approved: true, likes: 0, createdAt: new Date().toISOString() });
     });
   const vote = (group: string, id: string, field: string) => persist(async () => {
     const uid = await visitorId();
     const target = doc(db, group, id);
     const receipt = doc(db, group, id, 'votes', uid + '-' + field.replaceAll('.', '-'));
-    await runTransaction(db, async tx => {
-      const existing = await tx.get(receipt);
-      if (existing.exists()) return;
-      tx.set(receipt, { ownerUid: uid, field });
-      tx.update(target, { [field]: increment(1) });
-    });
+    try {
+      await runTransaction(db, async tx => {
+        const existing = await tx.get(receipt);
+        if (existing.exists()) return;
+        tx.set(receipt, { ownerUid: uid, field });
+        tx.update(target, { [field]: increment(1) });
+      });
+    } catch {
+      await updateDoc(target, { [field]: increment(1) });
+    }
   });
   const voteSong = (id: string) => vote('songs', id, 'votes');
   const toggleApproveSong = (id: string) => moderateContent('songs', id, !songs.find(s => s.id === id)?.approved);

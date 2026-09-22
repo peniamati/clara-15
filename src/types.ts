@@ -104,6 +104,8 @@ export interface SongRequest {
   youtubeUrl?: string;
   isInOfficialPlaylist?: boolean;
   note?: string;
+  ownerUid?: string;
+  createdAt?: string;
 }
 
 export interface GuestbookMessage {
@@ -115,6 +117,7 @@ export interface GuestbookMessage {
   voiceAudioUrl?: string;
   createdAt: string;
   approved: boolean;
+  ownerUid?: string;
 }
 
 export interface TimeCapsuleMessage {
@@ -123,6 +126,7 @@ export interface TimeCapsuleMessage {
   message: string;
   unlockAge: 18 | 21;
   createdAt: string;
+  ownerUid?: string;
 }
 
 export interface PhotoboothImage {
@@ -135,6 +139,7 @@ export interface PhotoboothImage {
   createdAt: string;
   likes: number;
   approved: boolean;
+  ownerUid?: string;
 }
 
 export interface GiftIdea {

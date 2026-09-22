@@ -31,6 +31,13 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('hashchange', navigate);
   }, []);
   const { config, isConfigReady, isPlayingMusic, setIsPlayingMusic, syncError, clearSyncError, trackEvent } = useEvent();
+  const [isInvitationOpened, setIsInvitationOpened] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.location.hash.includes('organizador') ||
+      sessionStorage.getItem('clara15_invitation_opened') === 'true'
+    );
+  });
   const [isInvitationReady, setIsInvitationReady] = useState(false);
   const hasLoadedInitialInvitation = useRef(false);
   const hasTrackedView = useRef(false);
@@ -100,6 +107,25 @@ const AppContent: React.FC = () => {
     return <div className="min-h-[100dvh] bg-[#050505]" style={rootStyle} aria-label="Cargando invitación" />;
   }
 
+  // Cover page before guest opens the invitation
+  if (!isInvitationOpened && !showAdminModal) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-white font-sans overflow-hidden" style={rootStyle}>
+        <WelcomeScreen
+          onOpen={() => {
+            setIsInvitationOpened(true);
+            sessionStorage.setItem('clara15_invitation_opened', 'true');
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+          onOpenAdmin={() => {
+            setShowAdminModal(true);
+            window.location.hash = 'organizador';
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#C0C0C0] selection:text-black overflow-x-hidden" style={rootStyle}>
       
@@ -111,9 +137,6 @@ const AppContent: React.FC = () => {
         isPlaying={isPlayingMusic && !showAdminModal}
         onPlaybackError={() => setIsPlayingMusic(false)}
       />
-
-      {/* Welcome Screen for Autoplay Audio */}
-      {!showAdminModal && <WelcomeScreen />}
 
       {/* Navigation Bar */}
       <Navbar

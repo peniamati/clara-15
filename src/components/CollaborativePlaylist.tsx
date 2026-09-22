@@ -69,22 +69,24 @@ export const CollaborativePlaylist: React.FC = () => {
         spotifyUrl: SPOTIFY_PLAYLIST_URL
       });
 
-      // Send background notification to server
-      try {
-        await fetch('/api/notify-song-request', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: currentTitle,
-            artist: currentArtist,
-            submittedBy: currentSubmittedBy,
-            note: currentNote,
-            adminEmail,
-            playlistUrl: SPOTIFY_PLAYLIST_URL
-          })
-        });
-      } catch (err) {
-        console.warn('Notification log error (non-blocking):', err);
+      // Send background notification to server if server endpoint is available (e.g. not static GitHub Pages)
+      if (typeof window !== 'undefined' && !window.location.hostname.endsWith('github.io')) {
+        try {
+          await fetch('/api/notify-song-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: currentTitle,
+              artist: currentArtist,
+              submittedBy: currentSubmittedBy,
+              note: currentNote,
+              adminEmail,
+              playlistUrl: SPOTIFY_PLAYLIST_URL
+            })
+          });
+        } catch {
+          // non-blocking
+        }
       }
 
       setSubmittedSuccessModal({

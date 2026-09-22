@@ -56,6 +56,9 @@ export const initialEventConfig: EventConfig = {
   heroImageUrl: DEFAULT_HERO_IMAGE,
   adminEmails: ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'],
   gallery: [
+    { id: 1, category: 'Book de 15', title: 'Clara · Sesión 047', url: 'gallery/047 - CLARA SESION.jpg', size: 'normal' },
+    { id: 2, category: 'Book de 15', title: 'Clara · Sesión 048', url: 'gallery/048 - CLARA SESION.jpg', size: 'normal' },
+    { id: 3, category: 'Book de 15', title: 'Clara · Sesión 061', url: 'gallery/061 - CLARA SESION.jpg', size: 'normal' },
     { id: 4, category: 'Book de 15', title: 'Clara · Sesión 065', url: 'gallery/065 - CLARA SESION.jpg', size: 'normal' },
     { id: 5, category: 'Book de 15', title: 'Clara · Sesión 139', url: 'gallery/139 - CLARA SESION.jpg', size: 'normal' },
     { id: 6, category: 'Book de 15', title: 'Clara · Sesión 141', url: 'gallery/141 - CLARA SESION.jpg', size: 'normal' },
