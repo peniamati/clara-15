@@ -61,9 +61,11 @@ export const GalleryMasonry: React.FC = () => {
     }
   }, [localPhotos]);
 
-  // Combine config gallery with any locally loaded photos
+  // The official book always comes from the shared event configuration.
+  // Older versions stored temporary uploads in localStorage; using them here
+  // could permanently replace the official gallery with stale or repeated files.
   const defaultGallery = config.gallery || [];
-  const displayPhotos: CustomPhotoItem[] = localPhotos.length > 0 ? localPhotos : defaultGallery;
+  const displayPhotos: CustomPhotoItem[] = defaultGallery;
 
   const handleShare = (url: string) => {
     if (navigator.share) {

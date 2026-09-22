@@ -129,9 +129,6 @@ export const EventInfoDetails: React.FC = () => {
               <div className="flex items-center gap-2 text-[#C0C0C0] font-semibold text-sm mb-4">
                 <Clock className="w-4 h-4" /> Recepción {formattedEventTime} HS · Puntual
               </div>
-              <p className="text-zinc-300 text-sm leading-relaxed font-light">
-                Recepción al aire libre con sushi bar, fondues, appetizers gourmet y barra de cócteles & mocktails antes del ingreso a la pista.
-              </p>
             </div>
 
           </div>
