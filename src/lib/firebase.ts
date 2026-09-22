@@ -39,13 +39,9 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 // Initialize Firestore with auto-detect long polling to prevent "unavailable / could not reach Cloud Firestore backend" in sandboxed environments
-export const db = initializeFirestore(
-  app, 
-  {
-    experimentalAutoDetectLongPolling: true,
-  }, 
-  firestoreDatabaseId
-);
+export const db = (!firestoreDatabaseId || firestoreDatabaseId === '(default)')
+  ? initializeFirestore(app, { experimentalAutoDetectLongPolling: true })
+  : initializeFirestore(app, { experimentalAutoDetectLongPolling: true }, firestoreDatabaseId);
 
 export { 
   collection, addDoc, getDocs, onSnapshot, query, orderBy, 
