@@ -41,7 +41,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     toggleApproveSong,
     guestbook,
     photoboothImages,
-    isAdminLoggedIn, moderateContent, timeCapsule, checkInGuest, analyticsEvents
+    isAdminLoggedIn, moderateContent, deleteContent, timeCapsule, checkInGuest, analyticsEvents
   } = useEvent();
 
   const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports' | 'collabs'>('stats');
@@ -158,24 +158,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     } finally { setSaving(false); }
   };
 
-  const exportCsv = () => {
+  const exportGuestTable = () => {
     const headers = ['Nombre', 'Apellido', 'Edad', 'MenorDeEdad', 'TutorNombre', 'TutorTelefono', 'Telefono', 'Email', 'Estado', 'Mesa', 'MenuEspecial', 'Notas'];
-    const cell = (value: unknown) => {
-      const raw = String(value ?? '');
-      const safe = /^[=+@\\-\\t\\r]/.test(raw) ? "'" + raw : raw;
-      return '"' + safe.replaceAll('"', '""') + '"';
-    };
+    const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] || char));
     const rows = guests.map(g => [
       g.name, g.lastName, g.age, g.age && g.age < 18 ? 'SI' : 'NO',
       g.tutorName || g.emergencyContactName, g.tutorPhone || g.emergencyContactPhone,
       g.phone, g.email, g.status, g.tableNumber || 'Sin asignar',
       g.dietaryRestrictions.join(', '), g.notes
-    ].map(cell).join(','));
-    const csvContent = 'data:text/csv;charset=utf-8,' + '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
-    const encodedUri = URL.createObjectURL(new Blob([csvContent.slice(csvContent.indexOf(',') + 1)], { type: 'text/csv;charset=utf-8;' }));
+    ]);
+    const table = `<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Arial}th,td{border:1px solid #999;padding:8px;text-align:left}th{background:#eee}</style></head><body><h1>Invitados de ${escapeHtml(config.honoree)}</h1><table><thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(value => `<td>${escapeHtml(value)}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
+    const encodedUri = URL.createObjectURL(new Blob(['\uFEFF', table], { type: 'application/vnd.ms-excel;charset=utf-8;' }));
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Lista_Invitados_${config.honoree.replace(/\s+/g, '_')}.csv`);
+    link.setAttribute('download', `Tabla_Invitados_${config.honoree.replace(/\s+/g, '_')}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -368,10 +364,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-serif text-2xl font-semibold text-white">Confirmaciones y detalles</h3>
               <button
-                onClick={exportCsv}
+                onClick={exportGuestTable}
                 className="px-4 py-2 rounded-full bg-[#C0C0C0] text-black font-semibold text-xs uppercase tracking-wider flex items-center gap-1.5"
               >
-                <FileSpreadsheet className="w-4 h-4" /> Exportar CSV
+                <FileSpreadsheet className="w-4 h-4" /> Descargar tabla
               </button>
             </div>
 
@@ -413,7 +409,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                      {g.status === 'CONFIRMED' && <button className="rounded border p-2" onClick={() => checkInGuest(g.id)}>Registrar ingreso</button>}
+                      {g.status === 'CONFIRMED' && <button className="min-h-11 rounded-lg border border-white/20 px-3" onClick={() => checkInGuest(g.id)}>Registrar ingreso</button>}
+                      <button className="min-h-11 rounded-lg border border-red-500/30 px-3 text-red-300" onClick={() => deleteContent('guests', g.id)}><Trash2 className="h-4 w-4" aria-hidden="true" /><span className="sr-only">Eliminar invitado</span></button>
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                         g.status === 'CONFIRMED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 
                         g.status === 'CHECKED_IN' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
@@ -431,7 +428,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
 
         {activeTab === 'moderation' && <section className="space-y-6">
           <h3 className="text-2xl font-semibold">Contenido de los invitados</h3>
-          <p className="text-zinc-400">Aprobá el contenido para que aparezca en la invitación. Ocultar no elimina el registro.</p>
+          <p className="text-zinc-400">Todo el contenido nuevo se publica automáticamente. Desde acá podés ocultarlo o eliminarlo definitivamente.</p>
           {[
             { group: 'songs', title: 'Canciones', items: songs },
             { group: 'guestbook', title: 'Firmas', items: guestbook },
@@ -441,12 +438,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             {section.items.length === 0 && <p className="text-zinc-400">Todavía no hay contenido.</p>}
             {section.items.map((item: any) => <article key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-zinc-900 p-4">
               <div><p>{item.title || item.guestName}</p><p className="text-sm text-zinc-400">{item.artist || item.message || item.caption}</p>{item.imageUrl && <img src={item.imageUrl} alt="Foto enviada" className="mt-2 h-32 rounded-lg" />}</div>
-              <button className="rounded-lg border border-white/20 p-3" onClick={() => moderateContent(section.group, item.id, !item.approved)}>{item.approved ? 'Ocultar' : 'Aprobar'}</button>
+              <div className="flex w-full gap-2 sm:w-auto"><button className="min-h-11 flex-1 rounded-lg border border-white/20 px-3 sm:flex-none" onClick={() => moderateContent(section.group, item.id, !item.approved)}>{item.approved ? 'Ocultar' : 'Mostrar'}</button><button className="min-h-11 flex-1 rounded-lg border border-red-500/30 px-3 text-red-300 sm:flex-none" onClick={() => deleteContent(section.group, item.id)}><Trash2 className="mr-1 inline h-4 w-4" />Eliminar</button></div>
             </article>)}
           </div>)}
           <h4 className="text-lg font-semibold">Cápsulas del tiempo · privadas</h4>
           <p className="text-sm text-zinc-400">La apertura a los 18 o 21 años es una indicación para la organización, no un envío automático.</p>
-          {timeCapsule.map(item => <article key={item.id} className="rounded-xl bg-zinc-900 p-4"><strong>{item.author} · {item.unlockAge} años</strong><p>{item.message}</p></article>)}
+          {timeCapsule.map(item => <article key={item.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl bg-zinc-900 p-4"><div><strong>{item.author} · {item.unlockAge} años</strong><p>{item.message}</p></div><button className="min-h-11 rounded-lg border border-red-500/30 px-3 text-red-300" onClick={() => deleteContent('capsules', item.id)}><Trash2 className="mr-1 inline h-4 w-4" />Eliminar</button></article>)}
         </section>}
         {/* Tab 3: Customizer */}
         {activeTab === 'customizer' && (
@@ -802,7 +799,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             <p className="text-xs text-zinc-400 font-light">Descargá reportes completos en formato CSV para catering y recepción.</p>
 
             <button
-              onClick={exportCsv}
+              onClick={exportGuestTable}
               className="w-full py-3.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10"
             >
               Descargar Lista CSV Completa

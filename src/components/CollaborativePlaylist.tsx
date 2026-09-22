@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 const SPOTIFY_PLAYLIST_URL = 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL?si=3b44a51ff97744da';
+const normalizeSongText = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
 
 export const CollaborativePlaylist: React.FC = () => {
   const { songs, addSongRequest, voteSong, config } = useEvent();
@@ -60,14 +61,25 @@ export const CollaborativePlaylist: React.FC = () => {
     const currentArtist = artist.trim();
     const currentSubmittedBy = submittedBy.trim() || 'Invitado';
     const currentNote = note.trim();
+    const duplicate = songs.find(song =>
+      normalizeSongText(song.title) === normalizeSongText(currentTitle) &&
+      normalizeSongText(song.artist) === normalizeSongText(currentArtist)
+    );
+    if (duplicate) {
+      notify(`“${duplicate.title}” de ${duplicate.artist} ya está en la lista. Podés votarla en lugar de repetirla.`);
+      setSearchTerm(duplicate.title);
+      return;
+    }
 
     try {
-      await addSongRequest({
+      const added = await addSongRequest({
         title: currentTitle,
         artist: currentArtist,
         submittedBy: currentSubmittedBy,
+        note: currentNote,
         spotifyUrl: SPOTIFY_PLAYLIST_URL
       });
+      if (!added) return;
 
       // Send background notification to server if server endpoint is available (e.g. not static GitHub Pages)
       if (typeof window !== 'undefined' && !window.location.hostname.endsWith('github.io')) {
@@ -100,7 +112,7 @@ export const CollaborativePlaylist: React.FC = () => {
       setArtist('');
       setSubmittedBy('');
       setNote('');
-      notify('¡Canción enviada! Preparamos el aviso para que el administrador la sume a Spotify.');
+      notify('¡Canción publicada! Ya está visible en la lista, sin esperar aprobación.');
     } catch (err) {
       notify('Hubo un problema al enviar la canción. Reintentá en unos segundos.');
     }

@@ -21,6 +21,7 @@ import {
 export const RsvpForm: React.FC = () => {
   const { config, addOrUpdateGuestRsvp, trackEvent } = useEvent();
   const hasTrackedStart = useRef(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -53,7 +54,7 @@ export const RsvpForm: React.FC = () => {
 
   const handleDietaryToggle = (item: string) => {
     if (item.startsWith('Ninguna')) {
-      setSelectedDietary(['Ninguna']);
+      setSelectedDietary([item]);
       return;
     }
     const filtered = selectedDietary.filter(i => !i.startsWith('Ninguna'));
@@ -98,6 +99,7 @@ export const RsvpForm: React.FC = () => {
     });
 
     setSubmitted(true);
+    requestAnimationFrame(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     void trackEvent(status === 'CONFIRMED' ? 'rsvp_complete' : 'rsvp_declined');
 
     if (status === 'CONFIRMED') {
@@ -121,7 +123,7 @@ export const RsvpForm: React.FC = () => {
   };
 
   return (
-    <section id="rsvp" className="py-24 bg-[#050505] text-white relative">
+    <section ref={sectionRef} id="rsvp" className="scroll-mt-4 py-24 bg-[#050505] text-white relative">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         {error && <p role="alert" className="rounded-xl bg-red-950 p-4">{error}</p>}
         {saving && <p role="status">Guardando tu respuesta…</p>}
@@ -377,4 +379,3 @@ export const RsvpForm: React.FC = () => {
     </section>
   );
 };
-

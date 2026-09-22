@@ -41,6 +41,53 @@ app.get("/api/event-info", (_req, res) => {
   res.json(eventConfig);
 });
 
+app.get("/api/spotify-playlist", async (_req, res) => {
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  const playlistId = process.env.SPOTIFY_PLAYLIST_ID || "408drhVBzu4Jxrt501CwOL";
+  if (!clientId || !clientSecret) {
+    res.status(503).json({ error: "Spotify sync is not configured" });
+    return;
+  }
+  try {
+    const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: "grant_type=client_credentials"
+    });
+    if (!tokenResponse.ok) throw new Error(`Spotify token ${tokenResponse.status}`);
+    const { access_token: accessToken } = await tokenResponse.json() as { access_token: string };
+    const tracks: Array<{ id: string; title: string; artist: string; spotifyUrl?: string }> = [];
+    let next: string | null = `https://api.spotify.com/v1/playlists/${playlistId}/items?limit=100&offset=0`;
+    while (next) {
+      const pageResponse = await fetch(next, { headers: { Authorization: `Bearer ${accessToken}` } });
+      if (!pageResponse.ok) throw new Error(`Spotify playlist ${pageResponse.status}`);
+      const page = await pageResponse.json() as {
+        next: string | null;
+        items: Array<{ track?: { id?: string; name?: string; artists?: Array<{ name: string }>; external_urls?: { spotify?: string } } }>;
+      };
+      for (const item of page.items) {
+        if (!item.track?.id || !item.track.name) continue;
+        tracks.push({
+          id: `spotify-${item.track.id}`,
+          title: item.track.name,
+          artist: item.track.artists?.map(artist => artist.name).join(", ") || "Artista desconocido",
+          spotifyUrl: item.track.external_urls?.spotify
+        });
+      }
+      next = page.next;
+    }
+    res.set("Cache-Control", "public, max-age=120, stale-while-revalidate=300");
+    res.json({ tracks, total: tracks.length });
+  } catch (error) {
+    console.error("[SPOTIFY SYNC]", error);
+    res.status(502).json({ error: "Could not sync Spotify playlist" });
+  }
+});
+
 app.post("/api/notify-song-request", (req, res) => {
   const { title, artist, submittedBy, adminEmail, note } = req.body;
   console.log(`[NOTIFICACIÓN PLAYLIST] Nueva sugerencia: "${title}" de ${artist} por ${submittedBy || 'Invitado'}. Admin email: ${adminEmail || 'MatiasPa380@gmail.com'}`);

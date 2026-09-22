@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, onSnapshot, doc, setDoc, updateDoc, query, where, runTransaction, increment } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, query, where, runTransaction, increment } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { visitorId } from '../lib/visitor';
 import { db, auth, firebaseConfigurationIssues } from '../lib/firebase';
@@ -41,6 +41,7 @@ interface EventContextType {
   syncError: string;
   clearSyncError: () => void;
   moderateContent: (group: string, id: string, approved: boolean) => Promise<boolean>;
+  deleteContent: (group: string, id: string) => Promise<boolean>;
   config: EventConfig;
   previewConfig: EventConfig | null;
   setPreviewConfig: (config: EventConfig | null) => void;
@@ -54,7 +55,7 @@ interface EventContextType {
   schedule: ScheduleItem[];
   unlockScheduleStage: (index: number) => void;
   songs: SongRequest[];
-  addSongRequest: (song: { title: string; artist: string; submittedBy: string; spotifyUrl?: string }) => Promise<boolean>;
+  addSongRequest: (song: { title: string; artist: string; submittedBy: string; note?: string; spotifyUrl?: string }) => Promise<boolean>;
   voteSong: (songId: string) => Promise<boolean>;
   toggleApproveSong: (songId: string) => Promise<boolean>;
   guestbook: GuestbookMessage[];
@@ -164,6 +165,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [schedule, setSchedule] = useState<ScheduleItem[]>(initialSchedule);
   const [songs, setSongs] = useState<SongRequest[]>(() => firebaseConfigurationIssues.length ? initialSongs : []);
+  const [spotifySongs, setSpotifySongs] = useState<SongRequest[]>([]);
   const [guestbook, setGuestbook] = useState<GuestbookMessage[]>(() => firebaseConfigurationIssues.length ? initialGuestbook : []);
   const [timeCapsule, setTimeCapsule] = useState<TimeCapsuleMessage[]>([]);
   const [photoboothImages, setPhotoboothImages] = useState<PhotoboothImage[]>(() => firebaseConfigurationIssues.length ? initialPhotobooth : []);
@@ -172,6 +174,24 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [tables, setTables] = useState<TableInfo[]>(initialTables);
   const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
   const [isPlayingMusic, setIsPlayingMusic] = useState<boolean>(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/spotify-playlist', { signal: controller.signal, headers: { Accept: 'application/json' } })
+      .then(response => response.ok ? response.json() : Promise.reject())
+      .then((payload: { tracks?: Array<Pick<SongRequest, 'id' | 'title' | 'artist' | 'spotifyUrl'>> }) => {
+        if (!Array.isArray(payload.tracks)) return;
+        setSpotifySongs(payload.tracks.map(track => ({
+          ...track,
+          submittedBy: 'Playlist Oficial',
+          votes: 0,
+          approved: true,
+          createdAt: new Date().toISOString()
+        })));
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, []);
 
   const [accessibility, setAccessibility] = useState<{
     fontSize: 'normal' | 'large' | 'xlarge';
@@ -192,7 +212,16 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const source = collection(db, name as string);
       const readable = name === 'polls' || isAdminLoggedIn ? source : query(source, where('approved', '==', true));
       return onSnapshot(readable, snap => {
-        (setter as (items: any[]) => void)(snap.docs.map(d => ({ ...d.data(), id: d.id })));
+        const remoteItems = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+        if (name === 'songs') {
+          const remoteKeys = new Set(remoteItems.map((item: any) => `${item.title}|${item.artist}`.toLocaleLowerCase('es')));
+          (setter as (items: any[]) => void)([
+            ...remoteItems,
+            ...initialSongs.filter(item => !remoteKeys.has(`${item.title}|${item.artist}`.toLocaleLowerCase('es')))
+          ]);
+        } else {
+          (setter as (items: any[]) => void)(remoteItems);
+        }
       }, () => setSyncError('No se pudieron sincronizar los contenidos. Revisá la conexión y los permisos.'));
     });
     if (isAdminLoggedIn) stops.push(onSnapshot(collection(db, 'capsules'), snap => {
@@ -219,6 +248,8 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   const moderateContent = (group: string, id: string, approved: boolean) =>
     persist(() => updateDoc(doc(db, group, id), { approved }));
+  const deleteContent = (group: string, id: string) =>
+    persist(() => deleteDoc(doc(db, group, id)));
 
   const updateConfig = async (newConfig: Partial<EventConfig>) => {
     await setDoc(doc(db, 'settings', 'config'), newConfig, { merge: true });
@@ -266,43 +297,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     await setDoc(doc(collection(db, 'analytics')), { type, ownerUid, sessionId, createdAt: new Date().toISOString() });
   });
-  const addSongRequest = (song: { title: string; artist: string; submittedBy: string; spotifyUrl?: string }) => {
-    const tempId = crypto.randomUUID();
-    const optimisticSong: SongRequest = {
-      id: tempId,
-      title: song.title,
-      artist: song.artist,
-      submittedBy: song.submittedBy,
-      votes: 0,
-      approved: false,
-      ownerUid: 'local',
-      createdAt: new Date().toISOString()
-    };
-    setSongs(prev => [optimisticSong, ...prev]);
-    return createContent('songs', { ...song, votes: 0, approved: false }).then(success => {
-      if (!success) setSongs(prev => prev.filter(item => item.id !== tempId));
-      return success;
-    });
-  };
-  const addGuestbookMessage = (msg: { guestName: string; message: string; photoUrl?: string }) => {
-    const tempId = crypto.randomUUID();
-    const optimisticMsg: GuestbookMessage = {
-      id: tempId,
-      guestName: msg.guestName,
-      message: msg.message,
-      photoUrl: msg.photoUrl,
-      reactions: { love: 0, sparkle: 0, cheer: 0 },
-      approved: true,
-      ownerUid: 'local',
-      createdAt: new Date().toISOString()
-    };
-    setGuestbook(prev => [optimisticMsg, ...prev]);
-    return createContent('guestbook', { ...msg, reactions: { love: 0, sparkle: 0, cheer: 0 }, approved: true })
-      .then(success => {
-        if (!success) setGuestbook(prev => prev.filter(item => item.id !== tempId));
-        return success;
-      });
-  };
+  const addSongRequest = (song: { title: string; artist: string; submittedBy: string; note?: string; spotifyUrl?: string }) =>
+    createContent('songs', { ...song, votes: 0, approved: true });
+  const addGuestbookMessage = (msg: { guestName: string; message: string; photoUrl?: string }) =>
+    createContent('guestbook', { ...msg, reactions: { love: 0, sparkle: 0, cheer: 0 }, approved: true });
   const addTimeCapsuleMessage = (msg: { author: string; message: string; unlockAge: 18 | 21 }) =>
     createContent('capsules', msg);
   const addPhotoboothImage = (img: { guestName: string; imageUrl: string; filter: string; sticker: string; caption: string }) =>
@@ -346,7 +344,21 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       await updateDoc(target, { [field]: increment(1) });
     }
   });
-  const voteSong = (id: string) => vote('songs', id, 'votes');
+  const voteSong = (id: string) => {
+    const bundledSong = initialSongs.find(song => song.id === id) || spotifySongs.find(song => song.id === id);
+    const persistedSong = songs.find(song => song.id === id && song.ownerUid);
+    if (!bundledSong || persistedSong) return vote('songs', id, 'votes');
+    return persist(async () => {
+      const ownerUid = await visitorId();
+      await setDoc(doc(db, 'songs', id), {
+        ...bundledSong,
+        votes: (bundledSong.votes || 0) + 1,
+        approved: true,
+        ownerUid,
+        createdAt: new Date().toISOString()
+      });
+    });
+  };
   const toggleApproveSong = (id: string) => moderateContent('songs', id, !songs.find(s => s.id === id)?.approved);
   const reactToMessage = (id: string, type: 'love' | 'sparkle' | 'cheer') => vote('guestbook', id, 'reactions.' + type);
   const likePhotoboothImage = (id: string) => vote('photobooth', id, 'likes');
@@ -365,10 +377,14 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => stops.forEach(stop => stop());
   }, [pollIds]);
 
+  const mergedSongs = spotifySongs.length
+    ? [...songs, ...spotifySongs.filter(spotifySong => !songs.some(song => song.id === spotifySong.id || (`${song.title}|${song.artist}`.toLocaleLowerCase('es') === `${spotifySong.title}|${spotifySong.artist}`.toLocaleLowerCase('es'))))]
+    : songs;
+
   return (
     <EventContext.Provider
       value={{
-        syncError, clearSyncError: () => setSyncError(''), moderateContent,
+        syncError, clearSyncError: () => setSyncError(''), moderateContent, deleteContent,
         config: activeConfig,
         previewConfig,
         setPreviewConfig,
@@ -381,7 +397,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         timeline: config.timeline || [],
         schedule: config.schedule || [],
         unlockScheduleStage,
-        songs,
+        songs: mergedSongs,
         addSongRequest,
         voteSong,
         toggleApproveSong,

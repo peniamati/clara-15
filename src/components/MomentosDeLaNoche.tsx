@@ -104,7 +104,8 @@ const composePhotoboothImage = (imageSrc: string, filter: string, sticker: strin
         ctx.restore();
 
         // Top sticker overlay badge
-        if (sticker) {
+        const hasSticker = Boolean(sticker && sticker !== 'Sin sticker');
+        if (hasSticker) {
           ctx.save();
           ctx.font = 'bold 30px sans-serif';
           const textWidth = ctx.measureText(sticker).width;
@@ -131,24 +132,18 @@ const composePhotoboothImage = (imageSrc: string, filter: string, sticker: strin
           ctx.restore();
         }
 
-        // Bottom footer banner
-        ctx.save();
-        const footerH = 76;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
-        ctx.fillRect(0, size - footerH, size, footerH);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(0, size - footerH);
-        ctx.lineTo(size, size - footerH);
-        ctx.stroke();
-
-        ctx.font = '600 28px serif';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(`✨ ${honoree} · Momentos de la Noche ✨`, size / 2, size - footerH / 2);
-        ctx.restore();
+        if (hasSticker) {
+          ctx.save();
+          const footerH = 76;
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+          ctx.fillRect(0, size - footerH, size, footerH);
+          ctx.font = '600 28px serif';
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`✨ ${honoree} · Momentos de la Noche ✨`, size / 2, size - footerH / 2);
+          ctx.restore();
+        }
 
         let quality = 0.82;
         let result = canvas.toDataURL('image/jpeg', quality);
@@ -174,7 +169,7 @@ export const MomentosDeLaNoche: React.FC = () => {
   const [guestName, setGuestName] = useState('');
   const [caption, setCaption] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('Golden Hour');
-  const [selectedSticker, setSelectedSticker] = useState(`✨ Mis 15 ${config.honoree}`);
+  const [selectedSticker, setSelectedSticker] = useState('Sin sticker');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [showDriveUrlModal, setShowDriveUrlModal] = useState(false);
@@ -185,6 +180,7 @@ export const MomentosDeLaNoche: React.FC = () => {
 
   const filterOptions = ['Normal', 'Golden Hour', 'Glamour B&W', 'Hollywood Glow', 'Neon Party', 'Disco Silver'];
   const stickerOptions = [
+    'Sin sticker',
     `✨ Mis 15 ${config.honoree}`,
     '👑 Noche Mágica',
     '🥂 Brindis Disco',
@@ -417,15 +413,15 @@ export const MomentosDeLaNoche: React.FC = () => {
                     }`}
                   />
                   {/* Active Sticker */}
-                  {selectedSticker && (
+                  {selectedSticker && selectedSticker !== 'Sin sticker' && (
                     <div className="absolute top-4 right-4 bg-black/85 border border-[#C0C0C0]/50 text-[#C0C0C0] text-xs font-bold px-3 py-1.5 rounded-full shadow-lg pointer-events-none">
                       {selectedSticker}
                     </div>
                   )}
                   {/* Bottom Watermark */}
-                  <div className="absolute bottom-0 inset-x-0 bg-black/85 border-t border-white/10 py-2.5 text-center text-xs font-serif text-white tracking-wider pointer-events-none">
+                  {selectedSticker !== 'Sin sticker' && <div className="absolute bottom-0 inset-x-0 bg-black/85 border-t border-white/10 py-2.5 text-center text-xs font-serif text-white tracking-wider pointer-events-none">
                     ✨ {config.honoree} · Momentos de la Noche ✨
-                  </div>
+                  </div>}
                 </div>
               </div>
 

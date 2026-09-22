@@ -110,24 +110,18 @@ const composeBrandedPhoto = (imageSrc: string, filter: string, sticker: string, 
           ctx.restore();
         }
 
-        // Bottom footer watermark
-        ctx.save();
-        const frameH = 80;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.fillRect(0, size - frameH, size, frameH);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, size - frameH);
-        ctx.lineTo(size, size - frameH);
-        ctx.stroke();
-
-        ctx.font = '600 30px serif';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(`${honoree} · Mis 15`, size / 2, size - frameH / 2);
-        ctx.restore();
+        if (sticker && sticker !== 'Sin sticker') {
+          ctx.save();
+          const frameH = 80;
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+          ctx.fillRect(0, size - frameH, size, frameH);
+          ctx.font = '600 30px serif';
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`${honoree} · Mis 15`, size / 2, size - frameH / 2);
+          ctx.restore();
+        }
 
         let quality = 0.82;
         let finalData = canvas.toDataURL('image/jpeg', quality);
