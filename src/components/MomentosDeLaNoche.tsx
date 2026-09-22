@@ -18,7 +18,7 @@ import {
   Flame,
   Info
 } from 'lucide-react';
-import { GOOGLE_DRIVE_FOLDER_URL, extractDriveFileId, getDriveDirectImageUrl } from '../lib/driveUtils';
+import { GOOGLE_DRIVE_FOLDER_URL, extractDriveFileId, getDriveDirectImageUrl, uploadImageToDrive } from '../lib/driveUtils';
 import { MAX_PHOTO_DATA_LENGTH } from '../lib/photoUpload';
 
 const MAX_BASE64_SIZE = MAX_PHOTO_DATA_LENGTH;
@@ -229,9 +229,13 @@ export const MomentosDeLaNoche: React.FC = () => {
     setIsPublishing(true);
     try {
       // If it's a base64 image, we brand it; if it's already an external Drive URL, we use it directly
-      const finalImageUrl = photoSource.startsWith('data:')
+      let finalImageUrl = photoSource.startsWith('data:')
         ? await composePhotoboothImage(photoSource, selectedFilter, selectedSticker, config.honoree)
         : photoSource;
+      if (finalImageUrl.startsWith('data:')) {
+        const driveImage = await uploadImageToDrive(finalImageUrl, `momento-${Date.now()}.jpg`);
+        finalImageUrl = driveImage.imageUrl;
+      }
 
       const published = await addPhotoboothImage({
         guestName: guestName.trim() || 'Invitado de la Fiesta',

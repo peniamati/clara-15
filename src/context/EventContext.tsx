@@ -4,6 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { visitorId } from '../lib/visitor';
 import { db, auth, firebaseConfigurationIssues } from '../lib/firebase';
 import { describePersistenceError, validatePhotoSource } from '../lib/photoUpload';
+import { listDriveImages } from '../lib/driveUtils';
 import {
   EventConfig,
   Guest,
@@ -169,6 +170,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [guestbook, setGuestbook] = useState<GuestbookMessage[]>(() => firebaseConfigurationIssues.length ? initialGuestbook : []);
   const [timeCapsule, setTimeCapsule] = useState<TimeCapsuleMessage[]>([]);
   const [photoboothImages, setPhotoboothImages] = useState<PhotoboothImage[]>(() => firebaseConfigurationIssues.length ? initialPhotobooth : []);
+  const [driveImages, setDriveImages] = useState<PhotoboothImage[]>([]);
   const [polls, setPolls] = useState<Poll[]>(() => firebaseConfigurationIssues.length ? initialPolls : []);
   const [analyticsEvents, setAnalyticsEvents] = useState<AnalyticsEvent[]>([]);
   const [tables, setTables] = useState<TableInfo[]>(initialTables);
@@ -191,6 +193,29 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       })
       .catch(() => undefined);
     return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const syncDrive = () => listDriveImages().then(images => {
+      if (!active) return;
+      setDriveImages(images.map(image => ({
+        id: `drive-${image.id}`,
+        guestName: 'Google Drive',
+        imageUrl: image.imageUrl,
+        filter: 'Normal',
+        sticker: 'Sin sticker',
+        caption: image.name,
+        likes: 0,
+        approved: true,
+        createdAt: image.createdAt
+      })));
+    }).catch(error => {
+      if (active) setSyncError(error instanceof Error ? error.message : 'No se pudo sincronizar Google Drive.');
+    });
+    void syncDrive();
+    const timer = window.setInterval(syncDrive, 15000);
+    return () => { active = false; window.clearInterval(timer); };
   }, []);
 
   const [accessibility, setAccessibility] = useState<{
@@ -361,7 +386,15 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   const toggleApproveSong = (id: string) => moderateContent('songs', id, !songs.find(s => s.id === id)?.approved);
   const reactToMessage = (id: string, type: 'love' | 'sparkle' | 'cheer') => vote('guestbook', id, 'reactions.' + type);
-  const likePhotoboothImage = (id: string) => vote('photobooth', id, 'likes');
+  const likePhotoboothImage = (id: string) => {
+    const driveImage = driveImages.find(image => image.id === id);
+    const persistedImage = photoboothImages.find(image => image.id === id);
+    if (!driveImage || persistedImage) return vote('photobooth', id, 'likes');
+    return persist(async () => {
+      const ownerUid = await visitorId();
+      await setDoc(doc(db, 'photobooth', id), { ...driveImage, likes: 1, ownerUid });
+    });
+  };
   const votePoll = (id: string, optionId: string) => persist(async () => {
     const uid = await visitorId();
     await setDoc(doc(db, 'polls', id, 'votes', uid), { ownerUid: uid, optionId });
@@ -380,6 +413,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const mergedSongs = spotifySongs.length
     ? [...songs, ...spotifySongs.filter(spotifySong => !songs.some(song => song.id === spotifySong.id || (`${song.title}|${song.artist}`.toLocaleLowerCase('es') === `${spotifySong.title}|${spotifySong.artist}`.toLocaleLowerCase('es'))))]
     : songs;
+  const mergedPhotoboothImages = [
+    ...photoboothImages,
+    ...driveImages.filter(driveImage => !photoboothImages.some(image => image.id === driveImage.id || image.imageUrl === driveImage.imageUrl))
+  ].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
   return (
     <EventContext.Provider
@@ -406,7 +443,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         reactToMessage,
         timeCapsule,
         addTimeCapsuleMessage,
-        photoboothImages,
+        photoboothImages: mergedPhotoboothImages,
         addPhotoboothImage,
         likePhotoboothImage,
         gifts: config.gifts || [],
