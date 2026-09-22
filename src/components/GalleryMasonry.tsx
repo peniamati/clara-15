@@ -17,6 +17,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { getDriveDirectImageUrl } from '../lib/driveUtils';
+import { resolveAssetUrl } from '../lib/assetHelper';
 
 interface CustomPhotoItem {
   id: number;
@@ -239,7 +240,7 @@ export const GalleryMasonry: React.FC = () => {
             >
               {!failedImages[img.id] ? (
                 <img
-                  src={img.url}
+                  src={resolveAssetUrl(img.url)}
                   alt={img.title}
                   onError={() => setFailedImages(prev => ({ ...prev, [img.id]: true }))}
                   className="w-full h-80 object-cover object-center group-hover:scale-105 transition-transform duration-700"
@@ -251,7 +252,7 @@ export const GalleryMasonry: React.FC = () => {
                   </div>
                   <span className="text-zinc-200 font-serif text-base font-semibold">{img.title}</span>
                   <span className="text-[11px] text-[#C0C0C0]/80 mt-1 font-mono bg-zinc-950/80 px-3 py-1 rounded-full border border-white/10 max-w-[90%] truncate">
-                    public{img.url}
+                    {img.url}
                   </span>
                   <button
                     type="button"
@@ -431,9 +432,6 @@ export const GalleryMasonry: React.FC = () => {
                     <li>
                       La galería ya está configurada para reconocer exactamente tus nombres:
                       <div className="mt-1.5 grid grid-cols-2 gap-1 font-mono text-[11px] text-[#C0C0C0]">
-                        <span>• 047 - CLARA SESION.jpg</span>
-                        <span>• 048 - CLARA SESION.jpg</span>
-                        <span>• 061 - CLARA SESION.jpg</span>
                         <span>• 065 - CLARA SESION.jpg</span>
                         <span>• 139 - CLARA SESION.jpg</span>
                         <span>• 141 - CLARA SESION.jpg</span>
@@ -504,11 +502,11 @@ export const GalleryMasonry: React.FC = () => {
               <X className="w-6 h-6" />
             </button>
 
-            <img src={selectedPhoto} alt="Zoom preview" className="max-h-[80vh] w-auto rounded-2xl shadow-2xl border border-white/10 object-contain" />
+            <img src={resolveAssetUrl(selectedPhoto)} alt="Zoom preview" className="max-h-[80vh] w-auto rounded-2xl shadow-2xl border border-white/10 object-contain" />
 
             <div className="mt-6 flex items-center gap-4">
               <a
-                href={selectedPhoto}
+                href={resolveAssetUrl(selectedPhoto)}
                 download="Clara_15_Foto.jpg"
                 target="_blank"
                 rel="noreferrer"

@@ -5,7 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(({ mode }) => {
   return {
-    base: process.env.GITHUB_PAGES === 'true' ? '/clara-15/' : './',
+    base: './',
     plugins: [react(), tailwindcss()],
     build: {
       rollupOptions: {
