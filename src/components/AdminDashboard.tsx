@@ -45,6 +45,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   } = useEvent();
 
   const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports' | 'collabs'>('stats');
+  const organizerTabs = [
+    { id: 'stats', label: 'Resumen', icon: '📊' },
+    { id: 'guests', label: 'Confirmaciones', icon: '👥' },
+    { id: 'moderation', label: 'Moderación', icon: '🎵' },
+    { id: 'customizer', label: 'Personalizar', icon: '🎨' },
+    { id: 'exports', label: 'Exportar', icon: '📥' },
+    { id: 'collabs', label: 'Administradores', icon: '🛡️' },
+  ] as const;
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   React.useEffect(() => {
     onPreviewChange(isPreviewMode);
@@ -271,27 +279,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
           </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto py-3" role="navigation" aria-label="Secciones del organizador">
-            {[
-              { id: 'stats', label: '📊 Estadísticas' },
-              { id: 'guests', label: '👥 Confirmaciones' },
-              { id: 'moderation', label: '🎵 Moderación' },
-              { id: 'customizer', label: '🎨 Personalizar' },
-              { id: 'exports', label: '📥 Exportar' },
-              { id: 'collabs', label: '🛡️ Administradores' },
-            ].map(tab => (
+        <div className="py-3" role="navigation" aria-label="Secciones del organizador">
+          <label className="block sm:hidden">
+            <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Sección del panel</span>
+            <select
+              aria-label="Sección del organizador"
+              value={activeTab}
+              onChange={event => setActiveTab(event.target.value as typeof activeTab)}
+              className="min-h-12 w-full rounded-xl border border-white/15 bg-black px-4 text-sm font-semibold text-white outline-none focus:border-[#C0C0C0]"
+            >
+              {organizerTabs.map(item => <option key={item.id} value={item.id}>{item.icon} {item.label}</option>)}
+            </select>
+          </label>
+          <div className="hidden gap-2 overflow-x-auto sm:flex">
+            {organizerTabs.map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
+                aria-current={activeTab === tab.id ? 'page' : undefined}
                 className={`flex shrink-0 items-center justify-center px-4 py-3 text-center rounded-xl text-xs font-semibold transition-all ${
                   activeTab === tab.id
                     ? 'bg-[#C0C0C0] text-black font-bold shadow-lg shadow-[#C0C0C0]/10'
                     : 'bg-black border border-white/10 text-zinc-400 hover:text-white'
                 }`}
               >
-                {tab.label}
+                {tab.icon} {tab.label}
               </button>
             ))}
+          </div>
         </div>
         </div>
 
@@ -442,7 +457,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
 
             <ContentEditor config={localConfig} onChange={handleLocalConfigChange} />
             {/* Customizer Sub-tabs */}
-            <div className="grid grid-cols-2 gap-1.5 border-b border-white/10 pb-3 mb-5 sm:flex sm:overflow-x-auto sm:pb-2 sm:gap-2 no-scrollbar">
+            <label className="mb-5 block sm:hidden">
+              <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Qué querés editar</span>
+              <select
+                aria-label="Área de personalización"
+                value={customizerTab}
+                onChange={event => setCustomizerTab(event.target.value as typeof customizerTab)}
+                className="min-h-12 w-full rounded-xl border border-white/15 bg-zinc-900 px-4 text-sm font-semibold text-white outline-none focus:border-[#C0C0C0]"
+              >
+                <option value="general">Información general</option>
+                <option value="location">Ubicación y fecha</option>
+                <option value="gifts">Regalos</option>
+                <option value="appearance">Diseño</option>
+                <option value="modules">Secciones</option>
+              </select>
+            </label>
+            <div className="mb-5 hidden gap-2 overflow-x-auto border-b border-white/10 pb-2 sm:flex no-scrollbar">
               <button
                 type="button"
                 onClick={() => setCustomizerTab('general')}

@@ -14,6 +14,7 @@ import {
   TimeCapsuleMessage
 } from '../types';
 import { DEFAULT_HERO_IMAGE } from '../lib/heroMedia';
+import { spotifyPlaylistTracks } from './spotifyTracks';
 
 export const initialEventConfig: EventConfig = {
   id: 'evt-clara-15',
@@ -209,23 +210,7 @@ export const initialSchedule: ScheduleItem[] = [
   { time: '06:00', title: 'Desayuno de Despedida', description: 'Churros calentitos con dulce de leche y café express.', iconName: 'Coffee', isUnlocked: false }
 ];
 
-export const initialSongs: SongRequest[] = [
-  { id: 's1', title: 'Dance the Night', artist: 'Dua Lipa', submittedBy: 'Playlist Oficial', votes: 42, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's2', title: 'Cruel Summer', artist: 'Taylor Swift', submittedBy: 'Playlist Oficial', votes: 38, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's3', title: 'Despechá', artist: 'Rosalía', submittedBy: 'Playlist Oficial', votes: 35, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's4', title: 'Starboy', artist: 'The Weeknd', submittedBy: 'Playlist Oficial', votes: 29, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's5', title: 'Vagabundo', artist: 'Sebastián Yatra, Manuel Turizo', submittedBy: 'Playlist Oficial', votes: 27, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's6', title: 'As It Was', artist: 'Harry Styles', submittedBy: 'Playlist Oficial', votes: 25, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's7', title: 'Levitating', artist: 'Dua Lipa', submittedBy: 'Playlist Oficial', votes: 24, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's8', title: 'Flowers', artist: 'Miley Cyrus', submittedBy: 'Playlist Oficial', votes: 22, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's9', title: 'La Bachata', artist: 'Manuel Turizo', submittedBy: 'Playlist Oficial', votes: 21, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's10', title: 'Bzrp Music Sessions #52', artist: 'Bizarrap, Quevedo', submittedBy: 'Playlist Oficial', votes: 31, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's11', title: 'LALA', artist: 'Myke Towers', submittedBy: 'Playlist Oficial', votes: 19, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's12', title: 'Blinding Lights', artist: 'The Weeknd', submittedBy: 'Playlist Oficial', votes: 18, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's13', title: 'AUTOMÁTICO', artist: 'Maria Becerra', submittedBy: 'Playlist Oficial', votes: 20, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's14', title: 'Los del Espacio', artist: 'LIT killah, Duki, Emilia, Maria Becerra', submittedBy: 'Playlist Oficial', votes: 26, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' },
-  { id: 's15', title: 'Cupido', artist: 'TINI', submittedBy: 'Playlist Oficial', votes: 17, approved: true, isInOfficialPlaylist: true, spotifyUrl: 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL' }
-];
+export const initialSongs: SongRequest[] = spotifyPlaylistTracks;
 
 export const initialGuestbook: GuestbookMessage[] = [
   {

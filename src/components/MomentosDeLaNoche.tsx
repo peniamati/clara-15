@@ -19,8 +19,9 @@ import {
   Info
 } from 'lucide-react';
 import { GOOGLE_DRIVE_FOLDER_URL, extractDriveFileId, getDriveDirectImageUrl } from '../lib/driveUtils';
+import { MAX_PHOTO_DATA_LENGTH } from '../lib/photoUpload';
 
-const MAX_BASE64_SIZE = 700000; // ~680 KB, stays well within Firestore's 1MB document limit
+const MAX_BASE64_SIZE = MAX_PHOTO_DATA_LENGTH;
 
 // Converts file to optimized Base64 WebP/JPEG data URL for instant Firestore storage without fees
 const compressPhotoToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
@@ -75,7 +76,7 @@ const composePhotoboothImage = (imageSrc: string, filter: string, sticker: strin
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
-        const size = 1080;
+        const size = 900;
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
@@ -149,7 +150,13 @@ const composePhotoboothImage = (imageSrc: string, filter: string, sticker: strin
         ctx.fillText(`✨ ${honoree} · Momentos de la Noche ✨`, size / 2, size - footerH / 2);
         ctx.restore();
 
-        resolve(canvas.toDataURL('image/jpeg', 0.86));
+        let quality = 0.82;
+        let result = canvas.toDataURL('image/jpeg', quality);
+        while (result.length > MAX_PHOTO_DATA_LENGTH && quality > 0.38) {
+          quality -= 0.08;
+          result = canvas.toDataURL('image/jpeg', quality);
+        }
+        resolve(result.length <= MAX_PHOTO_DATA_LENGTH ? result : imageSrc);
       } catch {
         resolve(imageSrc);
       }
@@ -230,7 +237,7 @@ export const MomentosDeLaNoche: React.FC = () => {
         ? await composePhotoboothImage(photoSource, selectedFilter, selectedSticker, config.honoree)
         : photoSource;
 
-      await addPhotoboothImage({
+      const published = await addPhotoboothImage({
         guestName: guestName.trim() || 'Invitado de la Fiesta',
         imageUrl: finalImageUrl,
         filter: selectedFilter,
@@ -238,6 +245,7 @@ export const MomentosDeLaNoche: React.FC = () => {
         caption: caption.trim()
       });
 
+      if (!published) return;
       notify('¡Foto publicada con éxito en el Muro en vivo!');
       setPhotoSource('');
       setCaption('');

@@ -23,10 +23,18 @@ const messagingSenderId = import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.tri
 const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET?.trim() || (projectId ? `${projectId}.firebasestorage.app` : '');
 const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID?.trim() || '(default)';
 
+export const firebaseConfigurationIssues = [
+  ['VITE_FIREBASE_PROJECT_ID', projectId],
+  ['VITE_FIREBASE_APP_ID', appId],
+  ['VITE_FIREBASE_API_KEY', apiKey],
+  ['VITE_FIREBASE_AUTH_DOMAIN', authDomain],
+  ['VITE_FIREBASE_MESSAGING_SENDER_ID', messagingSenderId],
+].filter(([, value]) => !value).map(([name]) => name);
+
 const firebaseConfig = {
   projectId,
   appId,
-  apiKey: apiKey || 'NO_KEY_CONFIGURED',
+  apiKey: apiKey || 'missing-firebase-api-key',
   authDomain,
   messagingSenderId,
   storageBucket,

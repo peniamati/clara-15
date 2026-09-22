@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, updateDoc, query, where, runTransaction, increment } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { visitorId } from '../lib/visitor';
-import { db, auth } from '../lib/firebase';
+import { db, auth, firebaseConfigurationIssues } from '../lib/firebase';
+import { describePersistenceError, validatePhotoSource } from '../lib/photoUpload';
 import {
   EventConfig,
   Guest,
@@ -94,7 +95,9 @@ interface EventContextType {
 const EventContext = createContext<EventContextType | undefined>(undefined);
 
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [syncError, setSyncError] = useState('');
+  const [syncError, setSyncError] = useState(() => firebaseConfigurationIssues.length
+    ? `El despliegue no tiene configurado Firebase (${firebaseConfigurationIssues.join(', ')}).`
+    : '');
   const [config, setConfig] = useState<EventConfig>(initialEventConfig);
   const [isConfigReady, setIsConfigReady] = useState(false);
   const [previewConfig, setPreviewConfig] = useState<EventConfig | null>(null);
@@ -125,6 +128,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Firestore synchronization for config
   useEffect(() => {
+    if (firebaseConfigurationIssues.length) {
+      setIsConfigReady(true);
+      return;
+    }
     const configDocRef = doc(db, 'settings', 'config');
     const unsubscribe = onSnapshot(configDocRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
@@ -156,11 +163,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isAdminLoggedIn]);
 
   const [schedule, setSchedule] = useState<ScheduleItem[]>(initialSchedule);
-  const [songs, setSongs] = useState<SongRequest[]>([]);
-  const [guestbook, setGuestbook] = useState<GuestbookMessage[]>([]);
+  const [songs, setSongs] = useState<SongRequest[]>(() => firebaseConfigurationIssues.length ? initialSongs : []);
+  const [guestbook, setGuestbook] = useState<GuestbookMessage[]>(() => firebaseConfigurationIssues.length ? initialGuestbook : []);
   const [timeCapsule, setTimeCapsule] = useState<TimeCapsuleMessage[]>([]);
-  const [photoboothImages, setPhotoboothImages] = useState<PhotoboothImage[]>([]);
-  const [polls, setPolls] = useState<Poll[]>([]);
+  const [photoboothImages, setPhotoboothImages] = useState<PhotoboothImage[]>(() => firebaseConfigurationIssues.length ? initialPhotobooth : []);
+  const [polls, setPolls] = useState<Poll[]>(() => firebaseConfigurationIssues.length ? initialPolls : []);
   const [analyticsEvents, setAnalyticsEvents] = useState<AnalyticsEvent[]>([]);
   const [tables, setTables] = useState<TableInfo[]>(initialTables);
   const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
@@ -177,6 +184,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   useEffect(() => {
+    if (firebaseConfigurationIssues.length) return;
     const stops = [
       ['songs', setSongs], ['guestbook', setGuestbook], ['photobooth', setPhotoboothImages],
       ['polls', setPolls],
@@ -205,7 +213,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try { await operation(); return true; }
     catch (error) {
       console.error(error);
-      setSyncError('No se guardó la operación. Conservá tus datos y reintentá; si persiste, contactá al organizador.');
+      setSyncError(describePersistenceError(error));
       return false;
     }
   };
@@ -271,7 +279,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString()
     };
     setSongs(prev => [optimisticSong, ...prev]);
-    return createContent('songs', { ...song, votes: 0, approved: false });
+    return createContent('songs', { ...song, votes: 0, approved: false }).then(success => {
+      if (!success) setSongs(prev => prev.filter(item => item.id !== tempId));
+      return success;
+    });
   };
   const addGuestbookMessage = (msg: { guestName: string; message: string; photoUrl?: string }) => {
     const tempId = crypto.randomUUID();
@@ -286,7 +297,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString()
     };
     setGuestbook(prev => [optimisticMsg, ...prev]);
-    return createContent('guestbook', { ...msg, reactions: { love: 0, sparkle: 0, cheer: 0 }, approved: true });
+    return createContent('guestbook', { ...msg, reactions: { love: 0, sparkle: 0, cheer: 0 }, approved: true })
+      .then(success => {
+        if (!success) setGuestbook(prev => prev.filter(item => item.id !== tempId));
+        return success;
+      });
   };
   const addTimeCapsuleMessage = (msg: { author: string; message: string; unlockAge: 18 | 21 }) =>
     createContent('capsules', msg);
@@ -294,8 +309,8 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     persist(async () => {
       const ownerUid = await visitorId();
       const id = crypto.randomUUID();
-      if (!img.imageUrl.startsWith('data:image/')) throw new Error('Seleccioná una imagen.');
-      if (img.imageUrl.length > 950000) throw new Error('No se pudo comprimir la foto al tamaño permitido.');
+      const validationError = validatePhotoSource(img.imageUrl);
+      if (validationError) throw new Error(validationError);
       const optimisticPhoto: PhotoboothImage = {
         id,
         guestName: img.guestName,
@@ -309,7 +324,12 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         createdAt: new Date().toISOString()
       };
       setPhotoboothImages(prev => [optimisticPhoto, ...prev]);
-      await setDoc(doc(db, 'photobooth', id), { ...img, ownerUid, approved: true, likes: 0, createdAt: new Date().toISOString() });
+      try {
+        await setDoc(doc(db, 'photobooth', id), { ...img, ownerUid, approved: true, likes: 0, createdAt: new Date().toISOString() });
+      } catch (error) {
+        setPhotoboothImages(prev => prev.filter(item => item.id !== id));
+        throw error;
+      }
     });
   const vote = (group: string, id: string, field: string) => persist(async () => {
     const uid = await visitorId();

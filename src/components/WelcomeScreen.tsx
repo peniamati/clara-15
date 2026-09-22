@@ -103,7 +103,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onOpen, onOpenAdmi
         <button
           type="button"
           onClick={onOpenAdmin || (() => { window.location.hash = 'organizador'; })}
-          className="mt-1 inline-flex items-center gap-1.5 text-[11px] text-zinc-600 hover:text-[#C0C0C0] transition-colors"
+          className="mt-1 inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-[11px] text-zinc-500 transition-colors hover:bg-white/5 hover:text-[#C0C0C0] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#C0C0C0]"
         >
           <ShieldCheck className="w-3 h-3" />
           <span>Acceso Organizador</span>
