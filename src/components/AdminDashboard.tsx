@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as XLSX from 'xlsx';
 import { useEvent } from '../context/EventContext';
 import { ContentEditor } from './ContentEditor';
 import { OrganizerHelp } from './OrganizerHelp';
@@ -21,8 +22,10 @@ import {
   Edit2,
   Trash2,
   FileSpreadsheet,
-  FileText,
-  LogOut
+  LogOut,
+  LayoutDashboard,
+  Settings2,
+  UserCog
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -44,14 +47,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     isAdminLoggedIn, moderateContent, deleteContent, checkInGuest, analyticsEvents
   } = useEvent();
 
-  const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports' | 'collabs'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'collabs'>('stats');
   const organizerTabs = [
-    { id: 'stats', label: 'Resumen', icon: '📊' },
-    { id: 'guests', label: 'Confirmaciones', icon: '👥' },
-    { id: 'moderation', label: 'Moderación', icon: '🎵' },
-    { id: 'customizer', label: 'Personalizar', icon: '🎨' },
-    { id: 'exports', label: 'Exportar', icon: '📥' },
-    { id: 'collabs', label: 'Administradores', icon: '🛡️' },
+    { id: 'stats', label: 'Inicio', description: 'Estado general', icon: LayoutDashboard },
+    { id: 'guests', label: 'Invitados', description: 'RSVP y mesas', icon: Users },
+    { id: 'moderation', label: 'Contenido', description: 'Música y firmas', icon: Music },
+    { id: 'customizer', label: 'Diseño', description: 'Datos y apariencia', icon: Settings2 },
+    { id: 'collabs', label: 'Equipo', description: 'Administradores', icon: UserCog },
   ] as const;
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   React.useEffect(() => {
@@ -159,24 +161,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   };
 
   const exportGuestTable = () => {
-    const headers = ['Nombre', 'Apellido', 'Edad', 'MenorDeEdad', 'TutorNombre', 'TutorTelefono', 'Telefono', 'Email', 'Estado', 'Mesa', 'MenuEspecial', 'Notas'];
-    const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] || char));
-    const rows = guests.map(g => [
-      g.name, g.lastName, g.age, g.age && g.age < 18 ? 'SI' : 'NO',
-      g.tutorName || g.emergencyContactName, g.tutorPhone || g.emergencyContactPhone,
-      g.phone, g.email, g.status, g.tableNumber || 'Sin asignar',
-      g.dietaryRestrictions.join(', '), g.notes
-    ]);
-    const cells = (row: unknown[], header = false) => row.map(value => `<Cell${header ? ' ss:StyleID="Header"' : ''}><Data ss:Type="String">${escapeHtml(value)}</Data></Cell>`).join('');
-    const table = `<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#D9E1F2" ss:Pattern="Solid"/></Style></Styles><Worksheet ss:Name="Invitados"><Table><Row>${cells(headers, true)}</Row>${rows.map(row => `<Row>${cells(row)}</Row>`).join('')}</Table></Worksheet></Workbook>`;
-    const encodedUri = URL.createObjectURL(new Blob(['\uFEFF', table], { type: 'application/xml;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Tabla_Invitados_${config.honoree.replace(/\s+/g, '_')}.xml`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(encodedUri), 1000);
+    const rows = guests.map(g => ({
+      Nombre: g.name,
+      Apellido: g.lastName,
+      Edad: g.age ?? '',
+      'Menor de edad': g.age && g.age < 18 ? 'Sí' : 'No',
+      Tutor: g.tutorName || g.emergencyContactName || '',
+      'Teléfono del tutor': g.tutorPhone || g.emergencyContactPhone || '',
+      Teléfono: g.phone || '',
+      Email: g.email || '',
+      Estado: g.status,
+      Mesa: g.tableNumber || 'Sin asignar',
+      'Menú especial': g.dietaryRestrictions.join(', '),
+      Notas: g.notes || '',
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet['!cols'] = [
+      { wch: 18 }, { wch: 18 }, { wch: 8 }, { wch: 15 }, { wch: 24 }, { wch: 20 },
+      { wch: 18 }, { wch: 28 }, { wch: 15 }, { wch: 14 }, { wch: 28 }, { wch: 36 },
+    ];
+    worksheet['!autofilter'] = { ref: worksheet['!ref'] || 'A1:L1' };
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Invitados');
+    XLSX.writeFile(workbook, `Invitados_${config.honoree.replace(/\s+/g, '_')}.xls`, { bookType: 'biff8' });
   };
 
   if (!isAdminLoggedIn) {
@@ -277,32 +284,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
         </div>
 
         <div className="py-3" role="navigation" aria-label="Secciones del organizador">
-          <label className="block sm:hidden">
-            <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Sección del panel</span>
-            <select
-              aria-label="Sección del organizador"
-              value={activeTab}
-              onChange={event => setActiveTab(event.target.value as typeof activeTab)}
-              className="min-h-12 w-full rounded-xl border border-white/15 bg-black px-4 text-sm font-semibold text-white outline-none focus:border-[#C0C0C0]"
-            >
-              {organizerTabs.map(item => <option key={item.id} value={item.id}>{item.icon} {item.label}</option>)}
-            </select>
-          </label>
-          <div className="hidden gap-2 overflow-x-auto sm:flex">
-            {organizerTabs.map(tab => (
+          <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {organizerTabs.map(tab => {
+              const TabIcon = tab.icon;
+              return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 aria-current={activeTab === tab.id ? 'page' : undefined}
-                className={`flex shrink-0 items-center justify-center px-4 py-3 text-center rounded-xl text-xs font-semibold transition-all ${
+                className={`flex min-w-[104px] shrink-0 items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-all sm:min-w-[150px] sm:px-4 ${
                   activeTab === tab.id
-                    ? 'bg-[#C0C0C0] text-black font-bold shadow-lg shadow-[#C0C0C0]/10'
-                    : 'bg-black border border-white/10 text-zinc-400 hover:text-white'
+                    ? 'border-[#C0C0C0] bg-[#C0C0C0] text-black shadow-lg shadow-[#C0C0C0]/10'
+                    : 'border-white/10 bg-black text-zinc-400 hover:border-white/25 hover:text-white'
                 }`}
               >
-                {tab.icon} {tab.label}
+                <TabIcon className="h-4 w-4 shrink-0" />
+                <span className="min-w-0">
+                  <span className="block text-xs font-bold">{tab.label}</span>
+                  <span className={`hidden truncate text-[10px] sm:block ${activeTab === tab.id ? 'text-black/65' : 'text-zinc-500'}`}>{tab.description}</span>
+                </span>
               </button>
-            ))}
+            )})}
           </div>
         </div>
         </div>
@@ -362,13 +364,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
         {/* Tab 2: Guest List */}
         {activeTab === 'guests' && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-serif text-2xl font-semibold text-white">Confirmaciones y detalles</h3>
+            <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C0C0C0]">Lista operativa</p>
+                <h3 className="font-serif text-2xl font-semibold text-white">Confirmaciones y detalles</h3>
+              </div>
               <button
                 onClick={exportGuestTable}
-                className="px-4 py-2 rounded-full bg-[#C0C0C0] text-black font-semibold text-xs uppercase tracking-wider flex items-center gap-1.5"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#C0C0C0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-black sm:w-auto"
               >
-                <FileSpreadsheet className="w-4 h-4" /> Descargar tabla
+                <FileSpreadsheet className="w-4 h-4" /> Descargar XLS
               </button>
             </div>
 
@@ -789,23 +794,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
           </form>
         )}
 
-        {/* Tab 4: Exports */}
-        {activeTab === 'exports' && (
-          <div className="text-center py-8 max-w-md mx-auto space-y-4">
-            <FileSpreadsheet className="w-12 h-12 text-[#C0C0C0] mx-auto" />
-            <h3 className="font-serif text-2xl font-semibold text-white">Exportación de Reportes</h3>
-            <p className="text-xs text-zinc-400 font-light">Descargá la tabla completa en formato SpreadsheetML compatible con Excel, LibreOffice y Google Sheets.</p>
-
-            <button
-              onClick={exportGuestTable}
-              className="w-full py-3.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10"
-            >
-              Descargar Tabla para Excel
-            </button>
-          </div>
-        )}
-
-        {/* Tab 6: Collabs / Admins */}
+        {/* Tab 5: Collabs / Admins */}
         {activeTab === 'collabs' && (
           <div className="max-w-xl mx-auto">
             <h3 className="font-serif text-2xl font-semibold text-white mb-2">Administradores del Sitio</h3>
