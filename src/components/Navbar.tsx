@@ -30,11 +30,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navLinks = [
     { name: 'Inicio', href: '#inicio', condition: config.enableHero !== false },
+    { name: 'Evento', href: '#evento', condition: true },
+    { name: 'RSVP', href: '#rsvp', condition: true },
     { name: 'Historia', href: '#historia', condition: config.enableTimeline !== false },
     { name: 'Galería', href: '#galeria', condition: true },
     { name: 'Momentos', href: '#momentos', condition: true },
-    { name: 'Evento', href: '#evento', condition: true },
-    { name: 'RSVP', href: '#rsvp', condition: true },
     { name: 'Playlist', href: '#playlist', condition: true },
     { name: 'Firmas', href: '#firmas', condition: config.enableGuestbook !== false },
     { name: 'Regalos', href: '#regalos', condition: config.enableGifts !== false },

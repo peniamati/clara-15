@@ -98,7 +98,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onOpen, onOpenAdmi
         className="relative z-10 flex flex-col items-center gap-2 text-center"
       >
         <span className="text-xs text-zinc-500 tracking-widest font-mono">
-          {config.eventDate ? new Date(config.eventDate).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }) : '2026'} · {config.locationName || 'Salón de Fiestas'}
+          {config.date ? new Date(config.date).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }) : '2026'} · {config.venue || 'Salón de Fiestas'}
         </span>
         <button
           type="button"

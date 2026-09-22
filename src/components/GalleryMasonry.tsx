@@ -212,7 +212,7 @@ export const GalleryMasonry: React.FC = () => {
         </div>
 
         {/* Masonry Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
           {displayPhotos.map(img => (
             <div
               key={img.id}
@@ -226,10 +226,10 @@ export const GalleryMasonry: React.FC = () => {
                   src={resolveAssetUrl(img.url)}
                   alt={img.title}
                   onError={() => setFailedImages(prev => ({ ...prev, [img.id]: true }))}
-                  className="w-full h-80 object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                  className="block h-auto w-full object-contain transition-transform duration-700 group-hover:scale-[1.015]"
                 />
               ) : (
-                <div className="w-full h-80 bg-gradient-to-b from-zinc-900 to-black flex flex-col items-center justify-center p-6 text-center border border-white/5">
+                <div className="flex min-h-96 w-full flex-col items-center justify-center border border-white/5 bg-gradient-to-b from-zinc-900 to-black p-6 text-center">
                   <div className="w-14 h-14 rounded-full bg-[#C0C0C0]/10 border border-[#C0C0C0]/30 flex items-center justify-center text-[#C0C0C0] mb-3 group-hover:scale-110 transition-transform">
                     <Camera className="w-6 h-6 text-[#C0C0C0]" />
                   </div>
