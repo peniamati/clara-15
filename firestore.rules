@@ -57,7 +57,7 @@ service cloud.firestore {
         && request.resource.data.imageUrl is string
         && request.resource.data.imageUrl.size() <= 1000000
         && (request.resource.data.imageUrl.matches('data:image/.*')
-          || request.resource.data.imageUrl.matches('https://lh3\\.googleusercontent\\.com/d/[a-zA-Z0-9_-]+=w[0-9]+'));
+          || request.resource.data.imageUrl.matches('https://lh3[.]googleusercontent[.]com/d/[a-zA-Z0-9_-]+=w[0-9]+'));
       allow update: if admin() || (
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
         && counter('photobooth', id, 'likes', resource.data.likes, request.resource.data.likes)

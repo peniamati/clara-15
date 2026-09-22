@@ -1,6 +1,6 @@
 export const MAX_PHOTO_DATA_LENGTH = 700_000;
 
-const DRIVE_IMAGE_URL = /^https:\/\/lh3\.googleusercontent\.com\/d\/[a-zA-Z0-9_-]+=w\d+$/;
+const DRIVE_IMAGE_URL = /^https:\/\/lh3[.]googleusercontent[.]com\/d\/[a-zA-Z0-9_-]+=w\d+$/;
 
 export function isSupportedPhotoSource(value: string): boolean {
   return value.startsWith('data:image/') || DRIVE_IMAGE_URL.test(value);
