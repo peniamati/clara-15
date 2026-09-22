@@ -102,6 +102,8 @@ export interface SongRequest {
   approved: boolean;
   spotifyUrl?: string;
   youtubeUrl?: string;
+  isInOfficialPlaylist?: boolean;
+  note?: string;
 }
 
 export interface GuestbookMessage {

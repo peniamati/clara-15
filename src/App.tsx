@@ -5,14 +5,13 @@ import { HeroWelcome } from './components/HeroWelcome';
 import { Countdown } from './components/Countdown';
 import { LifeTimeline } from './components/LifeTimeline';
 import { GalleryMasonry } from './components/GalleryMasonry';
-import { VideoSection } from './components/VideoSection';
+import { MomentosDeLaNoche } from './components/MomentosDeLaNoche';
 import { EventInfoDetails } from './components/EventInfoDetails';
 import { RsvpForm } from './components/RsvpForm';
 import { CollaborativePlaylist } from './components/CollaborativePlaylist';
-import { Guestbook } from './components/Guestbook';
+import { LibroDeFirmas } from './components/LibroDeFirmas';
 import { GiftsSection } from './components/GiftsSection';
 import { DressCodeMoodboard } from './components/DressCodeMoodboard';
-import { PhotoboothCollabAlbum } from './components/PhotoboothCollabAlbum';
 import { InteractiveGames } from './components/InteractiveGames';
 import { Footer } from './components/Footer';
 import { WelcomeScreen } from './components/WelcomeScreen';
@@ -128,14 +127,13 @@ const AppContent: React.FC = () => {
         {config.enableCountdown !== false && <Countdown />}
         {config.enableTimeline !== false && <LifeTimeline />}
         <GalleryMasonry />
-        <VideoSection />
+        <MomentosDeLaNoche />
         <EventInfoDetails />
         <RsvpForm />
         <CollaborativePlaylist />
-        {config.enableGuestbook !== false && <Guestbook />}
+        {config.enableGuestbook !== false && <LibroDeFirmas />}
         {config.enableGifts !== false && <GiftsSection />}
         {config.enableDressCode !== false && <DressCodeMoodboard />}
-        <PhotoboothCollabAlbum />
         {config.enableTrivia !== false && <InteractiveGames />}
       </main>
 

@@ -32,12 +32,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     { name: 'Inicio', href: '#inicio', condition: config.enableHero !== false },
     { name: 'Historia', href: '#historia', condition: config.enableTimeline !== false },
     { name: 'Galería', href: '#galeria', condition: true },
+    { name: 'Momentos', href: '#momentos', condition: true },
     { name: 'Evento', href: '#evento', condition: true },
     { name: 'RSVP', href: '#rsvp', condition: true },
     { name: 'Playlist', href: '#playlist', condition: true },
     { name: 'Firmas', href: '#firmas', condition: config.enableGuestbook !== false },
     { name: 'Regalos', href: '#regalos', condition: config.enableGifts !== false },
-    { name: 'Recuerdos', href: '#recuerdos', condition: true },
     { name: 'Juegos', href: '#juegos', condition: config.enableTrivia !== false },
   ].filter(link => link.condition);
 

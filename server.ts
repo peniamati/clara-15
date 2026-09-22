@@ -41,6 +41,21 @@ app.get("/api/event-info", (_req, res) => {
   res.json(eventConfig);
 });
 
+app.post("/api/notify-song-request", (req, res) => {
+  const { title, artist, submittedBy, adminEmail, note } = req.body;
+  console.log(`[NOTIFICACIÓN PLAYLIST] Nueva sugerencia: "${title}" de ${artist} por ${submittedBy || 'Invitado'}. Admin email: ${adminEmail || 'MatiasPa380@gmail.com'}`);
+  res.json({
+    status: "ok",
+    message: "Aviso recibido correctamente para notificar al organizador de Spotify.",
+    data: { title, artist, submittedBy, note }
+  });
+});
+
+app.get("/api/drive-image/:fileId", (req, res) => {
+  const { fileId } = req.params;
+  res.redirect(`https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}=w1600`);
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

@@ -15,18 +15,23 @@ import {
   getDoc
 } from 'firebase/firestore';
 
-const required = (name: string, value?: string) => {
-  const clean = value?.trim();
-  if (!clean) throw new Error(`Falta configurar ${name}. Revisá los secrets del despliegue.`);
-  return clean;
-};
+import appletConfig from '../../firebase-applet-config.json';
+
+const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID?.trim() || appletConfig.projectId;
+const appId = import.meta.env.VITE_FIREBASE_APP_ID?.trim() || appletConfig.appId;
+const apiKey = import.meta.env.VITE_FIREBASE_API_KEY?.trim() || appletConfig.apiKey;
+const authDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim() || appletConfig.authDomain;
+const messagingSenderId = import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.trim() || appletConfig.messagingSenderId;
+const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET?.trim() || appletConfig.storageBucket;
+const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID?.trim() || appletConfig.firestoreDatabaseId || '(default)';
 
 const firebaseConfig = {
-  projectId: required('VITE_FIREBASE_PROJECT_ID', import.meta.env.VITE_FIREBASE_PROJECT_ID),
-  appId: required('VITE_FIREBASE_APP_ID', import.meta.env.VITE_FIREBASE_APP_ID),
-  apiKey: required('VITE_FIREBASE_API_KEY', import.meta.env.VITE_FIREBASE_API_KEY),
-  authDomain: required('VITE_FIREBASE_AUTH_DOMAIN', import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
-  messagingSenderId: required('VITE_FIREBASE_MESSAGING_SENDER_ID', import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+  projectId,
+  appId,
+  apiKey,
+  authDomain,
+  messagingSenderId,
+  storageBucket,
 };
 
 export const app = initializeApp(firebaseConfig);
@@ -34,8 +39,6 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 // Initialize Firestore with auto-detect long polling to prevent "unavailable / could not reach Cloud Firestore backend" in sandboxed environments
-const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID?.trim() || '(default)';
-
 export const db = initializeFirestore(
   app, 
   {
