@@ -56,16 +56,13 @@ export const initialEventConfig: EventConfig = {
   heroImageUrl: DEFAULT_HERO_IMAGE,
   adminEmails: ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'],
   gallery: [
-    { id: 1, category: 'Book de 15', title: 'Clara · Sesión 01', url: '/gallery/foto-01.jpg', size: 'normal' },
-    { id: 2, category: 'Book de 15', title: 'Clara · Sesión 02', url: '/gallery/foto-02.jpg', size: 'normal' },
-    { id: 3, category: 'Book de 15', title: 'Clara · Sesión 03', url: '/gallery/foto-03.jpg', size: 'normal' },
-    { id: 4, category: 'Book de 15', title: 'Clara · Sesión 04', url: '/gallery/foto-04.jpg', size: 'normal' },
-    { id: 5, category: 'Book de 15', title: 'Clara · Sesión 05', url: '/gallery/foto-05.jpg', size: 'normal' },
-    { id: 6, category: 'Book de 15', title: 'Clara · Sesión 06', url: '/gallery/foto-06.jpg', size: 'normal' },
-    { id: 7, category: 'Book de 15', title: 'Clara · Sesión 07', url: '/gallery/foto-07.jpg', size: 'normal' },
-    { id: 8, category: 'Book de 15', title: 'Clara · Sesión 08', url: '/gallery/foto-08.jpg', size: 'normal' },
-    { id: 9, category: 'Book de 15', title: 'Clara · Sesión 09', url: '/gallery/foto-09.jpg', size: 'normal' },
-    { id: 10, category: 'Book de 15', title: 'Clara · Sesión 10', url: '/gallery/foto-10.jpg', size: 'normal' },
+    { id: 1, category: 'Book de 15', title: 'Clara · Sesión 047', url: '/gallery/047 - CLARA SESION.jpg', size: 'normal' },
+    { id: 2, category: 'Book de 15', title: 'Clara · Sesión 048', url: '/gallery/048 - CLARA SESION.jpg', size: 'normal' },
+    { id: 3, category: 'Book de 15', title: 'Clara · Sesión 061', url: '/gallery/061 - CLARA SESION.jpg', size: 'normal' },
+    { id: 4, category: 'Book de 15', title: 'Clara · Sesión 065', url: '/gallery/065 - CLARA SESION.jpg', size: 'normal' },
+    { id: 5, category: 'Book de 15', title: 'Clara · Sesión 139', url: '/gallery/139 - CLARA SESION.jpg', size: 'normal' },
+    { id: 6, category: 'Book de 15', title: 'Clara · Sesión 141', url: '/gallery/141 - CLARA SESION.jpg', size: 'normal' },
+    { id: 7, category: 'Book de 15', title: 'Clara · Sesión 144', url: '/gallery/144 - CLARA SESION.jpg', size: 'normal' },
   ],
 };
 
