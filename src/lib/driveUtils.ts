@@ -18,7 +18,7 @@ export function listDriveImages(): Promise<DriveSyncedImage[]> {
   return new Promise((resolve, reject) => {
     const callbackName = `__claraDriveSync${Date.now()}${Math.random().toString(36).slice(2)}`;
     const script = document.createElement('script');
-    const timeout = window.setTimeout(() => finish(new Error('La sincronización con Drive tardó demasiado.')), 12000);
+    const timeout = window.setTimeout(() => finish(new Error('La sincronización con Drive tardó demasiado.')), 60000);
     const finish = (error?: Error, images: DriveSyncedImage[] = []) => {
       window.clearTimeout(timeout);
       script.remove();

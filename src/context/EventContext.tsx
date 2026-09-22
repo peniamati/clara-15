@@ -214,7 +214,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (active) setSyncError(error instanceof Error ? error.message : 'No se pudo sincronizar Google Drive.');
     });
     void syncDrive();
-    const timer = window.setInterval(syncDrive, 15000);
+    const timer = window.setInterval(syncDrive, 60000);
     return () => { active = false; window.clearInterval(timer); };
   }, []);
 
