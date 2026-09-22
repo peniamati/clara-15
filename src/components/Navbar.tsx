@@ -5,8 +5,6 @@ import {
   VolumeX,
   CheckCircle2,
   ShieldCheck,
-  Type,
-  Eye,
   Menu,
   X
 } from 'lucide-react';
@@ -20,9 +18,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAdmin,
   onOpenCheckIn,
 }) => {
-  const { config, isPlayingMusic, setIsPlayingMusic, accessibility, setAccessibility } = useEvent();
+  const { config, isPlayingMusic, setIsPlayingMusic } = useEvent();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [accMenuOpen, setAccMenuOpen] = useState(false);
 
   const toggleMusic = () => {
     setIsPlayingMusic(prev => !prev);
@@ -92,61 +89,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             {isPlayingMusic ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
-
-          {/* Accessibility Controls Dropdown */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setAccMenuOpen(!accMenuOpen)}
-              title="Ajustes de accesibilidad"
-              className="min-h-11 min-w-11 w-11 h-11 flex items-center justify-center touch-manipulation rounded-full border border-white/10 bg-zinc-900/80 text-zinc-400 transition-colors active:scale-95 hover:text-[#C0C0C0]"
-            >
-              <Eye className="w-4 h-4" />
-            </button>
-
-            {accMenuOpen && (
-              <div className="absolute right-0 mt-3 w-56 rounded-2xl bg-[#0F0F0F] border border-white/10 p-4 shadow-2xl z-50 text-xs flex flex-col gap-3 backdrop-blur-2xl">
-                <span className="font-serif text-sm text-[#C0C0C0] border-b border-white/10 pb-2 font-semibold">
-                  Accesibilidad & Ajustes
-                </span>
-                
-                {/* Font Size Selector */}
-                <div className="flex items-center justify-between text-zinc-300">
-                  <span className="flex items-center gap-1.5"><Type className="w-3.5 h-3.5"/> Fuente</span>
-                  <div className="flex gap-1">
-                    {(['normal', 'large', 'xlarge'] as const).map(size => (
-                      <button
-                        key={size}
-                        onClick={() => setAccessibility(a => ({ ...a, fontSize: size }))}
-                        className={`px-2 py-1 rounded text-[10px] uppercase font-bold border ${
-                          accessibility.fontSize === size
-                            ? 'bg-[#C0C0C0]/20 border-[#C0C0C0] text-[#C0C0C0]'
-                            : 'border-white/10 text-zinc-400'
-                        }`}
-                      >
-                        {size === 'normal' ? '1x' : size === 'large' ? '1.2x' : '1.4x'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* High Contrast */}
-                <div className="flex items-center justify-between text-zinc-300">
-                  <span>Alto Contraste</span>
-                  <button
-                    onClick={() => setAccessibility(a => ({ ...a, highContrast: !a.highContrast }))}
-                    className={`px-2 py-1 rounded text-[10px] uppercase font-bold border ${
-                      accessibility.highContrast
-                        ? 'bg-[#C0C0C0]/20 border-[#C0C0C0] text-[#C0C0C0]'
-                        : 'border-white/10 text-zinc-400'
-                    }`}
-                  >
-                    {accessibility.highContrast ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* QR Pass / RSVP Button */}
           <a
