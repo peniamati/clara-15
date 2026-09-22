@@ -1,12 +1,12 @@
 {
-  "projectId": "foton-8d1e5",
-  "appId": "1:853190635698:web:10f77fb1b10ac78ffdd9ab",
-  "apiKey": "AIzaSyCALgw5oBU0zhF42eiN0K2Nse7KEmaKo3s",
-  "authDomain": "foton-8d1e5.firebaseapp.com",
+  "projectId": "",
+  "appId": "",
+  "apiKey": "",
+  "authDomain": "",
   "firestoreDatabaseId": "(default)",
-  "storageBucket": "foton-8d1e5.firebasestorage.app",
-  "messagingSenderId": "853190635698",
-  "measurementId": "G-NRM8R3EK1W",
+  "storageBucket": "",
+  "messagingSenderId": "",
+  "measurementId": "",
   "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }

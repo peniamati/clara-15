@@ -15,20 +15,18 @@ import {
   getDoc
 } from 'firebase/firestore';
 
-import appletConfig from '../../firebase-applet-config.json';
-
-const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID?.trim() || appletConfig.projectId;
-const appId = import.meta.env.VITE_FIREBASE_APP_ID?.trim() || appletConfig.appId;
-const apiKey = import.meta.env.VITE_FIREBASE_API_KEY?.trim() || appletConfig.apiKey;
-const authDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim() || appletConfig.authDomain;
-const messagingSenderId = import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.trim() || appletConfig.messagingSenderId;
-const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET?.trim() || appletConfig.storageBucket;
-const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID?.trim() || appletConfig.firestoreDatabaseId || '(default)';
+const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID?.trim() || '';
+const appId = import.meta.env.VITE_FIREBASE_APP_ID?.trim() || '';
+const apiKey = import.meta.env.VITE_FIREBASE_API_KEY?.trim() || '';
+const authDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim() || (projectId ? `${projectId}.firebaseapp.com` : '');
+const messagingSenderId = import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.trim() || '';
+const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET?.trim() || (projectId ? `${projectId}.firebasestorage.app` : '');
+const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID?.trim() || '(default)';
 
 const firebaseConfig = {
   projectId,
   appId,
-  apiKey,
+  apiKey: apiKey || 'NO_KEY_CONFIGURED',
   authDomain,
   messagingSenderId,
   storageBucket,
