@@ -7,7 +7,7 @@ export function OrganizerHelp() {
       <li><strong>Personalizar:</strong> modificá textos, lugar, música y apariencia. Guardar cambios publica lo que editaste; Vista previa permite revisarlo.</li>
       <li><strong>Confirmaciones:</strong> buscá a cada persona, filtrá quienes confirmaron o no asistirán y consultá teléfono, menú y contacto del tutor.</li>
       <li><strong>Moderación:</strong> aprobá canciones, firmas y fotos antes de mostrarlas en la invitación.</li>
-      <li><strong>Exportar:</strong> descargá la lista en CSV para abrirla con Excel y compartirla con recepción o catering.</li>
+      <li><strong>Exportar:</strong> descargá la tabla compatible con Excel para compartirla con recepción o catering.</li>
       <li><strong>Administradores:</strong> agregá únicamente las cuentas de las personas que gestionan el evento.</li>
     </ol>
     <h4 className="mb-2 mt-5 font-semibold">Dónde quedan los datos</h4>

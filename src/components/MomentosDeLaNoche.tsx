@@ -20,9 +20,8 @@ import {
   LoaderCircle
 } from 'lucide-react';
 import { GOOGLE_DRIVE_FOLDER_URL, extractDriveFileId, getDriveDirectImageUrl, uploadImageToDrive } from '../lib/driveUtils';
-import { MAX_PHOTO_DATA_LENGTH } from '../lib/photoUpload';
 
-const MAX_BASE64_SIZE = MAX_PHOTO_DATA_LENGTH;
+const MAX_BASE64_SIZE = 8 * 1024 * 1024;
 
 // Converts file to optimized Base64 WebP/JPEG data URL for instant Firestore storage without fees
 const compressPhotoToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
@@ -39,7 +38,7 @@ const compressPhotoToBase64 = (file: File): Promise<string> => new Promise((reso
   const image = new Image();
   image.onload = () => {
     try {
-      let scale = Math.min(1, 1280 / Math.max(image.naturalWidth, image.naturalHeight));
+      let scale = 1;
       let result = '';
       for (let attempt = 0; attempt < 6; attempt += 1) {
         const canvas = document.createElement('canvas');
@@ -70,16 +69,21 @@ const compressPhotoToBase64 = (file: File): Promise<string> => new Promise((reso
 });
 
 // Canvas compositor with photobooth frame, filter, and sticker
-const composePhotoboothImage = (imageSrc: string, filter: string, sticker: string, honoree: string): Promise<string> => {
+const composePhotoboothImage = (
+  imageSrc: string,
+  filter: string,
+  sticker: string,
+  honoree: string,
+  stickerPosition: { x: number; y: number }
+): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
-        const size = 900;
-        canvas.width = size;
-        canvas.height = size;
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
         const ctx = canvas.getContext('2d');
         if (!ctx) return resolve(imageSrc);
 
@@ -91,34 +95,26 @@ const composePhotoboothImage = (imageSrc: string, filter: string, sticker: strin
         else if (filter === 'Neon Party') ctx.filter = 'hue-rotate(90deg) saturate(200%)';
         else if (filter === 'Disco Silver') ctx.filter = 'contrast(125%) saturate(85%) brightness(105%)';
 
-        // Crop to square cover
-        const aspect = img.naturalWidth / img.naturalHeight;
-        let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
-        if (aspect > 1) {
-          sw = img.naturalHeight;
-          sx = (img.naturalWidth - sw) / 2;
-        } else {
-          sh = img.naturalWidth;
-          sy = (img.naturalHeight - sh) / 2;
-        }
-        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         ctx.restore();
 
         // Top sticker overlay badge
         const hasSticker = Boolean(sticker && sticker !== 'Sin sticker');
         if (hasSticker) {
           ctx.save();
-          ctx.font = 'bold 30px sans-serif';
+          const fontSize = Math.max(18, Math.round(Math.min(canvas.width, canvas.height) * 0.034));
+          ctx.font = `bold ${fontSize}px sans-serif`;
           const textWidth = ctx.measureText(sticker).width;
-          const pillX = size - textWidth - 80;
-          const pillY = 36;
-          const pillW = textWidth + 48;
-          const pillH = 54;
+          const paddingX = fontSize * 0.8;
+          const pillW = textWidth + paddingX * 2;
+          const pillH = fontSize * 1.8;
+          const pillX = Math.max(0, Math.min(canvas.width - pillW, stickerPosition.x * canvas.width - pillW / 2));
+          const pillY = Math.max(0, Math.min(canvas.height - pillH, stickerPosition.y * canvas.height - pillH / 2));
           
           ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
           ctx.beginPath();
           if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(pillX, pillY, pillW, pillH, 27);
+            ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2);
           } else {
             ctx.rect(pillX, pillY, pillW, pillH);
           }
@@ -129,30 +125,30 @@ const composePhotoboothImage = (imageSrc: string, filter: string, sticker: strin
 
           ctx.fillStyle = '#C0C0C0';
           ctx.textBaseline = 'middle';
-          ctx.fillText(sticker, pillX + 24, pillY + pillH / 2);
+          ctx.fillText(sticker, pillX + paddingX, pillY + pillH / 2);
           ctx.restore();
         }
 
         if (hasSticker) {
           ctx.save();
-          const footerH = 76;
+          const footerH = Math.max(48, Math.round(canvas.height * 0.085));
           ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
-          ctx.fillRect(0, size - footerH, size, footerH);
-          ctx.font = '600 28px serif';
+          ctx.fillRect(0, canvas.height - footerH, canvas.width, footerH);
+          ctx.font = `600 ${Math.max(17, Math.round(footerH * 0.36))}px serif`;
           ctx.fillStyle = '#FFFFFF';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(`✨ ${honoree} · Momentos de la Noche ✨`, size / 2, size - footerH / 2);
+          ctx.fillText(`✨ ${honoree} · Momentos de la Noche ✨`, canvas.width / 2, canvas.height - footerH / 2);
           ctx.restore();
         }
 
         let quality = 0.82;
         let result = canvas.toDataURL('image/jpeg', quality);
-        while (result.length > MAX_PHOTO_DATA_LENGTH && quality > 0.38) {
+        while (result.length > MAX_BASE64_SIZE && quality > 0.38) {
           quality -= 0.08;
           result = canvas.toDataURL('image/jpeg', quality);
         }
-        resolve(result.length <= MAX_PHOTO_DATA_LENGTH ? result : imageSrc);
+        resolve(result.length <= MAX_BASE64_SIZE ? result : imageSrc);
       } catch {
         resolve(imageSrc);
       }
@@ -171,6 +167,9 @@ export const MomentosDeLaNoche: React.FC = () => {
   const [caption, setCaption] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('Golden Hour');
   const [selectedSticker, setSelectedSticker] = useState('Sin sticker');
+  const [stickerPosition, setStickerPosition] = useState({ x: 0.78, y: 0.10 });
+  const [isDraggingSticker, setIsDraggingSticker] = useState(false);
+  const [selectedWallImage, setSelectedWallImage] = useState<typeof photoboothImages[number] | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [showDriveUrlModal, setShowDriveUrlModal] = useState(false);
@@ -210,7 +209,7 @@ export const MomentosDeLaNoche: React.FC = () => {
     if (!photoSource) return;
     setIsPublishing(true);
     try {
-      const finalImage = await composePhotoboothImage(photoSource, selectedFilter, selectedSticker, config.honoree);
+      const finalImage = await composePhotoboothImage(photoSource, selectedFilter, selectedSticker, config.honoree, stickerPosition);
       const link = document.createElement('a');
       link.href = finalImage;
       link.download = `Momento_${config.honoree.replace(/\s+/g, '')}_${Date.now()}.jpg`;
@@ -231,7 +230,7 @@ export const MomentosDeLaNoche: React.FC = () => {
     try {
       // If it's a base64 image, we brand it; if it's already an external Drive URL, we use it directly
       let finalImageUrl = photoSource.startsWith('data:')
-        ? await composePhotoboothImage(photoSource, selectedFilter, selectedSticker, config.honoree)
+        ? await composePhotoboothImage(photoSource, selectedFilter, selectedSticker, config.honoree, stickerPosition)
         : photoSource;
       if (finalImageUrl.startsWith('data:')) {
         const driveImage = await uploadImageToDrive(finalImageUrl, `momento-${Date.now()}.jpg`);
@@ -310,7 +309,7 @@ export const MomentosDeLaNoche: React.FC = () => {
                 ¡Capturá tu momento de la fiesta!
               </h3>
               <p className="text-zinc-400 text-xs sm:text-sm font-light leading-relaxed mb-6">
-                Podés sacarte una selfie ahora mismo, elegir una foto de tu galería o sincronizar tu álbum con Google Drive. Las fotos se optimizan y guardan automáticamente en la base de datos en tiempo real.
+                Podés sacarte una selfie o elegir una foto de tu galería, aplicarle filtros y stickers, y guardarla directamente en Google Drive conservando su proporción y resolución.
               </p>
 
               {/* Action Buttons */}
@@ -399,11 +398,23 @@ export const MomentosDeLaNoche: React.FC = () => {
               
               {/* Photo Preview with Filters and Stickers */}
               <div className="md:col-span-6 flex flex-col items-center">
-                <div className="w-full max-w-sm aspect-square rounded-2xl overflow-hidden border border-white/20 relative shadow-2xl bg-black">
+                <div
+                  className="w-full max-w-lg rounded-2xl overflow-hidden border border-white/20 relative shadow-2xl bg-black touch-none"
+                  onPointerMove={(event) => {
+                    if (!isDraggingSticker) return;
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    setStickerPosition({
+                      x: Math.max(0.08, Math.min(0.92, (event.clientX - rect.left) / rect.width)),
+                      y: Math.max(0.06, Math.min(0.86, (event.clientY - rect.top) / rect.height))
+                    });
+                  }}
+                  onPointerUp={() => setIsDraggingSticker(false)}
+                  onPointerCancel={() => setIsDraggingSticker(false)}
+                >
                   <img
                     src={photoSource}
                     alt="Preview Photobooth"
-                    className={`w-full h-full object-cover transition-all duration-300 ${
+                    className={`w-full h-auto max-h-[70vh] object-contain transition-all duration-300 ${
                       selectedFilter === 'Glamour B&W'
                         ? 'grayscale contrast-125'
                         : selectedFilter === 'Golden Hour'
@@ -419,9 +430,19 @@ export const MomentosDeLaNoche: React.FC = () => {
                   />
                   {/* Active Sticker */}
                   {selectedSticker && selectedSticker !== 'Sin sticker' && (
-                    <div className="absolute top-4 right-4 bg-black/85 border border-[#C0C0C0]/50 text-[#C0C0C0] text-xs font-bold px-3 py-1.5 rounded-full shadow-lg pointer-events-none">
+                    <button
+                      type="button"
+                      onPointerDown={(event) => {
+                        event.currentTarget.setPointerCapture(event.pointerId);
+                        setIsDraggingSticker(true);
+                      }}
+                      className="absolute -translate-x-1/2 -translate-y-1/2 bg-black/85 border border-[#C0C0C0]/50 text-[#C0C0C0] text-xs font-bold px-3 py-1.5 rounded-full shadow-lg cursor-grab active:cursor-grabbing select-none whitespace-nowrap"
+                      style={{ left: `${stickerPosition.x * 100}%`, top: `${stickerPosition.y * 100}%` }}
+                      aria-label="Mover sticker"
+                      title="Arrastrá para mover el sticker"
+                    >
                       {selectedSticker}
-                    </div>
+                    </button>
                   )}
                   {/* Bottom Watermark */}
                   {selectedSticker !== 'Sin sticker' && <div className="absolute bottom-0 inset-x-0 bg-black/85 border-t border-white/10 py-2.5 text-center text-xs font-serif text-white tracking-wider pointer-events-none">
@@ -452,6 +473,9 @@ export const MomentosDeLaNoche: React.FC = () => {
                       </button>
                     ))}
                   </div>
+                  {selectedSticker !== 'Sin sticker' && (
+                    <p className="mt-2 text-[11px] text-amber-300/80">Arrastrá el sticker sobre la foto para ubicarlo donde quieras.</p>
+                  )}
                 </div>
 
                 <div>
@@ -583,19 +607,25 @@ export const MomentosDeLaNoche: React.FC = () => {
                   key={img.id}
                   className="rounded-2xl overflow-hidden bg-[#0F0F0F] border border-white/10 hover:border-[#C0C0C0]/40 transition-all shadow-xl group flex flex-col justify-between"
                 >
-                  <div className="aspect-square w-full relative overflow-hidden bg-black">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedWallImage(img)}
+                    className="aspect-square w-full relative overflow-hidden bg-black text-left"
+                    aria-label={`Ampliar ${img.caption || `foto de ${img.guestName}`}`}
+                  >
                     <img
                       src={img.imageUrl}
                       alt={img.caption || `Momento por ${img.guestName}`}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
                       loading="lazy"
                     />
-                    {img.sticker && (
+                    {img.sticker && img.sticker !== 'Sin sticker' && (
                       <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/80 border border-white/20 text-[10px] text-white font-medium">
                         {img.sticker}
                       </span>
                     )}
-                  </div>
+                    <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/75 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity">Ver completa</span>
+                  </button>
 
                   <div className="p-4 flex items-center justify-between gap-3 bg-[#0F0F0F]">
                     <div className="min-w-0">
@@ -626,6 +656,32 @@ export const MomentosDeLaNoche: React.FC = () => {
         </div>
 
       </div>
+
+      {selectedWallImage && (
+        <div className="fixed inset-0 z-[120] bg-black/95 backdrop-blur-md p-3 sm:p-8 flex flex-col" role="dialog" aria-modal="true" aria-label="Vista ampliada de la foto">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white truncate">{selectedWallImage.guestName}</p>
+              {selectedWallImage.caption && <p className="text-xs text-zinc-400 truncate">{selectedWallImage.caption}</p>}
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={selectedWallImage.imageUrl}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-full bg-white text-black text-xs font-bold flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" /> Descargar
+              </a>
+              <button type="button" onClick={() => setSelectedWallImage(null)} className="p-2.5 rounded-full bg-zinc-900 border border-white/15 text-white" aria-label="Cerrar imagen">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          <img src={selectedWallImage.imageUrl} alt={selectedWallImage.caption || `Foto de ${selectedWallImage.guestName}`} className="min-h-0 flex-1 w-full object-contain" />
+        </div>
+      )}
 
       {/* Modal to link image from Google Drive */}
       {showDriveUrlModal && (

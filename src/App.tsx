@@ -148,11 +148,11 @@ const AppContent: React.FC = () => {
       <main>
         {config.enableHero !== false && <HeroWelcome />}
         {config.enableCountdown !== false && <Countdown />}
+        <EventInfoDetails />
+        <RsvpForm />
         {config.enableTimeline !== false && <LifeTimeline />}
         <GalleryMasonry />
         <MomentosDeLaNoche />
-        <EventInfoDetails />
-        <RsvpForm />
         <CollaborativePlaylist />
         {config.enableGuestbook !== false && <LibroDeFirmas />}
         {config.enableGifts !== false && <GiftsSection />}

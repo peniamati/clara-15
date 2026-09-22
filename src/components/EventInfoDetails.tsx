@@ -70,7 +70,7 @@ export const EventInfoDetails: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
           
           {/* Card 1: Venue & Address */}
-          <div className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-8 shadow-2xl flex flex-col justify-between hover:border-[#C0C0C0]/30 transition-all">
+          <div className="self-start bg-[#0F0F0F] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl hover:border-[#C0C0C0]/30 transition-all">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-[#C0C0C0]/10 border border-[#C0C0C0]/30 flex items-center justify-center mb-6">
                 <MapPin className="w-6 h-6 text-[#C0C0C0]" />
@@ -117,7 +117,7 @@ export const EventInfoDetails: React.FC = () => {
           </div>
 
           {/* Card 2: Date & Time */}
-          <div className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-8 shadow-2xl flex flex-col justify-between hover:border-[#C0C0C0]/30 transition-all">
+          <div className="self-start bg-[#0F0F0F] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl hover:border-[#C0C0C0]/30 transition-all">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-[#C0C0C0]/10 border border-[#C0C0C0]/30 flex items-center justify-center mb-6">
                 <Calendar className="w-6 h-6 text-[#C0C0C0]" />
@@ -137,7 +137,7 @@ export const EventInfoDetails: React.FC = () => {
           </div>
 
           {/* Card 3: Dress Code */}
-          <div className="bg-[#0F0F0F] border border-white/10 rounded-3xl p-8 shadow-2xl flex flex-col justify-between hover:border-[#C0C0C0]/30 transition-all">
+          <div className="self-start bg-[#0F0F0F] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl hover:border-[#C0C0C0]/30 transition-all">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-[#C0C0C0]/10 border border-[#C0C0C0]/30 flex items-center justify-center mb-6">
                 <Shirt className="w-6 h-6 text-[#C0C0C0]" />

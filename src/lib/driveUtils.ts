@@ -66,6 +66,27 @@ export async function uploadImageToDrive(imageDataUrl: string, requestedName: st
   throw new Error('Drive recibió la foto, pero todavía no aparece en la carpeta. Reintentá en unos segundos.');
 }
 
+export function notifyOrganizer(type: 'rsvp' | 'song', fields: Record<string, string>): void {
+  const target = `organizer-notification-${Date.now()}`;
+  const frame = document.createElement('iframe');
+  frame.name = target;
+  frame.hidden = true;
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = GOOGLE_DRIVE_SYNC_ENDPOINT;
+  form.target = target;
+  form.hidden = true;
+  for (const [name, value] of Object.entries({ action: 'notify', type, ...fields })) {
+    const input = document.createElement('input');
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  }
+  document.body.append(frame, form);
+  form.submit();
+  window.setTimeout(() => { frame.remove(); form.remove(); }, 15000);
+}
+
 /**
  * Extracts a Google Drive File ID from various link formats:
  * - https://drive.google.com/file/d/{FILE_ID}/view?usp=sharing

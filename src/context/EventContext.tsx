@@ -350,7 +350,14 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await setDoc(doc(collection(db, 'analytics')), { type, ownerUid, sessionId, createdAt: new Date().toISOString() });
   });
   const addSongRequest = (song: { title: string; artist: string; submittedBy: string; note?: string; spotifyUrl?: string }) =>
-    createContent('songs', { ...song, votes: 0, approved: true });
+    persist(async () => {
+      const ownerUid = await visitorId();
+      const id = crypto.randomUUID();
+      const createdAt = new Date().toISOString();
+      const requestedSong: SongRequest = { id, ...song, votes: 0, approved: true, createdAt };
+      await setDoc(doc(db, 'songs', id), JSON.parse(JSON.stringify({ ...requestedSong, ownerUid })));
+      setSongs(previous => previous.some(item => item.id === id) ? previous : [requestedSong, ...previous]);
+    });
   const addGuestbookMessage = (msg: { guestName: string; message: string; photoUrl?: string }) =>
     createContent('guestbook', { ...msg, reactions: { love: 0, sparkle: 0, cheer: 0 }, approved: true });
   const addTimeCapsuleMessage = (msg: { author: string; message: string; unlockAge: 18 | 21 }) =>
@@ -440,10 +447,16 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const mergedSongs = spotifySongs.length
     ? [...songs, ...spotifySongs.filter(spotifySong => !songs.some(song => song.id === spotifySong.id || (`${song.title}|${song.artist}`.toLocaleLowerCase('es') === `${spotifySong.title}|${spotifySong.artist}`.toLocaleLowerCase('es'))))]
     : songs;
-  const mergedPhotoboothImages = [
-    ...photoboothImages,
-    ...driveImages.filter(driveImage => !photoboothImages.some(image => image.id === driveImage.id || image.imageUrl === driveImage.imageUrl))
-  ].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  const mergedPhotoboothImages = [...photoboothImages, ...driveImages]
+    .filter((image, index, all) => {
+      const fileId = image.imageUrl.match(/(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]+)/)?.[1];
+      const key = fileId || image.imageUrl.replace(/=w\d+$/, '');
+      return all.findIndex(candidate => {
+        const candidateId = candidate.imageUrl.match(/(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]+)/)?.[1];
+        return (candidateId || candidate.imageUrl.replace(/=w\d+$/, '')) === key;
+      }) === index;
+    })
+    .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
   return (
     <EventContext.Provider

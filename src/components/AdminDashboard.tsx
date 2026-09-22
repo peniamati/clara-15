@@ -41,7 +41,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     toggleApproveSong,
     guestbook,
     photoboothImages,
-    isAdminLoggedIn, moderateContent, deleteContent, timeCapsule, checkInGuest, analyticsEvents
+    isAdminLoggedIn, moderateContent, deleteContent, checkInGuest, analyticsEvents
   } = useEvent();
 
   const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'exports' | 'collabs'>('stats');
@@ -167,11 +167,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
       g.phone, g.email, g.status, g.tableNumber || 'Sin asignar',
       g.dietaryRestrictions.join(', '), g.notes
     ]);
-    const table = `<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Arial}th,td{border:1px solid #999;padding:8px;text-align:left}th{background:#eee}</style></head><body><h1>Invitados de ${escapeHtml(config.honoree)}</h1><table><thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(value => `<td>${escapeHtml(value)}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
-    const encodedUri = URL.createObjectURL(new Blob(['\uFEFF', table], { type: 'application/vnd.ms-excel;charset=utf-8;' }));
+    const cells = (row: unknown[], header = false) => row.map(value => `<Cell${header ? ' ss:StyleID="Header"' : ''}><Data ss:Type="String">${escapeHtml(value)}</Data></Cell>`).join('');
+    const table = `<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#D9E1F2" ss:Pattern="Solid"/></Style></Styles><Worksheet ss:Name="Invitados"><Table><Row>${cells(headers, true)}</Row>${rows.map(row => `<Row>${cells(row)}</Row>`).join('')}</Table></Worksheet></Workbook>`;
+    const encodedUri = URL.createObjectURL(new Blob(['\uFEFF', table], { type: 'application/xml;charset=utf-8' }));
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Tabla_Invitados_${config.honoree.replace(/\s+/g, '_')}.xls`);
+    link.setAttribute('download', `Tabla_Invitados_${config.honoree.replace(/\s+/g, '_')}.xml`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -441,9 +442,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
               <div className="flex w-full gap-2 sm:w-auto"><button className="min-h-11 flex-1 rounded-lg border border-white/20 px-3 sm:flex-none" onClick={() => moderateContent(section.group, item.id, !item.approved)}>{item.approved ? 'Ocultar' : 'Mostrar'}</button><button className="min-h-11 flex-1 rounded-lg border border-red-500/30 px-3 text-red-300 sm:flex-none" onClick={() => deleteContent(section.group, item.id)}><Trash2 className="mr-1 inline h-4 w-4" />Eliminar</button></div>
             </article>)}
           </div>)}
-          <h4 className="text-lg font-semibold">Cápsulas del tiempo · privadas</h4>
-          <p className="text-sm text-zinc-400">La apertura a los 18 o 21 años es una indicación para la organización, no un envío automático.</p>
-          {timeCapsule.map(item => <article key={item.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl bg-zinc-900 p-4"><div><strong>{item.author} · {item.unlockAge} años</strong><p>{item.message}</p></div><button className="min-h-11 rounded-lg border border-red-500/30 px-3 text-red-300" onClick={() => deleteContent('capsules', item.id)}><Trash2 className="mr-1 inline h-4 w-4" />Eliminar</button></article>)}
         </section>}
         {/* Tab 3: Customizer */}
         {activeTab === 'customizer' && (
@@ -796,13 +794,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
           <div className="text-center py-8 max-w-md mx-auto space-y-4">
             <FileSpreadsheet className="w-12 h-12 text-[#C0C0C0] mx-auto" />
             <h3 className="font-serif text-2xl font-semibold text-white">Exportación de Reportes</h3>
-            <p className="text-xs text-zinc-400 font-light">Descargá reportes completos en formato CSV para catering y recepción.</p>
+            <p className="text-xs text-zinc-400 font-light">Descargá la tabla completa en formato SpreadsheetML compatible con Excel, LibreOffice y Google Sheets.</p>
 
             <button
               onClick={exportGuestTable}
               className="w-full py-3.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10"
             >
-              Descargar Lista CSV Completa
+              Descargar Tabla para Excel
             </button>
           </div>
         )}
@@ -813,18 +811,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             <h3 className="font-serif text-2xl font-semibold text-white mb-2">Administradores del Sitio</h3>
             <p className="text-xs text-zinc-400 font-light mb-6">Gestioná los correos de Google (Gmail) que tienen permiso para acceder a este panel de control y modificar la página.</p>
             
-            <div className="flex gap-2 mb-6">
+            <div className="flex flex-col sm:flex-row gap-2 mb-6">
               <input
                 type="email"
                 placeholder="nuevo.admin@gmail.com"
                 value={newAdminEmail}
                 onChange={e => setNewAdminEmail(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAddAdmin()}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
+                className="min-w-0 flex-1 px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
               />
               <button
                 onClick={handleAddAdmin}
-                className="px-6 py-2.5 rounded-xl bg-[#C0C0C0] text-black font-semibold text-xs tracking-wider hover:bg-white transition-colors uppercase"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#C0C0C0] text-black font-semibold text-xs tracking-wider hover:bg-white transition-colors uppercase"
               >
                 Agregar
               </button>
@@ -832,8 +830,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
 
             <div className="space-y-3">
               {(config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com']).map(email => (
-                <div key={email} className="flex items-center justify-between p-4 rounded-xl bg-black border border-white/10">
-                  <span className="text-sm text-zinc-300 font-medium">{email}</span>
+                <div key={email} className="flex items-center justify-between gap-3 p-4 rounded-xl bg-black border border-white/10">
+                  <span className="min-w-0 break-all text-sm text-zinc-300 font-medium">{email}</span>
                   <button
                     onClick={() => handleRemoveAdmin(email)}
                     className="p-2 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"

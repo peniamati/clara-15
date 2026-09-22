@@ -206,29 +206,6 @@ export const GalleryMasonry: React.FC = () => {
             <span className="inline-flex rounded-full border border-white/10 bg-zinc-900/80 px-5 py-2 text-xs font-semibold uppercase tracking-wider text-[#C0C0C0]">
               Book de 15 · {displayPhotos.length} Fotos
             </span>
-            {isAdminLoggedIn && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setIsManageModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-[#C0C0C0]/30 text-white text-xs font-semibold uppercase tracking-wider transition-all hover:border-[#C0C0C0]"
-                >
-                  <Upload className="w-3.5 h-3.5 text-[#C0C0C0]" />
-                  <span>Gestionar Fotos (Organizador)</span>
-                </button>
-                {localPhotos.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleResetToDefault}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs transition-colors"
-                    title="Volver a las fotos predeterminadas"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    <span>Restaurar</span>
-                  </button>
-                )}
-              </>
-            )}
           </div>
         </div>
 
@@ -258,19 +235,6 @@ export const GalleryMasonry: React.FC = () => {
                   <span className="text-[11px] text-[#C0C0C0]/80 mt-1 font-mono bg-zinc-950/80 px-3 py-1 rounded-full border border-white/10 max-w-[90%] truncate">
                     {img.url}
                   </span>
-                  {isAdminLoggedIn && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsManageModalOpen(true);
-                      }}
-                      className="mt-3 px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-xs text-white flex items-center gap-1.5 transition-colors"
-                    >
-                      <Upload className="w-3 h-3 text-[#C0C0C0]" />
-                      <span>Cargar este archivo</span>
-                    </button>
-                  )}
                 </div>
               )}
 

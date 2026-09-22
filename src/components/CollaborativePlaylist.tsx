@@ -17,6 +17,7 @@ import {
   Sparkles,
   Info
 } from 'lucide-react';
+import { notifyOrganizer } from '../lib/driveUtils';
 
 const SPOTIFY_PLAYLIST_URL = 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL?si=3b44a51ff97744da';
 const normalizeSongText = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
@@ -27,6 +28,7 @@ export const CollaborativePlaylist: React.FC = () => {
   const [artist, setArtist] = useState('');
   const [submittedBy, setSubmittedBy] = useState('');
   const [note, setNote] = useState('');
+  const [spotifyUrl, setSpotifyUrl] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeViewMode, setActiveViewMode] = useState<'list' | 'ranking'>('list');
   const [submittedSuccessModal, setSubmittedSuccessModal] = useState<{
@@ -77,29 +79,18 @@ export const CollaborativePlaylist: React.FC = () => {
         artist: currentArtist,
         submittedBy: currentSubmittedBy,
         note: currentNote,
-        spotifyUrl: SPOTIFY_PLAYLIST_URL
+        spotifyUrl: spotifyUrl.trim() || undefined
       });
       if (!added) return;
 
-      // Send background notification to server if server endpoint is available (e.g. not static GitHub Pages)
-      if (typeof window !== 'undefined' && !window.location.hostname.endsWith('github.io')) {
-        try {
-          await fetch('/api/notify-song-request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              title: currentTitle,
-              artist: currentArtist,
-              submittedBy: currentSubmittedBy,
-              note: currentNote,
-              adminEmail,
-              playlistUrl: SPOTIFY_PLAYLIST_URL
-            })
-          });
-        } catch {
-          // non-blocking
-        }
-      }
+      notifyOrganizer('song', {
+        title: currentTitle,
+        artist: currentArtist,
+        submittedBy: currentSubmittedBy,
+        note: currentNote,
+        spotifyUrl: spotifyUrl.trim(),
+        adminEmail
+      });
 
       setSubmittedSuccessModal({
         title: currentTitle,
@@ -112,6 +103,7 @@ export const CollaborativePlaylist: React.FC = () => {
       setArtist('');
       setSubmittedBy('');
       setNote('');
+      setSpotifyUrl('');
       notify('¡Canción publicada! Ya está visible en la lista, sin esperar aprobación.');
     } catch (err) {
       notify('Hubo un problema al enviar la canción. Reintentá en unos segundos.');
@@ -246,6 +238,20 @@ ${SPOTIFY_PLAYLIST_URL}
             <form onSubmit={handleAddSong} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
+                  Link de Spotify (Opcional)
+                </label>
+                <input
+                  type="url"
+                  value={spotifyUrl}
+                  onChange={(e) => setSpotifyUrl(e.target.value)}
+                  placeholder="https://open.spotify.com/track/..."
+                  className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#1DB954] outline-none"
+                />
+                <p className="mt-1.5 text-[11px] text-zinc-500">Pegalo si lo tenés para que el organizador encuentre la versión exacta.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
                   Nombre de la Canción *
                 </label>
                 <input
@@ -302,7 +308,7 @@ ${SPOTIFY_PLAYLIST_URL}
                 type="submit"
                 className="w-full py-3.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10 transition-all flex items-center justify-center gap-2 active:scale-95"
               >
-                <Disc className="w-4 h-4" /> Proponer Canción & Notificar
+                <Disc className="w-4 h-4" /> Agregar canción
               </button>
             </form>
 

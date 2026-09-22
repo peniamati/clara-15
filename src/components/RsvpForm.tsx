@@ -2,6 +2,7 @@ import { notify } from '../lib/notify';
 import React, { useRef, useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import confetti from 'canvas-confetti';
+import { notifyOrganizer } from '../lib/driveUtils';
 import {
   CheckCircle2,
   XCircle,
@@ -99,6 +100,14 @@ export const RsvpForm: React.FC = () => {
     });
 
     setSubmitted(true);
+    notifyOrganizer('rsvp', {
+      guest: `${name.trim()} ${lastName.trim()}`,
+      status,
+      phone: phone.trim(),
+      email: email.trim(),
+      notes: notes.trim(),
+      adminEmail: config.adminEmails?.[0] || 'antonella.brizuela18@gmail.com'
+    });
     requestAnimationFrame(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     void trackEvent(status === 'CONFIRMED' ? 'rsvp_complete' : 'rsvp_declined');
 
@@ -120,6 +129,13 @@ export const RsvpForm: React.FC = () => {
         : 'Lamentablemente no podré asistir a tus 15 años, ¡te deseo una noche fantástica e inolvidable!'
     }`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const resetForAnotherGuest = () => {
+    setName(''); setLastName(''); setPhone(''); setEmail(''); setAge('15');
+    setStatus('CONFIRMED'); setTutorName(''); setTutorPhone('');
+    setSelectedDietary([]); setNotes(''); setError(''); setSubmitted(false);
+    requestAnimationFrame(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
   return (
@@ -165,11 +181,12 @@ export const RsvpForm: React.FC = () => {
                 <Share2 className="w-4 h-4" /> Enviar por WhatsApp
               </button>
               <button
-                onClick={() => setSubmitted(false)}
+                onClick={resetForAnotherGuest}
                 className="px-8 py-3.5 rounded-full bg-zinc-900 border border-white/10 text-white text-xs font-semibold tracking-wider uppercase hover:border-[#C0C0C0]/30 transition-all"
               >
-                Editar Respuesta
+                Confirmar otra persona
               </button>
+              <button onClick={() => setSubmitted(false)} className="px-5 py-3 text-xs text-zinc-400 underline">Editar esta respuesta</button>
             </div>
           </div>
         ) : (
