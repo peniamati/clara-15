@@ -65,6 +65,7 @@ interface EventContextType {
   timeCapsule: TimeCapsuleMessage[];
   addTimeCapsuleMessage: (msg: { author: string; message: string; unlockAge: 18 | 21 }) => Promise<boolean>;
   photoboothImages: PhotoboothImage[];
+  driveSyncStatus: 'loading' | 'synced' | 'error';
   addPhotoboothImage: (img: { guestName: string; imageUrl: string; filter: string; sticker: string; caption: string }) => Promise<boolean>;
   likePhotoboothImage: (id: string) => Promise<boolean>;
   gifts: GiftIdea[];
@@ -170,7 +171,26 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [guestbook, setGuestbook] = useState<GuestbookMessage[]>(() => firebaseConfigurationIssues.length ? initialGuestbook : []);
   const [timeCapsule, setTimeCapsule] = useState<TimeCapsuleMessage[]>([]);
   const [photoboothImages, setPhotoboothImages] = useState<PhotoboothImage[]>(() => firebaseConfigurationIssues.length ? initialPhotobooth : []);
-  const [driveImages, setDriveImages] = useState<PhotoboothImage[]>([]);
+  const [driveImages, setDriveImages] = useState<PhotoboothImage[]>(() => {
+    const fallback: PhotoboothImage[] = [{
+      id: 'drive-1qLzOMDJXpLZhd775C7wco8zaXib3BXeJ',
+      guestName: 'Google Drive',
+      imageUrl: 'https://lh3.googleusercontent.com/d/1qLzOMDJXpLZhd775C7wco8zaXib3BXeJ=w1600',
+      filter: 'Normal',
+      sticker: 'Sin sticker',
+      caption: 'WhatsApp Image 2026-06-23 at 14.21.09.jpeg',
+      likes: 0,
+      approved: true,
+      createdAt: '2026-09-22T03:33:09.021Z'
+    }];
+    try {
+      const cached = window.localStorage.getItem('clara-drive-images');
+      return cached ? JSON.parse(cached) as PhotoboothImage[] : fallback;
+    } catch {
+      return fallback;
+    }
+  });
+  const [driveSyncStatus, setDriveSyncStatus] = useState<'loading' | 'synced' | 'error'>('loading');
   const [polls, setPolls] = useState<Poll[]>(() => firebaseConfigurationIssues.length ? initialPolls : []);
   const [analyticsEvents, setAnalyticsEvents] = useState<AnalyticsEvent[]>([]);
   const [tables, setTables] = useState<TableInfo[]>(initialTables);
@@ -199,7 +219,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     let active = true;
     const syncDrive = () => listDriveImages().then(images => {
       if (!active) return;
-      setDriveImages(images.map(image => ({
+      const normalized = images.map(image => ({
         id: `drive-${image.id}`,
         guestName: 'Google Drive',
         imageUrl: image.imageUrl,
@@ -209,9 +229,16 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         likes: 0,
         approved: true,
         createdAt: image.createdAt
-      })));
-    }).catch(error => {
-      if (active) setSyncError(error instanceof Error ? error.message : 'No se pudo sincronizar Google Drive.');
+      }));
+      setDriveImages(normalized);
+      try {
+        window.localStorage.setItem('clara-drive-images', JSON.stringify(normalized));
+      } catch {
+        // The in-memory result remains usable when browser storage is unavailable.
+      }
+      setDriveSyncStatus('synced');
+    }).catch(() => {
+      if (active) setDriveSyncStatus('error');
     });
     void syncDrive();
     const timer = window.setInterval(syncDrive, 60000);
@@ -444,6 +471,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         timeCapsule,
         addTimeCapsuleMessage,
         photoboothImages: mergedPhotoboothImages,
+        driveSyncStatus,
         addPhotoboothImage,
         likePhotoboothImage,
         gifts: config.gifts || [],

@@ -16,7 +16,8 @@ import {
   HelpCircle,
   X,
   Flame,
-  Info
+  Info,
+  LoaderCircle
 } from 'lucide-react';
 import { GOOGLE_DRIVE_FOLDER_URL, extractDriveFileId, getDriveDirectImageUrl, uploadImageToDrive } from '../lib/driveUtils';
 import { MAX_PHOTO_DATA_LENGTH } from '../lib/photoUpload';
@@ -162,7 +163,7 @@ const composePhotoboothImage = (imageSrc: string, filter: string, sticker: strin
 };
 
 export const MomentosDeLaNoche: React.FC = () => {
-  const { photoboothImages, addPhotoboothImage, likePhotoboothImage, config } = useEvent();
+  const { photoboothImages, addPhotoboothImage, likePhotoboothImage, config, driveSyncStatus } = useEvent();
 
   // Photobooth interactive states
   const [photoSource, setPhotoSource] = useState<string>('');
@@ -552,9 +553,17 @@ export const MomentosDeLaNoche: React.FC = () => {
               </p>
             </div>
 
-            <span className="px-4 py-1.5 rounded-full bg-zinc-900 border border-white/10 text-xs text-[#C0C0C0] font-semibold">
-              {photoboothImages.length} fotos en el muro
-            </span>
+            <div className="flex flex-col sm:items-end gap-2">
+              <span className="px-4 py-1.5 rounded-full bg-zinc-900 border border-white/10 text-xs text-[#C0C0C0] font-semibold">
+                {photoboothImages.length} fotos en el muro
+              </span>
+              <span className="flex items-center gap-1.5 text-[11px] text-zinc-400" aria-live="polite">
+                {driveSyncStatus === 'loading' && <LoaderCircle className="w-3.5 h-3.5 animate-spin text-amber-400" />}
+                {driveSyncStatus === 'loading' && 'Actualizando fotos desde Google Drive…'}
+                {driveSyncStatus === 'synced' && <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Fotos de Drive actualizadas</>}
+                {driveSyncStatus === 'error' && 'Mostrando las fotos guardadas · reintentando Drive'}
+              </span>
+            </div>
           </div>
 
           {photoboothImages.length === 0 ? (
