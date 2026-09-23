@@ -88,6 +88,80 @@ export async function uploadImageToDrive(imageDataUrl: string, requestedName: st
   throw new Error('Drive recibió la foto, pero todavía no aparece en la carpeta. Reintentá en unos segundos.');
 }
 
+interface DriveRemovalStatus { ok: boolean; pending?: boolean; removed?: boolean; error?: string }
+
+function readDriveRemovalStatus(operationId: string): Promise<DriveRemovalStatus> {
+  return new Promise((resolve, reject) => {
+    const callbackName = `__claraDriveDelete${Date.now()}${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    let settled = false;
+    let cleanupTimer: number | undefined;
+    const cleanup = () => {
+      script.remove();
+      if (cleanupTimer !== undefined) window.clearTimeout(cleanupTimer);
+      delete (window as unknown as Record<string, unknown>)[callbackName];
+    };
+    const timeout = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error('Drive tardó demasiado en responder.'));
+      script.remove();
+      cleanupTimer = window.setTimeout(cleanup, 300000);
+    }, 10000);
+    (window as unknown as Record<string, unknown>)[callbackName] = (status: DriveRemovalStatus) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      resolve(status);
+    };
+    script.onload = cleanup;
+    script.onerror = () => {
+      if (!settled) { settled = true; window.clearTimeout(timeout); reject(new Error('No se pudo consultar la operación en Drive.')); }
+      cleanup();
+    };
+    script.src = `${GOOGLE_DRIVE_SYNC_ENDPOINT}?callback=${encodeURIComponent(callbackName)}&action=deleteStatus&operationId=${encodeURIComponent(operationId)}&t=${Date.now()}`;
+    document.body.appendChild(script);
+  });
+}
+
+/** The token is checked by Apps Script before it removes a file from Clara's folder. */
+export async function removeImageFromDriveFolder(fileId: string, idToken: string, apiKey: string): Promise<void> {
+  if (!/^[a-zA-Z0-9_-]{20,100}$/.test(fileId)) throw new Error('La foto no tiene un identificador válido.');
+  const operationId = crypto.randomUUID();
+  const target = `drive-delete-${operationId}`;
+  const frame = document.createElement('iframe');
+  frame.name = target;
+  frame.hidden = true;
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = GOOGLE_DRIVE_SYNC_ENDPOINT;
+  form.target = target;
+  form.hidden = true;
+  for (const [name, value] of Object.entries({ action: 'removePhoto', fileId, operationId, idToken, apiKey })) {
+    const input = document.createElement('input');
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  }
+  document.body.append(frame, form);
+  form.submit();
+  try {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await new Promise(resolve => window.setTimeout(resolve, 1200));
+      let status: DriveRemovalStatus;
+      try { status = await readDriveRemovalStatus(operationId); }
+      catch { continue; }
+      if (status.pending) continue;
+      if (!status.ok || !status.removed) throw new Error(status.error || 'Drive no pudo quitar la foto de la carpeta.');
+      return;
+    }
+    throw new Error('Drive tardó demasiado en confirmar que quitó la foto. Revisá la carpeta antes de reintentar.');
+  } finally {
+    frame.remove();
+    form.remove();
+  }
+}
+
 export function notifyOrganizer(type: 'rsvp' | 'song', fields: Record<string, string>): void {
   const target = `organizer-notification-${Date.now()}`;
   const frame = document.createElement('iframe');

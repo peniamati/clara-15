@@ -66,6 +66,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     toggleApproveSong,
     guestbook,
     photoboothImages,
+    removeDrivePhoto,
     isAdminLoggedIn, moderateContent, deleteContent, checkInGuest, analyticsEvents
   } = useEvent();
 
@@ -247,10 +248,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     const driveFileId = group === 'photobooth'
       ? extractDriveFileId(photoboothImages.find(image => image.id === id)?.imageUrl || '') : null;
     if (driveFileId) {
-      setNotice({
-        title: 'Esta foto está en Drive',
-        message: 'Borrar solo el registro de la web no elimina el archivo: volvería a aparecer en la próxima sincronización. Podés abrirlo en Drive para quitarlo desde allí.',
-        tone: 'error', actionUrl: `https://drive.google.com/file/d/${driveFileId}/view`, actionLabel: 'Abrir en Drive',
+      setConfirmation({
+        title: '¿Quitar esta foto de Drive?',
+        message: 'Se quitará de la carpeta compartida de Clara y dejará de aparecer en la web. El archivo original seguirá en la cuenta de su dueño.',
+        action: 'Quitar foto',
+        run: async () => {
+          const result = await removeDrivePhoto(driveFileId);
+          setNotice(result.ok
+            ? { title: 'Foto quitada', message: 'La foto salió de la carpeta de Drive y de la invitación.', tone: 'success' }
+            : { title: 'No se completó el borrado', message: result.error || 'Revisá Drive antes de reintentar.', tone: 'error', actionUrl: `https://drive.google.com/file/d/${driveFileId}/view`, actionLabel: 'Ver en Drive' });
+        },
       });
       return;
     }
@@ -616,7 +623,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
 
         {activeTab === 'moderation' && <section className="space-y-6">
           <h3 className="text-2xl font-semibold">Propuestas y publicaciones</h3>
-          <p className="text-zinc-400">Las canciones propuestas no aparecen en la invitación hasta que estén en la playlist oficial. Las firmas y fotos se publican al enviarse; las fotos de Drive deben quitarse también de la carpeta para que no reaparezcan.</p>
+          <p className="text-zinc-400">Las canciones propuestas no aparecen en la invitación hasta que estén en la playlist oficial. Las firmas y fotos se publican al enviarse. Al quitar una foto de Drive, también sale de la carpeta compartida.</p>
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900 p-4">
             <div><h4 className="font-semibold">Libro de firmas</h4><p className="text-sm text-zinc-400">Guardá una copia PDF con nombres, fechas y dedicatorias.</p></div>
             <button type="button" disabled={exportingGuestbook} onClick={async () => {

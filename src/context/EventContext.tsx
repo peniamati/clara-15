@@ -2,10 +2,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, query, where, runTransaction, increment } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { visitorId } from '../lib/visitor';
-import { db, auth, firebaseConfigurationIssues } from '../lib/firebase';
+import { app, db, auth, firebaseConfigurationIssues } from '../lib/firebase';
 import { describePersistenceError, validatePhotoSource } from '../lib/photoUpload';
 import { findOfficialTrack } from '../lib/playlist';
-import { listDriveImages } from '../lib/driveUtils';
+import { extractDriveFileId, listDriveImages, removeImageFromDriveFolder } from '../lib/driveUtils';
 import {
   EventConfig,
   Guest,
@@ -67,6 +67,7 @@ interface EventContextType {
   addTimeCapsuleMessage: (msg: { author: string; message: string; unlockAge: 18 | 21 }) => Promise<boolean>;
   photoboothImages: PhotoboothImage[];
   driveSyncStatus: 'loading' | 'synced' | 'error';
+  removeDrivePhoto: (fileId: string) => Promise<{ ok: boolean; error?: string }>;
   addPhotoboothImage: (img: { guestName: string; imageUrl: string; filter: string; sticker: string; caption: string }) => Promise<boolean>;
   likePhotoboothImage: (id: string) => Promise<boolean>;
   gifts: GiftIdea[];
@@ -296,6 +297,25 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteContent = (group: string, id: string) =>
     persist(() => deleteDoc(doc(db, group, id)));
 
+  const removeDrivePhoto = async (fileId: string): Promise<{ ok: boolean; error?: string }> => {
+    if (!isAdminLoggedIn || !auth.currentUser) return { ok: false, error: 'Iniciá sesión como organizador para quitar fotos.' };
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      await removeImageFromDriveFolder(fileId, idToken, app.options.apiKey || '');
+      const remaining = driveImages.filter(image => extractDriveFileId(image.imageUrl) !== fileId);
+      setDriveImages(remaining);
+      try { window.localStorage.setItem('clara-drive-images', JSON.stringify(remaining)); } catch { /* La vista actual se actualiza igual. */ }
+      const matchingRecords = photoboothImages.filter(image => extractDriveFileId(image.imageUrl) === fileId);
+      const results = await Promise.allSettled(matchingRecords.map(image => deleteDoc(doc(db, 'photobooth', image.id))));
+      if (results.some(result => result.status === 'rejected')) {
+        return { ok: false, error: 'La foto salió de Drive, pero no pudimos quitar todos sus registros de la web. Reintentá la limpieza desde el panel.' };
+      }
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : 'No se pudo quitar la foto de Drive.' };
+    }
+  };
+
   const updateConfig = async (newConfig: Partial<EventConfig>) => {
     await setDoc(doc(db, 'settings', 'config'), newConfig, { merge: true });
     setConfig(prev => ({ ...prev, ...newConfig }));
@@ -475,6 +495,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addTimeCapsuleMessage,
         photoboothImages: mergedPhotoboothImages,
         driveSyncStatus,
+        removeDrivePhoto,
         addPhotoboothImage,
         likePhotoboothImage,
         gifts: config.gifts || [],
