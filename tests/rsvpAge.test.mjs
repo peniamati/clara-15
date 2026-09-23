@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { guestContactPhone, isMinorGuest, parseGuestAge } from '../src/lib/rsvpAge.ts';
 
-test('admite bebés de 0 y 1 año y exige tutor para todo menor', () => {
-  assert.equal(parseGuestAge('0'), 0);
-  assert.equal(parseGuestAge('1'), 1);
-  assert.equal(isMinorGuest(parseGuestAge('0')), true);
-  assert.equal(isMinorGuest(parseGuestAge('1')), true);
+test('admite edades de 0 a 4 años y exige tutor para todo menor', () => {
+  for (const age of [0, 1, 2, 3, 4]) {
+    assert.equal(parseGuestAge(String(age)), age);
+    assert.equal(isMinorGuest(age), true);
+  }
   assert.equal(isMinorGuest(parseGuestAge('17')), true);
   assert.equal(isMinorGuest(parseGuestAge('18')), false);
 });

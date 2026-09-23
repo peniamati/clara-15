@@ -88,12 +88,13 @@ const AppContent: React.FC = () => {
     const hero = styles.getPropertyValue('--font-hero').trim();
     const body = styles.getPropertyValue('--font-body').trim();
 
-    Promise.all([
+    const fontTimeout = new Promise<void>(resolve => window.setTimeout(resolve, 3000));
+    Promise.race([Promise.all([
       document.fonts.ready,
       document.fonts.load(`600 1em ${heading}`),
       document.fonts.load(`400 1em ${hero}`),
       document.fonts.load(`400 1em ${body}`),
-    ]).catch(() => undefined).finally(() => {
+    ]), fontTimeout]).catch(() => undefined).finally(() => {
       if (!cancelled) {
         hasLoadedInitialInvitation.current = true;
         setIsInvitationReady(true);
@@ -103,7 +104,7 @@ const AppContent: React.FC = () => {
     return () => { cancelled = true; };
   }, [config.fontBody, config.fontHeading, config.heroFont, isConfigReady]);
 
-  if (!isInvitationReady) {
+  if (!isConfigReady || (!isInvitationReady && !showAdminModal)) {
     return <div className="min-h-[100dvh] bg-[#050505]" style={rootStyle} aria-label="Cargando invitación" />;
   }
 

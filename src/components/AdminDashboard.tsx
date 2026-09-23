@@ -3,8 +3,9 @@ import * as XLSX from 'xlsx';
 import { useEvent } from '../context/EventContext';
 import { ContentEditor } from './ContentEditor';
 import { OrganizerHelp } from './OrganizerHelp';
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
 import { DEFAULT_HERO_IMAGE, resolveHeroImage } from '../lib/heroMedia';
 import {
   ShieldCheck,
@@ -70,17 +71,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationSnapshot, setNotificationSnapshot] = useState<{ confirmations: number; messages: number; photos: number } | null>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
-  const notificationStorageKey = `clara-organizer-seen-${auth.currentUser?.email || 'local'}`;
-  const [lastSeenAt, setLastSeenAt] = useState(() => {
-    try { return Number(window.localStorage.getItem(notificationStorageKey) || 0); } catch { return 0; }
-  });
+  const organizerUid = isAdminLoggedIn ? auth.currentUser?.uid : undefined;
+  const notificationStorageKey = organizerUid ? `clara-organizer-seen-${organizerUid}` : '';
+  const [lastSeenAt, setLastSeenAt] = useState(0);
+  const latestSeenAt = useRef(0);
+  const latestSeenUid = useRef<string | undefined>(undefined);
+  const remoteSeenAt = organizerUid ? config.organizerNotificationSeenAt?.[organizerUid] : undefined;
   React.useEffect(() => {
-    try { setLastSeenAt(Number(window.localStorage.getItem(notificationStorageKey) || 0)); } catch { setLastSeenAt(0); }
-  }, [notificationStorageKey]);
+    if (latestSeenUid.current !== organizerUid) {
+      latestSeenAt.current = 0;
+      latestSeenUid.current = organizerUid;
+    }
+    if (!organizerUid) { setLastSeenAt(0); return; }
+    let localSeenAt = 0;
+    try {
+      localSeenAt = Math.max(
+        Number(window.localStorage.getItem(notificationStorageKey) || 0),
+        Number(window.localStorage.getItem(`clara-organizer-seen-${auth.currentUser?.email}`) || 0),
+      );
+    } catch { /* Sin almacenamiento local. */ }
+    latestSeenAt.current = Math.max(latestSeenAt.current, localSeenAt, remoteSeenAt || 0);
+    setLastSeenAt(latestSeenAt.current);
+  }, [organizerUid, notificationStorageKey, remoteSeenAt]);
   const markNotificationsSeen = () => {
+    if (!organizerUid) return;
     const now = Date.now();
+    latestSeenAt.current = now;
     setLastSeenAt(now);
     try { window.localStorage.setItem(notificationStorageKey, String(now)); } catch { /* La sesión actual sigue funcionando. */ }
+    void updateDoc(doc(db, 'settings', 'config'), { [`organizerNotificationSeenAt.${organizerUid}`]: now }).catch(error => {
+      console.error('No se pudo guardar la lectura de notificaciones:', error);
+      setNotice({ title: 'Notificaciones sin sincronizar', message: 'La lectura queda guardada en este dispositivo, pero no se pudo sincronizar entre dispositivos.', tone: 'error' });
+    });
   };
   React.useEffect(() => {
     if (!showNotifications) return;
@@ -116,7 +138,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     { id: 'modules', label: 'Secciones visibles', help: 'Mostrar u ocultar partes' },
   ] as const;
   const selectedCustomizerSection = customizerSections.find(section => section.id === customizerTab)!;
-  const hasUnsavedChanges = JSON.stringify(localConfig) !== JSON.stringify(config);
+  const editableConfig = ({ organizerNotificationSeenAt: _seen, ...rest }: typeof config) => rest;
+  const hasUnsavedChanges = JSON.stringify(editableConfig(localConfig)) !== JSON.stringify(editableConfig(config));
   const localDateTimeValue = localConfig.date ? (() => {
     const date = new Date(localConfig.date);
     if (Number.isNaN(date.getTime())) return '';
@@ -202,7 +225,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     if (saving) return;
     setSaving(true);
     try {
-      await updateConfig(localConfig);
+      await updateConfig(editableConfig(localConfig));
       setNotice({ title: 'Cambios guardados', message: 'La configuración quedó guardada en la base de datos.', tone: 'success' });
     } catch {
       setNotice({ title: 'No se pudo guardar', message: 'Tus cambios siguen en el editor. Revisá la conexión y los permisos de Firebase antes de reintentar.', tone: 'error' });
@@ -214,7 +237,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
       Nombre: g.name,
       Apellido: g.lastName,
       Edad: g.age ?? '',
-      'Menor de edad': g.age && g.age < 18 ? 'Sí' : 'No',
+      'Menor de edad': g.age !== undefined && g.age < 18 ? 'Sí' : 'No',
       Tutor: g.tutorName || g.emergencyContactName || '',
       'Teléfono del tutor': g.tutorPhone || g.emergencyContactPhone || '',
       Teléfono: g.phone || '',
@@ -450,7 +473,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             {guests.length === 0 && <p className="p-6">No hay respuestas cargadas. No se muestran invitados de ejemplo.</p>}
             <div className="space-y-2">
               {guests.filter(g => (statusFilter === 'ALL' || g.status === statusFilter) && `${g.name} ${g.lastName} ${g.phone} ${g.email}`.toLowerCase().includes(search.toLowerCase())).map(g => {
-                const isMinor = g.age ? g.age < 18 : false;
+                const isMinor = g.age !== undefined && g.age < 18;
                 const tutor = g.tutorName || g.emergencyContactName;
                 const tutorTel = g.tutorPhone || g.emergencyContactPhone;
                 return (
@@ -458,7 +481,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-white text-sm">{g.name} {g.lastName}</span>
-                        {g.age && (
+                        {g.age !== undefined && (
                           <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-[#C0C0C0] text-[10px] font-medium">
                             {g.age} años
                           </span>

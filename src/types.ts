@@ -51,6 +51,7 @@ export interface EventConfig {
   heroVideoUrl?: string;
   heroImageUrl: string;
   adminEmails?: string[];
+  organizerNotificationSeenAt?: Record<string, number>;
 }
 
 export interface Guest {

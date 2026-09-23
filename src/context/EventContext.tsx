@@ -137,19 +137,23 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
     const configDocRef = doc(db, 'settings', 'config');
+    // A slow first Firestore response must not leave the organizer on a blank screen.
+    const readyTimeout = window.setTimeout(() => setIsConfigReady(true), 5000);
     const unsubscribe = onSnapshot(configDocRef, (docSnapshot) => {
+      window.clearTimeout(readyTimeout);
       if (docSnapshot.exists()) {
         const fetchedConfig = docSnapshot.data() as EventConfig;
         setConfig({ ...initialEventConfig, ...fetchedConfig });
       }
       setIsConfigReady(true);
     }, (error) => {
+      window.clearTimeout(readyTimeout);
       console.error('Error fetching config:', error);
       setSyncError('No pudimos cargar la configuración. Revisá conexión y permisos.');
       // Keep the invitation usable with bundled data if Firestore is unavailable.
       setIsConfigReady(true);
     });
-    return () => unsubscribe();
+    return () => { window.clearTimeout(readyTimeout); unsubscribe(); };
   }, []);
 
   // Firestore synchronization for guests
