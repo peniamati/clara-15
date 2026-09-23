@@ -73,6 +73,7 @@ test('quita de la carpeta una foto autorizada sin eliminar el archivo original',
 
 test('informa el estado de una subida sin esperar una nueva lista de Drive', () => {
   const cache = new Map();
+  let changedSharing = false;
   const image = { id: fileId, name: 'prueba.jpg', mimeType: 'image/jpeg' };
   const sandbox = {
     CacheService: { getScriptCache: () => ({ get: key => cache.get(key) || null, put: (key, value) => cache.set(key, value) }) },
@@ -80,7 +81,7 @@ test('informa el estado de una subida sin esperar una nueva lista de Drive', () 
     Utilities: { base64Decode: () => [1, 2, 3], newBlob: () => ({}) },
     DriveApp: { Access: { ANYONE_WITH_LINK: 'link' }, Permission: { VIEW: 'view' }, getFolderById: () => ({ createFile: () => ({
       getId: () => image.id, getName: () => image.name, getMimeType: () => image.mimeType,
-      getDateCreated: () => new Date('2026-09-23T12:00:00Z'), setSharing() {},
+      getDateCreated: () => new Date('2026-09-23T12:00:00Z'), setSharing() { changedSharing = true; },
     }) }) },
   };
   vm.runInNewContext(source, sandbox);
@@ -89,4 +90,5 @@ test('informa el estado de una subida sin esperar una nueva lista de Drive', () 
   const get = sandbox.doGet({ parameter: { action: 'uploadStatus', operationId, callback: 'cb' } });
   assert.match(get.text, /^cb\(\{"ok":true,"image":/);
   assert.match(get.text, /prueba\.jpg/);
+  assert.equal(changedSharing, false);
 });

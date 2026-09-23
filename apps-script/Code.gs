@@ -144,7 +144,8 @@ function doPost(e) {
       .replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100);
     const file = DriveApp.getFolderById(FOLDER_ID)
       .createFile(Utilities.newBlob(bytes, mimeType, safeName));
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    // The photo inherits the shared folder's permissions. Overriding it with
+    // VIEW fails when the folder grants link editors access.
     const result = { ok: true, image: {
       id: file.getId(), name: file.getName(), mimeType: file.getMimeType(),
       imageUrl: 'https://lh3.googleusercontent.com/d/' + file.getId() + '=w2400',
