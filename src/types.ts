@@ -72,6 +72,7 @@ export interface Guest {
   notes: string;
   qrCode: string;
   checkInTime?: string;
+  createdAt?: string;
   uniqueInviteUrl: string;
 }
 

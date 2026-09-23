@@ -2,7 +2,7 @@ import { notify } from '../lib/notify';
 import React, { useRef, useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import confetti from 'canvas-confetti';
-import { notifyOrganizer } from '../lib/driveUtils';
+import { notifyOrganizer, ORGANIZER_EMAIL_ENABLED } from '../lib/driveUtils';
 import {
   CheckCircle2,
   XCircle,
@@ -34,6 +34,7 @@ export const RsvpForm: React.FC = () => {
   const [tutorPhone, setTutorPhone] = useState('');
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [wantsEmailNotification, setWantsEmailNotification] = useState(false);
   
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -100,14 +101,16 @@ export const RsvpForm: React.FC = () => {
     });
 
     setSubmitted(true);
-    notifyOrganizer('rsvp', {
-      guest: `${name.trim()} ${lastName.trim()}`,
-      status,
-      phone: phone.trim(),
-      email: email.trim(),
-      notes: notes.trim(),
-      adminEmail: config.adminEmails?.[0] || 'antonella.brizuela18@gmail.com'
-    });
+    if (ORGANIZER_EMAIL_ENABLED && wantsEmailNotification) {
+      notifyOrganizer('rsvp', {
+        guest: `${name.trim()} ${lastName.trim()}`,
+        status,
+        phone: phone.trim(),
+        email: email.trim(),
+        notes: notes.trim(),
+        adminEmail: (config.adminEmails?.length ? config.adminEmails : ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com']).join(',')
+      });
+    }
     requestAnimationFrame(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     void trackEvent(status === 'CONFIRMED' ? 'rsvp_complete' : 'rsvp_declined');
 
@@ -134,7 +137,7 @@ export const RsvpForm: React.FC = () => {
   const resetForAnotherGuest = () => {
     setName(''); setLastName(''); setPhone(''); setEmail(''); setAge('15');
     setStatus('CONFIRMED'); setTutorName(''); setTutorPhone('');
-    setSelectedDietary([]); setNotes(''); setError(''); setSubmitted(false);
+    setSelectedDietary([]); setNotes(''); setWantsEmailNotification(false); setError(''); setSubmitted(false);
     requestAnimationFrame(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
@@ -379,6 +382,11 @@ export const RsvpForm: React.FC = () => {
                 className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
               />
             </div>
+
+            {ORGANIZER_EMAIL_ENABLED && <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-zinc-900/60 p-4 text-sm text-zinc-300">
+              <input type="checkbox" checked={wantsEmailNotification} onChange={event => setWantsEmailNotification(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#C0C0C0]" />
+              <span>Avisar también por email al organizador <span className="block text-xs text-zinc-500">El aviso se enviará automáticamente. Tu confirmación siempre quedará visible en el panel.</span></span>
+            </label>}
 
             {/* Submit Button */}
             <button

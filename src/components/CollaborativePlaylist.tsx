@@ -12,15 +12,12 @@ import {
   CheckCircle2, 
   ListMusic, 
   Flame, 
-  Copy, 
-  Check, 
-  Sparkles,
   Info
 } from 'lucide-react';
-import { notifyOrganizer } from '../lib/driveUtils';
+import { notifyOrganizer, ORGANIZER_EMAIL_ENABLED } from '../lib/driveUtils';
+import { isPublicSong, normalizeSongText } from '../lib/playlist';
 
 const SPOTIFY_PLAYLIST_URL = 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL?si=3b44a51ff97744da';
-const normalizeSongText = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
 
 export const CollaborativePlaylist: React.FC = () => {
   const { songs, addSongRequest, voteSong, config } = useEvent();
@@ -29,6 +26,7 @@ export const CollaborativePlaylist: React.FC = () => {
   const [submittedBy, setSubmittedBy] = useState('');
   const [note, setNote] = useState('');
   const [spotifyUrl, setSpotifyUrl] = useState('');
+  const [wantsEmailNotification, setWantsEmailNotification] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeViewMode, setActiveViewMode] = useState<'list' | 'ranking'>('list');
   const [submittedSuccessModal, setSubmittedSuccessModal] = useState<{
@@ -36,11 +34,11 @@ export const CollaborativePlaylist: React.FC = () => {
     artist: string;
     submittedBy: string;
     note: string;
+    emailed: boolean;
   } | null>(null);
-  const [copiedData, setCopiedData] = useState(false);
   const [votedSongIds, setVotedSongIds] = useState<Set<string>>(new Set());
 
-  const adminEmail = config.adminEmails?.[0] || 'MatiasPa380@gmail.com';
+  const adminEmails = (config.adminEmails?.length ? config.adminEmails : ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com']).join(',');
 
   const handleVote = async (songId: string, songName: string) => {
     try {
@@ -83,20 +81,23 @@ export const CollaborativePlaylist: React.FC = () => {
       });
       if (!added) return;
 
-      notifyOrganizer('song', {
-        title: currentTitle,
-        artist: currentArtist,
-        submittedBy: currentSubmittedBy,
-        note: currentNote,
-        spotifyUrl: spotifyUrl.trim(),
-        adminEmail
-      });
+      if (ORGANIZER_EMAIL_ENABLED && wantsEmailNotification) {
+        notifyOrganizer('song', {
+          title: currentTitle,
+          artist: currentArtist,
+          submittedBy: currentSubmittedBy,
+          note: currentNote,
+          spotifyUrl: spotifyUrl.trim(),
+          adminEmail: adminEmails
+        });
+      }
 
       setSubmittedSuccessModal({
         title: currentTitle,
         artist: currentArtist,
         submittedBy: currentSubmittedBy,
-        note: currentNote
+        note: currentNote,
+        emailed: wantsEmailNotification
       });
 
       setSongTitle('');
@@ -104,43 +105,16 @@ export const CollaborativePlaylist: React.FC = () => {
       setSubmittedBy('');
       setNote('');
       setSpotifyUrl('');
-      notify('¡Canción publicada! Ya está visible en la lista, sin esperar aprobación.');
+      setWantsEmailNotification(false);
+      notify('¡Propuesta guardada! El organizador la verá como pendiente.');
     } catch (err) {
       notify('Hubo un problema al enviar la canción. Reintentá en unos segundos.');
     }
   };
 
-  const handleCopySongInfo = () => {
-    if (!submittedSuccessModal) return;
-    const text = `Canción: ${submittedSuccessModal.title} - ${submittedSuccessModal.artist} (Pedido por: ${submittedSuccessModal.submittedBy})`;
-    navigator.clipboard.writeText(text);
-    setCopiedData(true);
-    setTimeout(() => setCopiedData(false), 2500);
-    notify('¡Datos de la canción copiados al portapapeles!');
-  };
-
-  const getMailtoLink = (title: string, artistName: string, requester: string, memo: string) => {
-    const subject = encodeURIComponent(`🎶 Canción para Spotify: "${title}" - Fiesta de ${config.honoree}`);
-    const body = encodeURIComponent(
-`¡Hola!
-
-Se solicitó una nueva canción para la playlist oficial de los 15 de ${config.honoree}:
-
-🎵 Canción: ${title}
-🎤 Artista: ${artistName}
-👤 Pedida por: ${requester}
-${memo ? `📝 Momento sugerido: ${memo}\n` : ''}
-🔗 Link a la Playlist de Spotify para agregarla:
-${SPOTIFY_PLAYLIST_URL}
-
-¡Muchas gracias!`
-    );
-    return `mailto:${adminEmail}?subject=${subject}&body=${body}`;
-  };
-
   // Filter songs based on search and sort by votes or original list order
   const filteredSongs = songs
-    .filter(s => s.approved && (
+    .filter(s => isPublicSong(s) && (
       s.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.artist.toLowerCase().includes(searchTerm.toLowerCase())
     ));
@@ -215,7 +189,7 @@ ${SPOTIFY_PLAYLIST_URL}
           <div className="mt-4 p-3.5 rounded-xl bg-zinc-900/70 border border-white/10 flex items-start gap-3 text-xs text-zinc-400">
             <Info className="w-4 h-4 text-[#1DB954] shrink-0 mt-0.5" />
             <p>
-              <strong className="text-zinc-200">¿Falta un tema?</strong> Proponelo abajo: aparecerá en esta web y el organizador recibirá un aviso para sumarlo a la playlist de Spotify.
+              <strong className="text-zinc-200">¿Falta un tema?</strong> Proponelo abajo. El organizador lo verá como pendiente; aparecerá en esta lista cuando esté en la playlist oficial de Spotify.
             </p>
           </div>
         </div>
@@ -232,7 +206,7 @@ ${SPOTIFY_PLAYLIST_URL}
               </h3>
             </div>
             <p className="text-xs text-zinc-400 mb-6 font-light">
-              Pedí el tema que querés que suene. Aparecerá en la lista de esta web y el organizador podrá sumarlo a Spotify.
+              Pedí el tema que querés que suene. No aparecerá en la lista pública hasta que se agregue a Spotify.
             </p>
 
             <form onSubmit={handleAddSong} className="space-y-4">
@@ -304,6 +278,11 @@ ${SPOTIFY_PLAYLIST_URL}
                 />
               </div>
 
+              {ORGANIZER_EMAIL_ENABLED && <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-zinc-900/60 p-4 text-sm text-zinc-300">
+                <input type="checkbox" checked={wantsEmailNotification} onChange={event => setWantsEmailNotification(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#C0C0C0]" />
+                <span>Avisar también por email al organizador <span className="block text-xs text-zinc-500">Se enviará automáticamente. Si no lo elegís, igual verá la propuesta pendiente en el panel.</span></span>
+              </label>}
+
               <button
                 type="submit"
                 className="w-full py-3.5 rounded-full bg-[#C0C0C0] hover:bg-[#E0E0E0] text-black font-semibold text-xs uppercase tracking-widest shadow-lg shadow-[#C0C0C0]/10 transition-all flex items-center justify-center gap-2 active:scale-95"
@@ -314,7 +293,7 @@ ${SPOTIFY_PLAYLIST_URL}
 
             <div className="mt-5 p-3 rounded-xl bg-zinc-900/50 border border-white/5 flex items-center gap-2 text-[11px] text-zinc-400">
               <Mail className="w-3.5 h-3.5 text-[#C0C0C0] shrink-0" />
-              <span>El organizador recibirá un aviso con tu propuesta.</span>
+              <span>{ORGANIZER_EMAIL_ENABLED ? 'Tu propuesta queda registrada para el organizador, aunque no elijas el email.' : 'Tu propuesta aparecerá como pendiente en el panel del organizador. El aviso por email está temporalmente desactivado.'}</span>
             </div>
           </div>
 
@@ -470,7 +449,7 @@ ${SPOTIFY_PLAYLIST_URL}
             </h3>
             
             <p className="text-xs text-zinc-300 text-center mb-6">
-              Recibimos tu tema para la fiesta de <strong className="text-white">{config.honoree}</strong>. Podés avisarle al organizador por mail para que la sume a Spotify:
+              Recibimos tu tema para la fiesta de <strong className="text-white">{config.honoree}</strong>. Quedó pendiente hasta que el organizador lo agregue a Spotify.{submittedSuccessModal.emailed ? ' También solicitamos el aviso automático por email.' : ''}
             </p>
 
             <div className="p-4 rounded-2xl bg-zinc-900 border border-white/10 mb-6 space-y-1 text-xs">
@@ -483,28 +462,6 @@ ${SPOTIFY_PLAYLIST_URL}
             </div>
 
             <div className="space-y-2.5">
-              <a
-                href={getMailtoLink(
-                  submittedSuccessModal.title, 
-                  submittedSuccessModal.artist, 
-                  submittedSuccessModal.submittedBy,
-                  submittedSuccessModal.note
-                )}
-                className="w-full py-3 rounded-full bg-[#C0C0C0] hover:bg-white text-black font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
-              >
-                <Mail className="w-4 h-4" />
-                <span>Avisar al Admin por Mail</span>
-              </a>
-
-              <button
-                type="button"
-                onClick={handleCopySongInfo}
-                className="w-full py-2.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-              >
-                {copiedData ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-zinc-400" />}
-                <span>{copiedData ? '¡Copiado!' : 'Copiar datos de la canción'}</span>
-              </button>
-
               <a
                 href={SPOTIFY_PLAYLIST_URL}
                 target="_blank"

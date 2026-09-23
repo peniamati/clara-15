@@ -194,14 +194,11 @@ export const EventInfoDetails: React.FC = () => {
           </div>
         </div>}
 
-        {/* Google Maps iFrame Placeholder */}
-        <div className="mt-12 rounded-3xl overflow-hidden border border-white/10 shadow-2xl h-80 bg-[#0F0F0F] relative">
-          <iframe
-            title="Google Maps Location"
-            src={`https://www.google.com/maps?q=${encodeURIComponent(`${config.venue}, ${config.address}, ${config.city}`)}&output=embed`}
-            className="w-full h-full border-0 filter grayscale invert contrast-125 opacity-80 hover:opacity-100 transition-opacity"
-            loading="lazy"
-          />
+        <div className="mt-12 rounded-3xl border border-white/10 bg-[#0F0F0F] p-6 text-center shadow-2xl sm:p-8">
+          <p className="text-xs uppercase tracking-widest text-[#C0C0C0]">Cómo llegar</p>
+          <p className="mt-2 text-lg font-semibold text-white">{config.venue}</p>
+          <p className="mt-1 text-sm text-zinc-400">{config.address}, {config.city}</p>
+          <a href={config.googleMapsUrl} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-[#C0C0C0] px-6 text-xs font-bold uppercase tracking-wider text-black hover:bg-white">Abrir indicaciones en Google Maps</a>
         </div>
 
       </div>

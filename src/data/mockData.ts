@@ -210,7 +210,7 @@ export const initialSchedule: ScheduleItem[] = [
   { time: '06:00', title: 'Desayuno de Despedida', description: 'Churros calentitos con dulce de leche y café express.', iconName: 'Coffee', isUnlocked: false }
 ];
 
-export const initialSongs: SongRequest[] = spotifyPlaylistTracks;
+export const initialSongs: SongRequest[] = spotifyPlaylistTracks.map(song => ({ ...song, isInOfficialPlaylist: true }));
 
 export const initialGuestbook: GuestbookMessage[] = [
   {

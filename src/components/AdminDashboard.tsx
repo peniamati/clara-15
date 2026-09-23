@@ -25,8 +25,11 @@ import {
   LogOut,
   LayoutDashboard,
   Settings2,
-  UserCog
+  UserCog,
+  Bell
 } from 'lucide-react';
+import { initialSongs } from '../data/mockData';
+import { findOfficialTrack } from '../lib/playlist';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -64,6 +67,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ title: string; message: string; tone?: 'success' | 'error' } | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationStorageKey = `clara-organizer-seen-${auth.currentUser?.email || 'local'}`;
+  const [lastSeenAt, setLastSeenAt] = useState(() => {
+    try { return Number(window.localStorage.getItem(notificationStorageKey) || 0); } catch { return 0; }
+  });
+  React.useEffect(() => {
+    try { setLastSeenAt(Number(window.localStorage.getItem(notificationStorageKey) || 0)); } catch { setLastSeenAt(0); }
+  }, [notificationStorageKey]);
+  const markNotificationsSeen = () => {
+    const now = Date.now();
+    setLastSeenAt(now);
+    try { window.localStorage.setItem(notificationStorageKey, String(now)); } catch { /* La sesión actual sigue funcionando. */ }
+  };
 
   // Customizer state
   const [localConfig, setLocalConfig] = useState(config);
@@ -249,6 +265,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   const confirmedGuests = guests.filter(g => g.status === 'CONFIRMED' || g.status === 'CHECKED_IN').length;
   const checkedInGuests = guests.filter(g => g.status === 'CHECKED_IN').length;
   const dietaryCount = guests.filter(g => g.dietaryRestrictions.length > 0 && !g.dietaryRestrictions.includes('Ninguna')).length;
+  const pendingSongRequests = songs.filter(song => !song.isInOfficialPlaylist && !findOfficialTrack(song, initialSongs));
+  const newConfirmations = guests.filter(guest => guest.status === 'CONFIRMED' && Date.parse(guest.createdAt || '') > lastSeenAt).length;
+  const newGuestbookMessages = guestbook.filter(message => Date.parse(message.createdAt || '') > lastSeenAt).length;
+  const newPhotos = photoboothImages.filter(photo => photo.ownerUid && Date.parse(photo.createdAt || '') > lastSeenAt).length;
+  const notificationCount = pendingSongRequests.length + newConfirmations + newGuestbookMessages + newPhotos;
 
   if (isPreviewMode) {
     return (
@@ -270,6 +291,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
         
         <div className="relative z-30 shrink-0 border-b border-white/10 bg-[#151515] px-4 pt-3 sm:px-8 sm:pt-5">
         <div className="mb-2 flex items-center justify-end gap-2 sm:absolute sm:right-6 sm:top-4 sm:mb-0">
+          <button type="button" onClick={() => setShowNotifications(open => !open)} aria-label={`Notificaciones: ${notificationCount}`} aria-expanded={showNotifications} className="relative flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-zinc-900 px-3 text-xs font-semibold text-white hover:border-white/30"><Bell className="h-4 w-4" /><span>Notificaciones</span>{notificationCount > 0 && <span className="rounded-full bg-amber-300 px-1.5 py-0.5 text-[10px] font-bold text-black">{notificationCount}</span>}</button>
           <button
             onClick={handleLogout}
             className="p-2 px-3 flex items-center gap-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-[10px] sm:text-xs font-semibold uppercase tracking-wider"
@@ -285,6 +307,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             <X className="w-5 h-5" />
           </button>
         </div>
+        {showNotifications && <div role="region" aria-label="Novedades del organizador" className="absolute right-4 top-14 z-50 max-h-[70dvh] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-white/20 bg-[#171717] p-4 shadow-2xl sm:right-6 sm:top-16">
+          <div className="flex items-center justify-between gap-3"><h3 className="text-lg font-semibold">Novedades</h3><button type="button" onClick={markNotificationsSeen} className="text-xs text-[#C0C0C0] underline">Marcar como vistas</button></div>
+          <p className="mt-1 text-xs text-zinc-400">Las propuestas de canciones siguen pendientes hasta estar en Spotify.</p>
+          <div className="mt-4 space-y-2">
+            <button type="button" onClick={() => { setActiveTab('moderation'); setShowNotifications(false); }} className="w-full rounded-xl bg-zinc-900 p-3 text-left text-sm"><strong className="block text-white">{pendingSongRequests.length} canciones pendientes</strong><span className="text-xs text-zinc-400">Abrir propuestas para la playlist oficial</span></button>
+            <button type="button" onClick={() => { setActiveTab('guests'); setShowNotifications(false); }} className="w-full rounded-xl bg-zinc-900 p-3 text-left text-sm"><strong className="block text-white">{confirmedGuests} confirmaciones</strong><span className="text-xs text-zinc-400">{newConfirmations} nuevas desde la última revisión</span></button>
+            <button type="button" onClick={() => { setActiveTab('moderation'); setShowNotifications(false); }} className="w-full rounded-xl bg-zinc-900 p-3 text-left text-sm"><strong className="block text-white">Firmas y fotos</strong><span className="text-xs text-zinc-400">{newGuestbookMessages} firmas y {newPhotos} fotos nuevas</span></button>
+          </div>
+        </div>}
 
         {/* Dashboard Header */}
         <div className="flex flex-col items-stretch pb-3 sm:pr-64">
@@ -336,7 +367,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
                   { title: 'Ver quién viene', detail: `${confirmedGuests} personas confirmadas · buscar, asignar mesa o descargar la lista`, tab: 'guests' as const, icon: Users },
-                  { title: 'Revisar lo que publicaron', detail: `${songs.length} canciones · fotos y firmas de los invitados`, tab: 'moderation' as const, icon: Music },
+                  { title: 'Revisar propuestas y publicaciones', detail: `${pendingSongRequests.length} canciones pendientes · fotos y firmas de los invitados`, tab: 'moderation' as const, icon: Music },
                   { title: 'Cambiar la invitación', detail: 'Fecha, lugar, textos, regalos y apariencia', tab: 'customizer' as const, icon: Settings2 },
                   { title: 'Dar acceso a otra persona', detail: 'Agregar o quitar cuentas de organización', tab: 'collabs' as const, icon: UserCog },
                 ].map(action => <button key={action.tab} type="button" onClick={() => setActiveTab(action.tab)} className="flex min-h-24 items-start gap-4 rounded-2xl border border-white/10 bg-black p-4 text-left transition-colors hover:border-[#C0C0C0]/60 focus-visible:outline-2 focus-visible:outline-[#C0C0C0]"><action.icon className="mt-1 h-5 w-5 shrink-0 text-[#C0C0C0]" /><span><strong className="block text-base text-white">{action.title}</strong><span className="mt-1 block text-sm leading-snug text-zinc-400">{action.detail}</span></span></button>)}
@@ -449,10 +480,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
         )}
 
         {activeTab === 'moderation' && <section className="space-y-6">
-          <h3 className="text-2xl font-semibold">Contenido de los invitados</h3>
-          <p className="text-zinc-400">Todo el contenido nuevo se publica automáticamente. Desde acá podés ocultarlo o eliminarlo definitivamente.</p>
+          <h3 className="text-2xl font-semibold">Propuestas y publicaciones</h3>
+          <p className="text-zinc-400">Las canciones propuestas no aparecen en la invitación hasta que estén en la playlist oficial. Las firmas y fotos sí se publican al enviarse; podés ocultarlas o eliminarlas.</p>
           {[
-            { group: 'songs', title: 'Canciones', items: songs },
+            { group: 'songs', title: `Canciones pendientes (${pendingSongRequests.length})`, items: pendingSongRequests },
             { group: 'guestbook', title: 'Firmas', items: guestbook },
             { group: 'photobooth', title: 'Fotos', items: photoboothImages }
           ].map(section => <div key={section.group} className="space-y-3">
@@ -460,8 +491,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             {section.items.length === 0 && <p className="text-zinc-400">Todavía no hay contenido.</p>}
             {section.items.map((item: any) => <article key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-zinc-900 p-4">
               <div><p>{item.title || item.guestName}</p><p className="text-sm text-zinc-400">{item.artist || item.message || item.caption}</p>{item.imageUrl && <img src={item.imageUrl} alt="Foto enviada" className="mt-2 h-32 rounded-lg" />}</div>
-              <div className="flex w-full gap-2 sm:w-auto"><button className="min-h-11 flex-1 rounded-lg border border-white/20 px-3 sm:flex-none" onClick={() => moderateContent(section.group, item.id, !item.approved)}>{item.approved ? 'Ocultar' : 'Mostrar'}</button><button className="min-h-11 flex-1 rounded-lg border border-red-500/30 px-3 text-red-300 sm:flex-none" onClick={() => deleteContent(section.group, item.id)}><Trash2 className="mr-1 inline h-4 w-4" />Eliminar</button></div>
+              <div className="flex w-full gap-2 sm:w-auto">{section.group === 'songs' ? <a href={item.spotifyUrl || 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL'} target="_blank" rel="noreferrer" className="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-[#1DB954]/40 px-3 text-sm text-[#1DB954] sm:flex-none">Abrir Spotify</a> : <button className="min-h-11 flex-1 rounded-lg border border-white/20 px-3 sm:flex-none" onClick={() => moderateContent(section.group, item.id, !item.approved)}>{item.approved ? 'Ocultar' : 'Mostrar'}</button>}<button className="min-h-11 flex-1 rounded-lg border border-red-500/30 px-3 text-red-300 sm:flex-none" onClick={() => deleteContent(section.group, item.id)}><Trash2 className="mr-1 inline h-4 w-4" />Eliminar</button></div>
             </article>)}
+            {section.group === 'songs' && <p className="text-xs text-zinc-500">Cuando agregues un tema a Spotify, se mostrará en la web después de la próxima sincronización. Eliminar una propuesta no quita canciones de Spotify.</p>}
           </div>)}
         </section>}
         {/* Tab 3: Customizer */}

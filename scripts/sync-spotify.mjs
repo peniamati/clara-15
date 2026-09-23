@@ -12,6 +12,7 @@ const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN;
 const playlistId = process.env.SPOTIFY_PLAYLIST_ID || '408drhVBzu4Jxrt501CwOL';
 
 if (!clientId || (!clientSecret && !refreshToken)) {
+  if (process.env.GITHUB_PAGES === 'true') throw new Error('Spotify credentials are missing; refusing to replace the published playlist with the 100-track fallback.');
   console.log('Spotify credentials are not configured; keeping the bundled playlist snapshot.');
   process.exit(0);
 }
@@ -31,8 +32,7 @@ const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
 });
 
 if (!tokenResponse.ok) {
-  console.warn(`::warning title=Spotify playlist sync skipped::Spotify token request failed: ${tokenResponse.status}. Keeping the bundled playlist snapshot.`);
-  process.exit(0);
+  throw new Error(`Spotify token request failed: ${tokenResponse.status}. Keeping the previously published site unchanged.`);
 }
 const { access_token: accessToken } = await tokenResponse.json();
 const tracks = [];
@@ -42,8 +42,7 @@ while (next) {
   const response = await fetch(next, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
-      console.warn(`::warning title=Spotify playlist sync skipped::Spotify playlist request failed: ${response.status}. A user token from the playlist owner or a collaborator is needed. Keeping the bundled playlist snapshot.`);
-      process.exit(0);
+      throw new Error(`Spotify playlist request failed: ${response.status}. A user token from the playlist owner or a collaborator is needed.`);
     }
     throw new Error(`Spotify playlist request failed: ${response.status}.`);
   }

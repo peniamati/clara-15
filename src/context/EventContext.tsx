@@ -4,6 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { visitorId } from '../lib/visitor';
 import { db, auth, firebaseConfigurationIssues } from '../lib/firebase';
 import { describePersistenceError, validatePhotoSource } from '../lib/photoUpload';
+import { findOfficialTrack } from '../lib/playlist';
 import { listDriveImages } from '../lib/driveUtils';
 import {
   EventConfig,
@@ -167,7 +168,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [schedule, setSchedule] = useState<ScheduleItem[]>(initialSchedule);
   const [songs, setSongs] = useState<SongRequest[]>(() => firebaseConfigurationIssues.length ? initialSongs : []);
-  const [spotifySongs, setSpotifySongs] = useState<SongRequest[]>([]);
   const [guestbook, setGuestbook] = useState<GuestbookMessage[]>(() => firebaseConfigurationIssues.length ? initialGuestbook : []);
   const [timeCapsule, setTimeCapsule] = useState<TimeCapsuleMessage[]>([]);
   const [photoboothImages, setPhotoboothImages] = useState<PhotoboothImage[]>(() => firebaseConfigurationIssues.length ? initialPhotobooth : []);
@@ -196,24 +196,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [tables, setTables] = useState<TableInfo[]>(initialTables);
   const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
   const [isPlayingMusic, setIsPlayingMusic] = useState<boolean>(false);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch('/api/spotify-playlist', { signal: controller.signal, headers: { Accept: 'application/json' } })
-      .then(response => response.ok ? response.json() : Promise.reject())
-      .then((payload: { tracks?: Array<Pick<SongRequest, 'id' | 'title' | 'artist' | 'spotifyUrl'>> }) => {
-        if (!Array.isArray(payload.tracks)) return;
-        setSpotifySongs(payload.tracks.map(track => ({
-          ...track,
-          submittedBy: 'Playlist Oficial',
-          votes: 0,
-          approved: true,
-          createdAt: new Date().toISOString()
-        })));
-      })
-      .catch(() => undefined);
-    return () => controller.abort();
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -266,10 +248,12 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return onSnapshot(readable, snap => {
         const remoteItems = snap.docs.map(d => ({ ...d.data(), id: d.id }));
         if (name === 'songs') {
-          const remoteKeys = new Set(remoteItems.map((item: any) => `${item.title}|${item.artist}`.toLocaleLowerCase('es')));
           (setter as (items: any[]) => void)([
-            ...remoteItems,
-            ...initialSongs.filter(item => !remoteKeys.has(`${item.title}|${item.artist}`.toLocaleLowerCase('es')))
+            ...remoteItems.map((item: any) => {
+              const official = findOfficialTrack(item, initialSongs);
+              return official ? { ...item, isInOfficialPlaylist: true, approved: true, spotifyUrl: official.spotifyUrl || item.spotifyUrl } : item;
+            }),
+            ...initialSongs.filter(item => !remoteItems.some((remote: any) => findOfficialTrack(remote, [item])))
           ]);
         } else {
           (setter as (items: any[]) => void)(remoteItems);
@@ -354,7 +338,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const ownerUid = await visitorId();
       const id = crypto.randomUUID();
       const createdAt = new Date().toISOString();
-      const requestedSong: SongRequest = { id, ...song, votes: 0, approved: true, createdAt };
+      const requestedSong: SongRequest = { id, ...song, votes: 0, approved: false, isInOfficialPlaylist: false, createdAt };
       await setDoc(doc(db, 'songs', id), JSON.parse(JSON.stringify({ ...requestedSong, ownerUid })));
       setSongs(previous => previous.some(item => item.id === id) ? previous : [requestedSong, ...previous]);
     });
@@ -404,7 +388,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
   const voteSong = (id: string) => {
-    const bundledSong = initialSongs.find(song => song.id === id) || spotifySongs.find(song => song.id === id);
+    const bundledSong = initialSongs.find(song => song.id === id);
     const persistedSong = songs.find(song => song.id === id && song.ownerUid);
     if (!bundledSong || persistedSong) return vote('songs', id, 'votes');
     return persist(async () => {
@@ -444,9 +428,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => stops.forEach(stop => stop());
   }, [pollIds]);
 
-  const mergedSongs = spotifySongs.length
-    ? [...songs, ...spotifySongs.filter(spotifySong => !songs.some(song => song.id === spotifySong.id || (`${song.title}|${song.artist}`.toLocaleLowerCase('es') === `${spotifySong.title}|${spotifySong.artist}`.toLocaleLowerCase('es'))))]
-    : songs;
   const mergedPhotoboothImages = [...photoboothImages, ...driveImages]
     .filter((image, index, all) => {
       const fileId = image.imageUrl.match(/(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]+)/)?.[1];
@@ -474,7 +455,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         timeline: config.timeline || [],
         schedule: config.schedule || [],
         unlockScheduleStage,
-        songs: mergedSongs,
+        songs,
         addSongRequest,
         voteSong,
         toggleApproveSong,
