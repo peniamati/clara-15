@@ -38,6 +38,23 @@ interface AdminDashboardProps {
   onPreviewChange: (preview: boolean) => void;
 }
 
+type OrganizerNoticeState = { title: string; message: string; tone?: 'success' | 'error'; actionUrl?: string; actionLabel?: string };
+
+const OrganizerNotice: React.FC<{ notice: OrganizerNoticeState | null; onClose: () => void }> = ({ notice, onClose }) => {
+  if (!notice) return null;
+  return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="alertdialog" aria-modal="true" aria-labelledby="notice-title">
+    <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#121212] p-6 text-center shadow-2xl">
+      <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${notice.tone === 'error' ? 'bg-red-500/15 text-red-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
+        {notice.tone === 'error' ? <XCircle className="h-6 w-6" /> : <CheckCircle2 className="h-6 w-6" />}
+      </div>
+      <h3 id="notice-title" className="mb-2 font-serif text-2xl font-semibold text-white">{notice.title}</h3>
+      <p className="mb-6 text-sm leading-relaxed text-zinc-400">{notice.message}</p>
+      {notice.actionUrl && <a href={notice.actionUrl} target="_blank" rel="noopener noreferrer" className="mb-3 block w-full rounded-full border border-white/20 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white">{notice.actionLabel || 'Abrir enlace'}</a>}
+      <button type="button" onClick={onClose} className="w-full rounded-full bg-[#C0C0C0] px-5 py-3 text-xs font-bold uppercase tracking-wider text-black">Entendido</button>
+    </div>
+  </div>;
+};
+
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPreviewChange }) => {
   const {
     config,
@@ -69,7 +86,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [saving, setSaving] = useState(false);
   const [exportingGuestbook, setExportingGuestbook] = useState(false);
-  const [notice, setNotice] = useState<{ title: string; message: string; tone?: 'success' | 'error'; actionUrl?: string; actionLabel?: string } | null>(null);
+  const [notice, setNotice] = useState<OrganizerNoticeState | null>(null);
   const [confirmation, setConfirmation] = useState<{ title: string; message: string; action: string; run: () => Promise<void> } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -168,8 +185,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
         setNotice({ title: 'Acceso denegado', message: 'Tu cuenta no tiene permisos de organizador para este evento.', tone: 'error' });
       }
     } catch (error: any) {
-      console.error('Login error:', error);
-      setNotice({ title: 'No se pudo iniciar sesión', message: error.message || 'Verificá tus credenciales e intentá nuevamente.', tone: 'error' });
+      if (error?.code !== 'auth/network-request-failed' && error?.code !== 'auth/popup-blocked') console.error('Login error:', error);
+      const message = error?.code === 'auth/network-request-failed'
+        ? 'No pudimos conectar con Google. Revisá la conexión o intentá abrir la invitación en Chrome.'
+        : error?.code === 'auth/popup-blocked'
+          ? 'El navegador bloqueó la ventana de Google. Permití ventanas emergentes para esta web e intentá nuevamente.'
+          : error?.message || 'Verificá tu cuenta e intentá nuevamente.';
+      setNotice({ title: 'No se pudo iniciar sesión', message, tone: 'error' });
     }
   };
 
@@ -352,6 +374,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             Iniciar sesión con Google
           </button>
         </div>
+        <OrganizerNotice notice={notice} onClose={() => setNotice(null)} />
       </div>
     );
   }
@@ -1009,21 +1032,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             </div>
           </div>
         )}
-        {notice && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="notice-title">
-            <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#121212] p-6 text-center shadow-2xl">
-              <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${notice.tone === 'error' ? 'bg-red-500/15 text-red-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
-                {notice.tone === 'error' ? <XCircle className="h-6 w-6" /> : <CheckCircle2 className="h-6 w-6" />}
-              </div>
-              <h3 id="notice-title" className="mb-2 font-serif text-2xl font-semibold text-white">{notice.title}</h3>
-              <p className="mb-6 text-sm leading-relaxed text-zinc-400">{notice.message}</p>
-              {notice.actionUrl && <a href={notice.actionUrl} target="_blank" rel="noopener noreferrer" className="mb-3 block w-full rounded-full border border-white/20 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white">{notice.actionLabel || 'Abrir enlace'}</a>}
-              <button type="button" onClick={() => setNotice(null)} className="w-full rounded-full bg-[#C0C0C0] px-5 py-3 text-xs font-bold uppercase tracking-wider text-black">
-                Entendido
-              </button>
-            </div>
-          </div>
-        )}
+        <OrganizerNotice notice={notice} onClose={() => setNotice(null)} />
 
       </div>
     </div>
