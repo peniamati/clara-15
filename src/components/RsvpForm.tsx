@@ -3,6 +3,7 @@ import React, { useRef, useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import confetti from 'canvas-confetti';
 import { notifyOrganizer, ORGANIZER_EMAIL_ENABLED } from '../lib/driveUtils';
+import { guestContactPhone, isMinorGuest, parseGuestAge } from '../lib/rsvpAge';
 import {
   CheckCircle2,
   XCircle,
@@ -40,8 +41,8 @@ export const RsvpForm: React.FC = () => {
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const numericAge = parseInt(age, 10) || 0;
-  const isMinor = numericAge > 0 && numericAge < 18;
+  const numericAge = parseGuestAge(age);
+  const isMinor = isMinorGuest(numericAge);
 
   const dietaryOptions = [
     'Ninguna (Menú General)',
@@ -74,6 +75,16 @@ export const RsvpForm: React.FC = () => {
       return;
     }
 
+    if (numericAge === null) {
+      setError('Ingresá la edad en años, entre 0 y 99. Para bebés menores de un año, ingresá 0.');
+      return;
+    }
+
+    if (!isMinor && !phone.trim()) {
+      setError('Ingresá un número de contacto para confirmar la asistencia.');
+      return;
+    }
+
     if (status === 'CONFIRMED' && isMinor && (!tutorName.trim() || !tutorPhone.trim())) {
       notify('Al ser menor de 18 años, por favor ingresa el nombre y teléfono de contacto de tu padre, madre o tutor responsable.');
       return;
@@ -87,15 +98,15 @@ export const RsvpForm: React.FC = () => {
       name: name.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
-      phone: phone.trim(),
+      phone: guestContactPhone(numericAge, phone, tutorPhone),
       age: numericAge,
       tutorName: isMinor ? tutorName.trim() : undefined,
       tutorPhone: isMinor ? tutorPhone.trim() : undefined,
       emergencyContactName: isMinor ? tutorName.trim() : undefined,
       emergencyContactPhone: isMinor ? tutorPhone.trim() : undefined,
       status,
-      adultsCount: 1,
-      kidsCount: 0,
+      adultsCount: isMinor ? 0 : 1,
+      kidsCount: isMinor ? 1 : 0,
       dietaryRestrictions: selectedDietary.length > 0 ? selectedDietary : ['Menú Estándar'],
       notes: notes.trim()
     });
@@ -105,7 +116,7 @@ export const RsvpForm: React.FC = () => {
       notifyOrganizer('rsvp', {
         guest: `${name.trim()} ${lastName.trim()}`,
         status,
-        phone: phone.trim(),
+        phone: guestContactPhone(numericAge, phone, tutorPhone),
         email: email.trim(),
         notes: notes.trim(),
         adminEmail: (config.adminEmails?.length ? config.adminEmails : ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com']).join(',')
@@ -126,7 +137,7 @@ export const RsvpForm: React.FC = () => {
   };
 
   const sendWhatsAppConfirmation = () => {
-    const text = `¡Hola ${config.honoree}! Soy ${name} ${lastName}${numericAge ? ` (${numericAge} años)` : ''}. ${
+    const text = `¡Hola ${config.honoree}! Soy ${name} ${lastName}${numericAge !== null ? ` (${numericAge} años)` : ''}. ${
       status === 'CONFIRMED'
         ? `¡Confirmé mi asistencia para tu fiesta de 15! ${isMinor ? `(Contacto tutor: ${tutorName} - ${tutorPhone}).` : ''}`
         : 'Lamentablemente no podré asistir a tus 15 años, ¡te deseo una noche fantástica e inolvidable!'
@@ -252,10 +263,12 @@ export const RsvpForm: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">WhatsApp / Celular *</label>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
+                  WhatsApp / Celular {isMinor ? '(opcional; usaremos el del tutor)' : '*'}
+                </label>
                 <input
                   type="tel"
-                  required
+                  required={!isMinor}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+54 9 11 1234-5678"
@@ -269,14 +282,16 @@ export const RsvpForm: React.FC = () => {
                 </label>
                 <input
                   type="number"
-                  min="5"
+                  min="0"
                   max="99"
+                  step="1"
                   required
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
                   placeholder="Ej. 15"
                   className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
                 />
+                <p className="mt-1 text-xs text-zinc-500">Si tiene menos de un año, ingresá 0.</p>
               </div>
 
               <div className="sm:col-span-2">
