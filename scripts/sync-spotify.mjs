@@ -21,14 +21,19 @@ const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
 if (!tokenResponse.ok) throw new Error(`Spotify token request failed: ${tokenResponse.status}`);
 const { access_token: accessToken } = await tokenResponse.json();
 const tracks = [];
-let next = `https://api.spotify.com/v1/playlists/${playlistId}/items?limit=100&offset=0`;
+let next = `https://api.spotify.com/v1/playlists/${playlistId}/items?limit=50&offset=0`;
 
 while (next) {
   const response = await fetch(next, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!response.ok) throw new Error(`Spotify playlist request failed: ${response.status}`);
+  if (!response.ok) {
+    const hint = response.status === 403
+      ? 'Spotify requires a user token from the playlist owner or a collaborator.'
+      : '';
+    throw new Error(`Spotify playlist request failed: ${response.status}. ${hint}`);
+  }
   const page = await response.json();
   for (const item of page.items || []) {
-    const track = item.track;
+    const track = item.item ?? item.track;
     if (!track?.id || !track?.name) continue;
     tracks.push({
       id: `spotify-${track.id}`,
