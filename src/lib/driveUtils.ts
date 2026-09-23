@@ -20,18 +20,38 @@ export function listDriveImages(): Promise<DriveSyncedImage[]> {
   return new Promise((resolve, reject) => {
     const callbackName = `__claraDriveSync${Date.now()}${Math.random().toString(36).slice(2)}`;
     const script = document.createElement('script');
-    const timeout = window.setTimeout(() => finish(new Error('La sincronización con Drive tardó demasiado.')), 60000);
-    const finish = (error?: Error, images: DriveSyncedImage[] = []) => {
-      window.clearTimeout(timeout);
+    let settled = false;
+    let timedOut = false;
+    let cleanupTimer: number | undefined;
+    const cleanup = () => {
       script.remove();
+      if (cleanupTimer !== undefined) window.clearTimeout(cleanupTimer);
       delete (window as unknown as Record<string, unknown>)[callbackName];
+    };
+    const timeout = window.setTimeout(() => {
+      timedOut = true;
+      finish(new Error('La sincronización con Drive tardó demasiado.'));
+      // Removing a script does not cancel one already executing. Keep its callback
+      // available for a late Apps Script response instead of raising ReferenceError.
+      script.remove();
+      cleanupTimer = window.setTimeout(cleanup, 300000);
+    }, 60000);
+    const finish = (error?: Error, images: DriveSyncedImage[] = []) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
       error ? reject(error) : resolve(images);
     };
     (window as unknown as Record<string, unknown>)[callbackName] = (payload: { ok?: boolean; images?: DriveSyncedImage[]; error?: string }) => {
+      if (settled) return;
       if (!payload?.ok) finish(new Error(payload?.error || 'Drive no devolvió una respuesta válida.'));
       else finish(undefined, Array.isArray(payload.images) ? payload.images : []);
     };
-    script.onerror = () => finish(new Error('No se pudo conectar con Google Drive.'));
+    script.onload = cleanup;
+    script.onerror = () => {
+      if (!timedOut) finish(new Error('No se pudo conectar con Google Drive.'));
+      cleanup();
+    };
     script.src = `${GOOGLE_DRIVE_SYNC_ENDPOINT}?callback=${encodeURIComponent(callbackName)}&sync=${Date.now()}`;
     document.body.appendChild(script);
   });

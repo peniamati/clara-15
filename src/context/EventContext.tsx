@@ -199,29 +199,34 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     let active = true;
-    const syncDrive = () => listDriveImages().then(images => {
-      if (!active) return;
-      const normalized = images.map(image => ({
-        id: `drive-${image.id}`,
-        guestName: 'Google Drive',
-        imageUrl: image.imageUrl,
-        filter: 'Normal',
-        sticker: 'Sin sticker',
-        caption: image.name,
-        likes: 0,
-        approved: true,
-        createdAt: image.createdAt
-      }));
-      setDriveImages(normalized);
-      try {
-        window.localStorage.setItem('clara-drive-images', JSON.stringify(normalized));
-      } catch {
-        // The in-memory result remains usable when browser storage is unavailable.
-      }
-      setDriveSyncStatus('synced');
-    }).catch(() => {
-      if (active) setDriveSyncStatus('error');
-    });
+    let syncing = false;
+    const syncDrive = () => {
+      if (syncing) return;
+      syncing = true;
+      void listDriveImages().then(images => {
+        if (!active) return;
+        const normalized = images.map(image => ({
+          id: `drive-${image.id}`,
+          guestName: 'Google Drive',
+          imageUrl: image.imageUrl,
+          filter: 'Normal',
+          sticker: 'Sin sticker',
+          caption: image.name,
+          likes: 0,
+          approved: true,
+          createdAt: image.createdAt
+        }));
+        setDriveImages(normalized);
+        try {
+          window.localStorage.setItem('clara-drive-images', JSON.stringify(normalized));
+        } catch {
+          // The in-memory result remains usable when browser storage is unavailable.
+        }
+        setDriveSyncStatus('synced');
+      }).catch(() => {
+        if (active) setDriveSyncStatus('error');
+      }).finally(() => { syncing = false; });
+    };
     void syncDrive();
     const timer = window.setInterval(syncDrive, 60000);
     return () => { active = false; window.clearInterval(timer); };
