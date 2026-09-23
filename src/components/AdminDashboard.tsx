@@ -73,7 +73,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     return () => setPreviewConfig(null);
   }, [localConfig, setPreviewConfig]);
 
-  const [customizerTab, setCustomizerTab] = useState<'general' | 'location' | 'gifts' | 'appearance' | 'modules'>('general');
+  const [customizerTab, setCustomizerTab] = useState<'general' | 'location' | 'gifts' | 'appearance' | 'content' | 'modules'>('general');
+  const customizerSections = [
+    { id: 'general', label: 'Datos y mensaje', help: 'Nombre, fecha y bienvenida' },
+    { id: 'location', label: 'Lugar y vestimenta', help: 'Salón, mapa y ropa' },
+    { id: 'gifts', label: 'Regalos', help: 'Alias y cuenta' },
+    { id: 'content', label: 'Fotos y programa', help: 'Book y horarios' },
+    { id: 'appearance', label: 'Portada y estilo', help: 'Imagen, colores y música' },
+    { id: 'modules', label: 'Secciones visibles', help: 'Mostrar u ocultar partes' },
+  ] as const;
+  const selectedCustomizerSection = customizerSections.find(section => section.id === customizerTab)!;
+  const hasUnsavedChanges = JSON.stringify(localConfig) !== JSON.stringify(config);
+  const localDateTimeValue = localConfig.date ? (() => {
+    const date = new Date(localConfig.date);
+    if (Number.isNaN(date.getTime())) return '';
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+    return local.toISOString().slice(0, 16);
+  })() : '';
 
   const handleLocalConfigChange = (field: keyof typeof config, value: any) => {
     setLocalConfig(prev => ({ ...prev, [field]: value }));
@@ -450,76 +466,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
         </section>}
         {/* Tab 3: Customizer */}
         {activeTab === 'customizer' && (
-          <form onSubmit={handleSaveConfig} className="mx-auto max-w-3xl space-y-6 pb-24">
+          <form onSubmit={handleSaveConfig} className="mx-auto max-w-6xl space-y-5 pb-24">
             <div className="mb-4">
-              <h3 className="font-serif text-2xl font-semibold text-white">Personalización del Sitio</h3>
+              <h3 className="font-serif text-2xl font-semibold text-white">Editar la invitación</h3>
+              <p className="mt-1 text-sm text-zinc-400">Elegí qué querés cambiar. Podés revisar todo antes de guardar.</p>
+              <p role="status" className={`mt-2 text-xs font-semibold ${hasUnsavedChanges ? 'text-amber-300' : 'text-emerald-300'}`}>{hasUnsavedChanges ? 'Tenés cambios sin guardar' : 'Todo está guardado'}</p>
             </div>
-
-            <ContentEditor config={localConfig} onChange={handleLocalConfigChange} />
-            {/* Customizer Sub-tabs */}
-            <label className="mb-5 block sm:hidden">
-              <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Qué querés editar</span>
-              <select
-                aria-label="Área de personalización"
-                value={customizerTab}
-                onChange={event => setCustomizerTab(event.target.value as typeof customizerTab)}
-                className="min-h-12 w-full rounded-xl border border-white/15 bg-zinc-900 px-4 text-sm font-semibold text-white outline-none focus:border-[#C0C0C0]"
-              >
-                <option value="general">Información general</option>
-                <option value="location">Ubicación y fecha</option>
-                <option value="gifts">Regalos</option>
-                <option value="appearance">Diseño</option>
-                <option value="modules">Secciones</option>
-              </select>
-            </label>
-            <div className="mb-5 hidden gap-2 overflow-x-auto border-b border-white/10 pb-2 sm:flex no-scrollbar">
-              <button
-                type="button"
-                onClick={() => setCustomizerTab('general')}
-                className={`flex items-center justify-center px-2 py-2 text-center text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
-                  customizerTab === 'general' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
-                }`}
-              >
-                General & Textos
-              </button>
-              <button
-                type="button"
-                onClick={() => setCustomizerTab('location')}
-                className={`flex items-center justify-center px-2 py-2 text-center text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
-                  customizerTab === 'location' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
-                }`}
-              >
-                Ubicación & Dress Code
-              </button>
-              <button
-                type="button"
-                onClick={() => setCustomizerTab('gifts')}
-                className={`flex items-center justify-center px-2 py-2 text-center text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
-                  customizerTab === 'gifts' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
-                }`}
-              >
-                Regalos & Cuentas
-              </button>
-              <button
-                type="button"
-                onClick={() => setCustomizerTab('appearance')}
-                className={`flex items-center justify-center px-2 py-2 text-center text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
-                  customizerTab === 'appearance' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
-                }`}
-              >
-                Apariencia & Multimedia
-              </button>
-              <button
-                type="button"
-                onClick={() => setCustomizerTab('modules')}
-                className={`col-span-2 flex items-center justify-center px-2 py-2 text-center text-[10px] sm:col-auto sm:px-4 sm:text-xs font-semibold uppercase tracking-wide sm:tracking-wider whitespace-normal sm:whitespace-nowrap transition-colors border-b-2 ${
-                  customizerTab === 'modules' ? 'text-[#C0C0C0] border-[#C0C0C0]' : 'text-zinc-500 border-transparent hover:text-zinc-300'
-                }`}
-              >
-                Módulos & Secciones
-              </button>
-            </div>
-
+            <nav aria-label="Partes de la invitación" className="grid grid-cols-2 gap-2 lg:hidden">
+              {customizerSections.map(section => <button key={section.id} type="button" onClick={() => setCustomizerTab(section.id)} aria-current={customizerTab === section.id ? 'page' : undefined} className={`min-h-16 rounded-xl border px-3 py-2 text-left text-xs font-semibold leading-tight transition-colors ${customizerTab === section.id ? 'border-[#C0C0C0] bg-[#C0C0C0] text-black' : 'border-white/10 bg-zinc-900 text-white'}`}>{section.label}</button>)}
+            </nav>
+            <div className="lg:flex lg:items-start lg:gap-6">
+              <nav aria-label="Partes de la invitación" className="hidden lg:sticky lg:top-0 lg:flex lg:w-56 lg:shrink-0 lg:flex-col lg:gap-2">
+                {customizerSections.map(section => <button key={section.id} type="button" onClick={() => setCustomizerTab(section.id)} aria-current={customizerTab === section.id ? 'page' : undefined} className={`rounded-xl border px-4 py-3 text-left transition-colors ${customizerTab === section.id ? 'border-[#C0C0C0] bg-[#C0C0C0] text-black' : 'border-white/10 bg-zinc-900 text-white hover:border-white/30'}`}><span className="block text-sm font-semibold">{section.label}</span><span className={`mt-1 block text-xs ${customizerTab === section.id ? 'text-black/70' : 'text-zinc-400'}`}>{section.help}</span></button>)}
+              </nav>
+              <div className="min-w-0 flex-1 space-y-4">
+                <div><p className="text-xs uppercase tracking-widest text-[#C0C0C0]">Invitación</p><h4 className="text-xl font-semibold text-white">{selectedCustomizerSection.label}</h4><p className="text-sm text-zinc-400">{selectedCustomizerSection.help}</p></div>
             <div className="bg-black border border-white/10 rounded-2xl p-4 sm:p-6">
               {customizerTab === 'general' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -541,7 +502,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                   </div>
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Fecha del Evento</label>
-                    <input type="datetime-local" value={localConfig.date ? new Date(localConfig.date).toISOString().slice(0, 16) : ''} onChange={e => handleLocalConfigChange('date', new Date(e.target.value).toISOString())} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                    <input type="datetime-local" value={localDateTimeValue} onChange={e => handleLocalConfigChange('date', e.target.value ? new Date(e.target.value).toISOString() : '')} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
                   </div>
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Fecha Límite Confirmación (RSVP)</label>
@@ -596,8 +557,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                     <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">CBU / CVU</label>
                     <input type="text" value={localConfig.cvu} onChange={e => handleLocalConfigChange('cvu', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
                   </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Álbum compartido de Google Fotos (cuando esté disponible)</label>
+                </div>
+              )}
+
+              {customizerTab === 'content' && (
+                <div className="space-y-6">
+                  <ContentEditor config={localConfig} onChange={handleLocalConfigChange} />
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Enlace a un álbum compartido (opcional)</label>
                     <input type="url" value={localConfig.eventAlbumUrl || ''} onChange={e => handleLocalConfigChange('eventAlbumUrl', e.target.value)} placeholder="https://photos.app.goo.gl/..." className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
                   </div>
                 </div>
@@ -647,8 +614,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                       </div>
                     </div>
                   </div>
+                  <details className="md:col-span-2 rounded-xl border border-white/10 bg-zinc-900/40 p-4">
+                    <summary className="cursor-pointer text-sm font-semibold text-white">Opciones avanzadas de letras y tamaños</summary>
+                    <p className="mt-2 text-xs text-zinc-400">No necesitás cambiar esto para publicar la invitación.</p>
+                    <div className="mt-5 grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
-                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Fuente del nombre principal</label>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Letra del nombre principal</label>
                     <select value={localConfig.heroFont || 'eyesome'} onChange={e => handleLocalConfigChange('heroFont', e.target.value as any)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none">
                       <option value="eyesome">Eyesome Script</option>
                       <option value="greatvibes">Great Vibes</option>
@@ -737,8 +708,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                       <option value="large">Grande</option>
                     </select>
                   </div>
+                    </div>
+                  </details>
                   <div className="md:col-span-2">
-                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">URL Imagen Principal (Portada)</label>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Enlace de otra imagen para la portada (opcional)</label>
                     <input type="url" value={localConfig.heroImageUrl === DEFAULT_HERO_IMAGE ? '' : localConfig.heroImageUrl} onChange={e => handleLocalConfigChange('heroImageUrl', e.target.value || DEFAULT_HERO_IMAGE)} placeholder="https://ejemplo.com/mi-portada.jpg" className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
                     {localConfig.heroImageUrl && (
                       <div className="mt-2 w-full h-32 rounded-xl overflow-hidden border border-white/10">
@@ -751,7 +724,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                     <input type="text" value={localConfig.customHashtag} onChange={e => handleLocalConfigChange('customHashtag', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="mb-1.5 block text-xs uppercase tracking-wider text-zinc-300">Música de Fondo (URL o ID de YouTube)</label>
+                    <label className="mb-1.5 block text-xs uppercase tracking-wider text-zinc-300">Música al abrir la invitación (opcional)</label>
                     <input type="url" value={localConfig.backgroundMusicUrl} onChange={e => handleLocalConfigChange('backgroundMusicUrl', e.target.value)} placeholder="https://www.youtube.com/watch?v=nNEb2k_EmMg" className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-base text-white outline-none focus:border-[#C0C0C0] sm:text-sm" />
                     <p className="mt-1.5 text-xs text-zinc-500">Al abrir la invitación se reproduce el video; al silenciar se pausa. Podés pegar una URL de YouTube, su ID de 11 caracteres o una URL directa a MP3.</p>
                   </div>
@@ -790,6 +763,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                   </div>
                 </div>
               )}
+            </div>
+              </div>
             </div>
           </form>
         )}
