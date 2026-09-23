@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { useEvent } from '../context/EventContext';
 import { ContentEditor } from './ContentEditor';
@@ -68,6 +68,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ title: string; message: string; tone?: 'success' | 'error' } | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement>(null);
   const notificationStorageKey = `clara-organizer-seen-${auth.currentUser?.email || 'local'}`;
   const [lastSeenAt, setLastSeenAt] = useState(() => {
     try { return Number(window.localStorage.getItem(notificationStorageKey) || 0); } catch { return 0; }
@@ -80,6 +81,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     setLastSeenAt(now);
     try { window.localStorage.setItem(notificationStorageKey, String(now)); } catch { /* La sesión actual sigue funcionando. */ }
   };
+  React.useEffect(() => {
+    if (!showNotifications) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      if (!notificationsRef.current?.contains(event.target as Node) && !(event.target as Element).closest('[data-notification-trigger]')) setShowNotifications(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowNotifications(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [showNotifications]);
 
   // Customizer state
   const [localConfig, setLocalConfig] = useState(config);
@@ -266,10 +282,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   const checkedInGuests = guests.filter(g => g.status === 'CHECKED_IN').length;
   const dietaryCount = guests.filter(g => g.dietaryRestrictions.length > 0 && !g.dietaryRestrictions.includes('Ninguna')).length;
   const pendingSongRequests = songs.filter(song => !song.isInOfficialPlaylist && !findOfficialTrack(song, initialSongs));
+  const newSongRequests = pendingSongRequests.filter(song => Date.parse(song.createdAt || '') > lastSeenAt).length;
   const newConfirmations = guests.filter(guest => guest.status === 'CONFIRMED' && Date.parse(guest.createdAt || '') > lastSeenAt).length;
   const newGuestbookMessages = guestbook.filter(message => Date.parse(message.createdAt || '') > lastSeenAt).length;
   const newPhotos = photoboothImages.filter(photo => photo.ownerUid && Date.parse(photo.createdAt || '') > lastSeenAt).length;
-  const notificationCount = pendingSongRequests.length + newConfirmations + newGuestbookMessages + newPhotos;
+  const notificationCount = newSongRequests + newConfirmations + newGuestbookMessages + newPhotos;
 
   if (isPreviewMode) {
     return (
@@ -291,7 +308,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
         
         <div className="relative z-30 shrink-0 border-b border-white/10 bg-[#151515] px-4 pt-3 sm:px-8 sm:pt-5">
         <div className="mb-2 flex items-center justify-end gap-2 sm:absolute sm:right-6 sm:top-4 sm:mb-0">
-          <button type="button" onClick={() => setShowNotifications(open => !open)} aria-label={`Notificaciones: ${notificationCount}`} aria-expanded={showNotifications} className="relative flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-zinc-900 px-3 text-xs font-semibold text-white hover:border-white/30"><Bell className="h-4 w-4" /><span>Notificaciones</span>{notificationCount > 0 && <span className="rounded-full bg-amber-300 px-1.5 py-0.5 text-[10px] font-bold text-black">{notificationCount}</span>}</button>
+          <button type="button" data-notification-trigger onClick={() => { if (!showNotifications) markNotificationsSeen(); setShowNotifications(open => !open); }} aria-label={`Notificaciones: ${notificationCount}`} aria-expanded={showNotifications} className="relative flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-zinc-900 px-3 text-xs font-semibold text-white hover:border-white/30"><Bell className="h-4 w-4" /><span>Notificaciones</span>{notificationCount > 0 && <span className="rounded-full bg-amber-300 px-1.5 py-0.5 text-[10px] font-bold text-black">{notificationCount}</span>}</button>
           <button
             onClick={handleLogout}
             className="p-2 px-3 flex items-center gap-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-[10px] sm:text-xs font-semibold uppercase tracking-wider"
@@ -307,7 +324,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             <X className="w-5 h-5" />
           </button>
         </div>
-        {showNotifications && <div role="region" aria-label="Novedades del organizador" className="absolute right-4 top-14 z-50 max-h-[70dvh] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-white/20 bg-[#171717] p-4 shadow-2xl sm:right-6 sm:top-16">
+        {showNotifications && <div ref={notificationsRef} role="region" aria-label="Novedades del organizador" className="absolute right-4 top-14 z-50 max-h-[70dvh] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-white/20 bg-[#171717] p-4 shadow-2xl sm:right-6 sm:top-16">
           <div className="flex items-center justify-between gap-3"><h3 className="text-lg font-semibold">Novedades</h3><button type="button" onClick={markNotificationsSeen} className="text-xs text-[#C0C0C0] underline">Marcar como vistas</button></div>
           <p className="mt-1 text-xs text-zinc-400">Las propuestas de canciones siguen pendientes hasta estar en Spotify.</p>
           <div className="mt-4 space-y-2">

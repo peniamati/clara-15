@@ -194,11 +194,21 @@ export const EventInfoDetails: React.FC = () => {
           </div>
         </div>}
 
-        <div className="mt-12 rounded-3xl border border-white/10 bg-[#0F0F0F] p-6 text-center shadow-2xl sm:p-8">
+        <div className="mt-12 overflow-hidden rounded-3xl border border-white/10 bg-[#0F0F0F] shadow-2xl">
+          <iframe
+            title={`Mapa de ${config.venue}`}
+            src={`https://www.google.com/maps?q=${encodeURIComponent(`${config.venue}, ${config.address}, ${config.city}`)}&output=embed`}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            className="h-72 w-full border-0 sm:h-96"
+            allowFullScreen
+          />
+          <div className="p-6 text-center sm:p-8">
           <p className="text-xs uppercase tracking-widest text-[#C0C0C0]">Cómo llegar</p>
           <p className="mt-2 text-lg font-semibold text-white">{config.venue}</p>
           <p className="mt-1 text-sm text-zinc-400">{config.address}, {config.city}</p>
           <a href={config.googleMapsUrl} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-[#C0C0C0] px-6 text-xs font-bold uppercase tracking-wider text-black hover:bg-white">Abrir indicaciones en Google Maps</a>
+          </div>
         </div>
 
       </div>
