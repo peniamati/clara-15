@@ -23,6 +23,12 @@ function doGet(e) {
     const value = CacheService.getScriptCache().get('photo-delete-' + operationId);
     return jsonpOutput(callback, value ? JSON.parse(value) : { ok: true, pending: true });
   }
+  if (params.action === 'uploadStatus') {
+    const operationId = String(params.operationId || '');
+    if (!/^[a-zA-Z0-9-]{20,80}$/.test(operationId)) return jsonpOutput(callback, { ok: false, error: 'Operación inválida' });
+    const value = CacheService.getScriptCache().get('photo-upload-' + operationId);
+    return jsonpOutput(callback, value ? JSON.parse(value) : { ok: true, pending: true });
+  }
   try {
     const folder = DriveApp.getFolderById(FOLDER_ID);
     const files = folder.getFiles();
@@ -118,6 +124,7 @@ function doPost(e) {
     CacheService.getScriptCache().put('photo-delete-' + operationId, JSON.stringify(result), 300);
     return jsonOutput(result);
   }
+  const uploadOperationId = String(params.operationId || '');
   try {
     if (params.action === 'notify') {
       sendOrganizerNotification(params);
@@ -133,13 +140,21 @@ function doPost(e) {
     const file = DriveApp.getFolderById(FOLDER_ID)
       .createFile(Utilities.newBlob(bytes, mimeType, safeName));
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return jsonOutput({ ok: true, image: {
+    const result = { ok: true, image: {
       id: file.getId(), name: file.getName(), mimeType: file.getMimeType(),
       imageUrl: 'https://lh3.googleusercontent.com/d/' + file.getId() + '=w2400',
       createdAt: file.getDateCreated().toISOString()
-    }});
+    }};
+    if (/^[a-zA-Z0-9-]{20,80}$/.test(uploadOperationId)) {
+      CacheService.getScriptCache().put('photo-upload-' + uploadOperationId, JSON.stringify(result), 300);
+    }
+    return jsonOutput(result);
   } catch (error) {
-    return jsonOutput({ ok: false, error: String(error) });
+    const result = { ok: false, error: String(error) };
+    if (/^[a-zA-Z0-9-]{20,80}$/.test(uploadOperationId)) {
+      CacheService.getScriptCache().put('photo-upload-' + uploadOperationId, JSON.stringify(result), 300);
+    }
+    return jsonOutput(result);
   }
 }
 
