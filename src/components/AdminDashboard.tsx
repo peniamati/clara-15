@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { initialSongs } from '../data/mockData';
 import { findOfficialTrack } from '../lib/playlist';
+import { extractDriveFileId } from '../lib/driveUtils';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -67,7 +68,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<{ title: string; message: string; tone?: 'success' | 'error' } | null>(null);
+  const [exportingGuestbook, setExportingGuestbook] = useState(false);
+  const [notice, setNotice] = useState<{ title: string; message: string; tone?: 'success' | 'error'; actionUrl?: string; actionLabel?: string } | null>(null);
+  const [confirmation, setConfirmation] = useState<{ title: string; message: string; action: string; run: () => Promise<void> } | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationSnapshot, setNotificationSnapshot] = useState<{ confirmations: number; messages: number; photos: number } | null>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
@@ -174,18 +178,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
       await signOut(auth);
     } catch (error) {
       console.error('Logout error:', error);
+      setNotice({ title: 'No se pudo cerrar sesión', message: 'Intentá nuevamente.', tone: 'error' });
     }
   };
 
   const [newAdminEmail, setNewAdminEmail] = useState('');
-  const handleAddAdmin = () => {
-    if (!newAdminEmail.trim()) return;
+  const handleAddAdmin = async () => {
+    if (!newAdminEmail.trim()) { setNotice({ title: 'Falta el correo', message: 'Ingresá el correo de la persona que querés agregar.', tone: 'error' }); return; }
     const email = newAdminEmail.trim().toLowerCase();
-    const currentAdmins = config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
-    if (!currentAdmins.includes(email)) {
-      void updateConfig({ adminEmails: [...currentAdmins, email] }).catch(() => setNotice({ title: 'No se pudo guardar', message: 'No se agregó el administrador.', tone: 'error' }));
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setNotice({ title: 'Correo no válido', message: 'Revisá el correo antes de agregar el organizador.', tone: 'error' });
+      return;
     }
-    setNewAdminEmail('');
+    const currentAdmins = config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
+    if (currentAdmins.some(current => current.toLowerCase() === email)) {
+      setNotice({ title: 'Ya tiene acceso', message: `${email} ya figura como organizador.`, tone: 'error' });
+      return;
+    }
+    try {
+      await updateConfig({ adminEmails: [...currentAdmins, email] });
+      setNewAdminEmail('');
+      setNotice({ title: 'Organizador agregado', message: `${email} ya puede ingresar con su cuenta de Google.`, tone: 'success' });
+    } catch { setNotice({ title: 'No se pudo guardar', message: 'No se agregó el organizador. Revisá la conexión e intentá nuevamente.', tone: 'error' }); }
   };
 
   const handleRemoveAdmin = (emailToRemove: string) => {
@@ -194,7 +208,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
       setNotice({ title: 'No se puede quitar', message: 'Debe haber al menos un administrador en la plataforma.', tone: 'error' });
       return;
     }
-    void updateConfig({ adminEmails: currentAdmins.filter(e => e !== emailToRemove) }).catch(() => setNotice({ title: 'No se pudo guardar', message: 'No se quitó el administrador.', tone: 'error' }));
+    setConfirmation({
+      title: '¿Quitar este organizador?',
+      message: `${emailToRemove} perderá el acceso al panel. Debe quedar al menos un organizador.`,
+      action: 'Quitar acceso',
+      run: async () => {
+        try {
+          await updateConfig({ adminEmails: currentAdmins.filter(e => e !== emailToRemove) });
+          setNotice({ title: 'Acceso quitado', message: `${emailToRemove} ya no figura como organizador.`, tone: 'success' });
+        } catch { setNotice({ title: 'No se pudo guardar', message: 'No se quitó el organizador. Revisá la conexión e intentá nuevamente.', tone: 'error' }); }
+      },
+    });
+  };
+
+  const confirmDelete = (group: string, id: string, label: string) => {
+    const driveFileId = group === 'photobooth'
+      ? extractDriveFileId(photoboothImages.find(image => image.id === id)?.imageUrl || '') : null;
+    if (driveFileId) {
+      setNotice({
+        title: 'Esta foto está en Drive',
+        message: 'Borrar solo el registro de la web no elimina el archivo: volvería a aparecer en la próxima sincronización. Podés abrirlo en Drive para quitarlo desde allí.',
+        tone: 'error', actionUrl: `https://drive.google.com/file/d/${driveFileId}/view`, actionLabel: 'Abrir en Drive',
+      });
+      return;
+    }
+    setConfirmation({
+      title: `¿Eliminar ${label}?`,
+      message: 'Esta acción quita el contenido de la invitación. Revisá que sea el elemento correcto.',
+      action: 'Eliminar',
+      run: async () => {
+        const deleted = await deleteContent(group, id);
+        setNotice(deleted
+          ? { title: 'Contenido eliminado', message: `${label} se quitó de la invitación.`, tone: 'success' }
+          : { title: 'No se pudo eliminar', message: 'No se guardó el cambio. Revisá la conexión e intentá nuevamente.', tone: 'error' });
+      },
+    });
+  };
+
+  const handleModeration = async (group: string, id: string, approved: boolean) => {
+    const saved = await moderateContent(group, id, approved);
+    setNotice(saved
+      ? { title: approved ? 'Publicación visible' : 'Publicación oculta', message: approved ? 'Ya se muestra en la invitación.' : 'Ya no se muestra en la invitación.', tone: 'success' }
+      : { title: 'No se pudo guardar', message: 'El estado de la publicación no cambió.', tone: 'error' });
+  };
+
+  const handleCheckIn = async (id: string) => {
+    const saved = await checkInGuest(id);
+    setNotice(saved
+      ? { title: 'Ingreso registrado', message: 'La asistencia quedó marcada en el panel.', tone: 'success' }
+      : { title: 'No se pudo registrar', message: 'El ingreso no quedó guardado. Intentá nuevamente.', tone: 'error' });
   };
 
   const fontMap: Record<string, string> = {
@@ -233,6 +295,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   };
 
   const exportGuestTable = () => {
+    if (!guests.length) {
+      setNotice({ title: 'No hay invitados', message: 'La tabla estará disponible cuando haya una respuesta de asistencia.', tone: 'error' });
+      return;
+    }
     const rows = guests.map(g => ({
       Nombre: g.name,
       Apellido: g.lastName,
@@ -255,7 +321,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     worksheet['!autofilter'] = { ref: worksheet['!ref'] || 'A1:L1' };
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Invitados');
-    XLSX.writeFile(workbook, `Invitados_${config.honoree.replace(/\s+/g, '_')}.xls`, { bookType: 'biff8' });
+    try {
+      XLSX.writeFile(workbook, `Invitados_${config.honoree.replace(/\s+/g, '_')}.xls`, { bookType: 'biff8' });
+      setNotice({ title: 'Tabla descargada', message: 'Se generó el archivo de invitados en formato XLS.', tone: 'success' });
+    } catch {
+      setNotice({ title: 'No se pudo descargar', message: 'No se generó la tabla. Intentá nuevamente.', tone: 'error' });
+    }
   };
 
   if (!isAdminLoggedIn) {
@@ -503,8 +574,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                      {g.status === 'CONFIRMED' && <button className="min-h-11 rounded-lg border border-white/20 px-3" onClick={() => checkInGuest(g.id)}>Registrar ingreso</button>}
-                      <button className="min-h-11 rounded-lg border border-red-500/30 px-3 text-red-300" onClick={() => deleteContent('guests', g.id)}><Trash2 className="h-4 w-4" aria-hidden="true" /><span className="sr-only">Eliminar invitado</span></button>
+                      {g.status === 'CONFIRMED' && <button className="min-h-11 rounded-lg border border-white/20 px-3" onClick={() => void handleCheckIn(g.id)}>Registrar ingreso</button>}
+                      <button className="min-h-11 rounded-lg border border-red-500/30 px-3 text-red-300" onClick={() => confirmDelete('guests', g.id, `a ${g.name} ${g.lastName}`)}><Trash2 className="h-4 w-4" aria-hidden="true" /><span className="sr-only">Eliminar invitado</span></button>
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                         g.status === 'CONFIRMED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 
                         g.status === 'CHECKED_IN' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
@@ -522,7 +593,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
 
         {activeTab === 'moderation' && <section className="space-y-6">
           <h3 className="text-2xl font-semibold">Propuestas y publicaciones</h3>
-          <p className="text-zinc-400">Las canciones propuestas no aparecen en la invitación hasta que estén en la playlist oficial. Las firmas y fotos sí se publican al enviarse; podés ocultarlas o eliminarlas.</p>
+          <p className="text-zinc-400">Las canciones propuestas no aparecen en la invitación hasta que estén en la playlist oficial. Las firmas y fotos se publican al enviarse; las fotos de Drive deben quitarse también de la carpeta para que no reaparezcan.</p>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900 p-4">
+            <div><h4 className="font-semibold">Libro de firmas</h4><p className="text-sm text-zinc-400">Guardá una copia PDF con nombres, fechas y dedicatorias.</p></div>
+            <button type="button" disabled={exportingGuestbook} onClick={async () => {
+              const publishedMessages = guestbook.filter(message => message.approved);
+              if (!publishedMessages.length) { setNotice({ title: 'Todavía no hay firmas publicadas', message: 'Podrás descargar el libro cuando haya una dedicatoria visible.', tone: 'error' }); return; }
+              setExportingGuestbook(true);
+              try { const { downloadGuestbookPdf } = await import('../lib/guestbookPdf'); downloadGuestbookPdf(publishedMessages, config.honoree); setNotice({ title: 'PDF generado', message: 'Guardá el archivo en un lugar seguro para conservar las dedicatorias.', tone: 'success' }); }
+              catch { setNotice({ title: 'No se pudo crear el PDF', message: 'Intentá nuevamente desde este dispositivo.', tone: 'error' }); }
+              finally { setExportingGuestbook(false); }
+            }} className="min-h-11 rounded-full bg-white px-5 text-sm font-semibold text-black disabled:opacity-50"><Download className="mr-2 inline h-4 w-4" />{exportingGuestbook ? 'Generando…' : 'Descargar PDF'}</button>
+          </div>
           {[
             { group: 'songs', title: `Canciones pendientes (${pendingSongRequests.length})`, items: pendingSongRequests },
             { group: 'guestbook', title: 'Firmas', items: guestbook },
@@ -532,7 +614,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             {section.items.length === 0 && <p className="text-zinc-400">Todavía no hay contenido.</p>}
             {section.items.map((item: any) => <article key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-zinc-900 p-4">
               <div><p>{item.title || item.guestName}</p><p className="text-sm text-zinc-400">{item.artist || item.message || item.caption}</p>{item.imageUrl && <img src={item.imageUrl} alt="Foto enviada" className="mt-2 h-32 rounded-lg" />}</div>
-              <div className="flex w-full gap-2 sm:w-auto">{section.group === 'songs' ? <a href={item.spotifyUrl || 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL'} target="_blank" rel="noreferrer" className="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-[#1DB954]/40 px-3 text-sm text-[#1DB954] sm:flex-none">Abrir Spotify</a> : <button className="min-h-11 flex-1 rounded-lg border border-white/20 px-3 sm:flex-none" onClick={() => moderateContent(section.group, item.id, !item.approved)}>{item.approved ? 'Ocultar' : 'Mostrar'}</button>}<button className="min-h-11 flex-1 rounded-lg border border-red-500/30 px-3 text-red-300 sm:flex-none" onClick={() => deleteContent(section.group, item.id)}><Trash2 className="mr-1 inline h-4 w-4" />Eliminar</button></div>
+              <div className="flex w-full gap-2 sm:w-auto">
+                {section.group === 'songs'
+                  ? <a href={item.spotifyUrl || 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL'} target="_blank" rel="noreferrer" className="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-[#1DB954]/40 px-3 text-sm text-[#1DB954] sm:flex-none">Abrir Spotify</a>
+                  : section.group === 'photobooth' && extractDriveFileId(item.imageUrl || '')
+                    ? <a href={`https://drive.google.com/file/d/${extractDriveFileId(item.imageUrl)}/view`} target="_blank" rel="noopener noreferrer" className="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-white/20 px-3 text-sm text-white sm:flex-none">Abrir en Drive</a>
+                    : <button className="min-h-11 flex-1 rounded-lg border border-white/20 px-3 sm:flex-none" onClick={() => void handleModeration(section.group, item.id, !item.approved)}>{item.approved ? 'Ocultar' : 'Mostrar'}</button>}
+                <button className="min-h-11 flex-1 rounded-lg border border-red-500/30 px-3 text-red-300 sm:flex-none" onClick={() => confirmDelete(section.group, item.id, section.group === 'photobooth' ? 'la foto' : section.group === 'guestbook' ? 'la firma' : 'la propuesta')}><Trash2 className="mr-1 inline h-4 w-4" />Eliminar</button>
+              </div>
             </article>)}
             {section.group === 'songs' && <p className="text-xs text-zinc-500">Cuando agregues un tema a Spotify, se mostrará en la web después de la próxima sincronización. Eliminar una propuesta no quita canciones de Spotify.</p>}
           </div>)}
@@ -854,11 +943,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                 placeholder="nuevo.admin@gmail.com"
                 value={newAdminEmail}
                 onChange={e => setNewAdminEmail(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAddAdmin()}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void handleAddAdmin(); } }}
                 className="min-w-0 flex-1 px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
               />
               <button
-                onClick={handleAddAdmin}
+                onClick={() => void handleAddAdmin()}
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#C0C0C0] text-black font-semibold text-xs tracking-wider hover:bg-white transition-colors uppercase"
               >
                 Agregar
@@ -866,13 +955,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
             </div>
 
             <div className="space-y-3">
+              <p className="text-xs text-zinc-400">Debe quedar al menos una cuenta organizadora. Al quitar una cuenta se pedirá confirmación.</p>
               {(config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com']).map(email => (
                 <div key={email} className="flex items-center justify-between gap-3 p-4 rounded-xl bg-black border border-white/10">
                   <span className="min-w-0 break-all text-sm text-zinc-300 font-medium">{email}</span>
                   <button
                     onClick={() => handleRemoveAdmin(email)}
-                    className="p-2 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
-                    title="Eliminar administrador"
+                    disabled={(config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com']).length <= 1}
+                    className="p-2 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                    title={(config.adminEmails || ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com']).length <= 1 ? 'Debe quedar al menos un organizador' : 'Quitar organizador'}
+                    aria-label={`Quitar acceso a ${email}`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -905,6 +997,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
 
         </div>
         </div>
+        {confirmation && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="confirmation-title">
+            <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#121212] p-6 shadow-2xl">
+              <h3 id="confirmation-title" className="font-serif text-2xl font-semibold text-white">{confirmation.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-300">{confirmation.message}</p>
+              <div className="mt-6 flex gap-2">
+                <button type="button" disabled={confirming} onClick={() => setConfirmation(null)} className="min-h-11 flex-1 rounded-full border border-white/20 px-4 text-sm text-white">Cancelar</button>
+                <button type="button" disabled={confirming} onClick={async () => { setConfirming(true); try { await confirmation.run(); } finally { setConfirming(false); setConfirmation(null); } }} className="min-h-11 flex-1 rounded-full bg-red-500 px-4 text-sm font-bold text-white disabled:opacity-50">{confirming ? 'Procesando…' : confirmation.action}</button>
+              </div>
+            </div>
+          </div>
+        )}
         {notice && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="notice-title">
             <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#121212] p-6 text-center shadow-2xl">
@@ -913,6 +1017,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
               </div>
               <h3 id="notice-title" className="mb-2 font-serif text-2xl font-semibold text-white">{notice.title}</h3>
               <p className="mb-6 text-sm leading-relaxed text-zinc-400">{notice.message}</p>
+              {notice.actionUrl && <a href={notice.actionUrl} target="_blank" rel="noopener noreferrer" className="mb-3 block w-full rounded-full border border-white/20 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white">{notice.actionLabel || 'Abrir enlace'}</a>}
               <button type="button" onClick={() => setNotice(null)} className="w-full rounded-full bg-[#C0C0C0] px-5 py-3 text-xs font-bold uppercase tracking-wider text-black">
                 Entendido
               </button>
