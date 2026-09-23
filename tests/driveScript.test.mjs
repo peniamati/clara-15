@@ -57,17 +57,17 @@ test('solo un organizador verificado puede quitar fotos de Drive', () => {
   assert.equal(harness.driveTouched, false);
 });
 
-test('no quita archivos ajenos a la carpeta de Clara', () => {
+test('una eliminación ya completada puede reintentarse para limpiar el registro web', () => {
   const harness = scriptHarness({ insideFolder: false });
   const response = JSON.parse(harness.sandbox.doPost(harness.request).text);
-  assert.equal(response.ok, false);
+  assert.deepEqual(response, { ok: true, removed: true, alreadyAbsent: true });
   assert.equal(harness.removed, false);
 });
 
 test('quita de la carpeta una foto autorizada sin eliminar el archivo original', () => {
   const harness = scriptHarness();
   const response = JSON.parse(harness.sandbox.doPost(harness.request).text);
-  assert.deepEqual(response, { ok: true, removed: true });
+  assert.deepEqual(response, { ok: true, removed: true, alreadyAbsent: false });
   assert.equal(harness.removed, true);
 });
 

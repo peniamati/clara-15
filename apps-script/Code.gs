@@ -88,7 +88,9 @@ function removePhotoFromFolder(params) {
   const parents = file.getParents();
   let insideFolder = false;
   while (parents.hasNext()) if (parents.next().getId() === FOLDER_ID) insideFolder = true;
-  if (!insideFolder) throw new Error('La foto ya no está en la carpeta de Clara.');
+  // A prior removal may already have succeeded while Drive's list was still stale.
+  // Treat that retry as completed so the website can clean up its photo record.
+  if (!insideFolder) return { alreadyAbsent: true };
   // Drive API v3 changes only the parent folder; it never trashes the original.
   const endpoint = 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(fileId);
   const headers = { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() };
@@ -98,6 +100,7 @@ function removePhotoFromFolder(params) {
   if (response.getResponseCode() !== 200) throw new Error('Drive rechazó el cambio de carpeta: ' + response.getContentText().slice(0, 300));
   const remainingParents = JSON.parse(response.getContentText()).parents || [];
   if (remainingParents.includes(FOLDER_ID)) throw new Error('Drive no confirmó que la foto saliera de la carpeta.');
+  return { alreadyAbsent: false };
 }
 
 function sendOrganizerNotification(params) {
@@ -121,7 +124,7 @@ function doPost(e) {
     const operationId = String(params.operationId || '');
     if (!/^[a-zA-Z0-9-]{20,80}$/.test(operationId)) return jsonOutput({ ok: false, error: 'Operación inválida' });
     let result;
-    try { removePhotoFromFolder(params); result = { ok: true, removed: true }; }
+    try { const removal = removePhotoFromFolder(params); result = { ok: true, removed: true, alreadyAbsent: removal.alreadyAbsent }; }
     catch (error) { result = { ok: false, error: String(error) }; }
     CacheService.getScriptCache().put('photo-delete-' + operationId, JSON.stringify(result), 300);
     return jsonOutput(result);
