@@ -5,6 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, follow" />
     <meta name="theme-color" content="#050505" />
+    <script>
+      // GitHub Pages swaps the whole build. Recover once if a cached page asks
+      // for an asset that disappeared during deployment.
+      (function () {
+        var retryKey = 'clara15-asset-retry';
+        function recover() {
+          var now = Date.now();
+          try {
+            if (now - Number(sessionStorage.getItem(retryKey) || 0) < 120000) return;
+            sessionStorage.setItem(retryKey, String(now));
+          } catch (_) { /* Private browsing may block storage. */ }
+          var url = new URL(location.href);
+          url.searchParams.set('actualizar', String(now));
+          location.replace(url.toString());
+        }
+        window.addEventListener('error', function (event) {
+          var asset = event.target;
+          if (!(asset instanceof HTMLScriptElement || asset instanceof HTMLLinkElement)) return;
+          var url = asset.src || asset.href || '';
+          if (url.startsWith(location.origin + '/clara-15/assets/')) recover();
+        }, true);
+      })();
+    </script>
     <meta name="description" content="Te invito a celebrar mis 15 años. Sábado 17 de octubre de 2026, 21:30 h, en Salón Don Ata Eventos, Bahía Blanca. Abrí la invitación y confirmá tu asistencia." />
     <link rel="canonical" href="https://peniamati.github.io/clara-15/" />
     <meta property="og:type" content="website" />

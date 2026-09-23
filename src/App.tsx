@@ -17,6 +17,7 @@ import { Footer } from './components/Footer';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { BackgroundMusic } from './components/BackgroundMusic';
 import { Notice } from './components/Notice';
+import { AsyncPanelBoundary } from './components/AsyncPanelBoundary';
 
 const AdminDashboard = React.lazy(() => import('./components/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
 const ReceptionCheckInApp = React.lazy(() => import('./components/ReceptionCheckInApp').then(module => ({ default: module.ReceptionCheckInApp })));
@@ -163,14 +164,14 @@ const AppContent: React.FC = () => {
 
       {/* Reception Check-In App Drawer */}
       {showCheckInModal && (
-        <Suspense fallback={<div role="status" className="fixed inset-0 z-50 grid place-items-center bg-black text-white">Abriendo ingreso…</div>}><ReceptionCheckInApp onClose={() => setShowCheckInModal(false)} /></Suspense>
+        <AsyncPanelBoundary label="el ingreso"><Suspense fallback={<div role="status" className="fixed inset-0 z-50 grid place-items-center bg-black text-white">Abriendo ingreso…</div>}><ReceptionCheckInApp onClose={() => setShowCheckInModal(false)} /></Suspense></AsyncPanelBoundary>
       )}
 
       <Footer />
       </div>
       {/* Independent organizer screen */}
       {showAdminModal && (
-        <Suspense fallback={<div role="status" className="fixed inset-0 z-50 grid place-items-center bg-black text-white">Abriendo panel…</div>}><AdminDashboard onClose={() => { window.location.hash = 'inicio'; }} onPreviewChange={setAdminPreview} /></Suspense>
+        <AsyncPanelBoundary label="el organizador"><Suspense fallback={<div role="status" className="fixed inset-0 z-50 grid place-items-center bg-black text-white">Abriendo panel…</div>}><AdminDashboard onClose={() => { window.location.hash = 'inicio'; }} onPreviewChange={setAdminPreview} /></Suspense></AsyncPanelBoundary>
       )}
 
     </div>

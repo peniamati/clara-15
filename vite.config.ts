@@ -10,6 +10,13 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         input: path.resolve(__dirname, 'index.html'),
+        output: {
+          // Pages replaces its artifact on every playlist sync. Keep asset URLs
+          // stable so a cached page never points to a deleted hashed chunk.
+          entryFileNames: 'assets/[name].js',
+          chunkFileNames: 'assets/[name].js',
+          assetFileNames: 'assets/[name][extname]',
+        },
       },
     },
     resolve: {
