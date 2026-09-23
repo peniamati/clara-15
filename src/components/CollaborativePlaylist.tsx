@@ -1,5 +1,5 @@
 import { notify } from '../lib/notify';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import { 
   Music, 
@@ -15,7 +15,7 @@ import {
   Info
 } from 'lucide-react';
 import { notifyOrganizer, ORGANIZER_EMAIL_ENABLED } from '../lib/driveUtils';
-import { isPublicSong, normalizeSongText } from '../lib/playlist';
+import { isPublicSong, normalizeSongText, uniqueSongs } from '../lib/playlist';
 
 const SPOTIFY_PLAYLIST_URL = 'https://open.spotify.com/playlist/408drhVBzu4Jxrt501CwOL?si=3b44a51ff97744da';
 
@@ -28,6 +28,13 @@ export const CollaborativePlaylist: React.FC = () => {
   const [spotifyUrl, setSpotifyUrl] = useState('');
   const [wantsEmailNotification, setWantsEmailNotification] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [visibleCount, setVisibleCount] = useState(20);
+  const songListRef = useRef<HTMLDivElement>(null);
+  const updateSearch = (value: string) => {
+    setSearchTerm(value);
+    setVisibleCount(20);
+    if (songListRef.current) songListRef.current.scrollTop = 0;
+  };
   const [activeViewMode, setActiveViewMode] = useState<'list' | 'ranking'>('list');
   const [submittedSuccessModal, setSubmittedSuccessModal] = useState<{
     title: string;
@@ -67,7 +74,7 @@ export const CollaborativePlaylist: React.FC = () => {
     );
     if (duplicate) {
       notify(`“${duplicate.title}” de ${duplicate.artist} ya está en la lista. Podés votarla en lugar de repetirla.`);
-      setSearchTerm(duplicate.title);
+      updateSearch(duplicate.title);
       return;
     }
 
@@ -113,15 +120,15 @@ export const CollaborativePlaylist: React.FC = () => {
   };
 
   // Filter songs based on search and sort by votes or original list order
-  const filteredSongs = songs
-    .filter(s => isPublicSong(s) && (
-      s.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.artist.toLowerCase().includes(searchTerm.toLowerCase())
-    ));
+  const search = normalizeSongText(searchTerm.trim());
+  const filteredSongs = uniqueSongs(songs.filter(isPublicSong)).filter(s =>
+    normalizeSongText(s.title).includes(search) || normalizeSongText(s.artist).includes(search)
+  );
 
   const sortedSongs = activeViewMode === 'ranking'
     ? [...filteredSongs].sort((a, b) => b.votes - a.votes)
     : filteredSongs;
+  const visibleSongs = sortedSongs.slice(0, visibleCount);
 
   return (
     <section id="playlist" className="py-24 bg-[#050505] text-white relative">
@@ -307,7 +314,7 @@ export const CollaborativePlaylist: React.FC = () => {
                     Canciones de la Fiesta
                   </h3>
                   <p className="text-xs text-zinc-400 mt-0.5">
-                    {sortedSongs.length} temas cargados · Votá tus preferidos
+                    {search ? `${sortedSongs.length} resultados` : `${sortedSongs.length} temas cargados`} · Votá tus preferidos
                   </p>
                 </div>
 
@@ -346,20 +353,22 @@ export const CollaborativePlaylist: React.FC = () => {
                 <input
                   type="text"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => updateSearch(e.target.value)}
                   placeholder="Buscar por tema o artista..."
-                  className="w-full pl-10 pr-4 py-2.5 rounded-full bg-zinc-900 border border-white/10 text-white text-xs focus:border-[#C0C0C0] outline-none"
+                  aria-label="Buscar canciones por tema o artista"
+                  className="w-full pl-10 pr-12 py-2.5 rounded-full bg-zinc-900 border border-white/10 text-white text-xs focus:border-[#C0C0C0] outline-none"
                 />
+                {searchTerm && <button type="button" onClick={() => updateSearch('')} aria-label="Limpiar búsqueda" className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full px-2 py-1 text-zinc-400 hover:text-white">✕</button>}
               </div>
 
               {/* Song Items List */}
-              <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+              <div ref={songListRef} className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                 {sortedSongs.length === 0 ? (
                   <div className="text-center py-12 text-zinc-500 text-xs">
-                    No se encontraron canciones con ese criterio de búsqueda.
+                    {search ? 'No se encontraron canciones con ese criterio de búsqueda.' : 'Todavía no hay canciones en la lista.'}
                   </div>
                 ) : (
-                  sortedSongs.map((song, index) => {
+                  visibleSongs.map((song, index) => {
                     const hasVoted = votedSongIds.has(song.id);
                     return (
                       <div
@@ -422,6 +431,7 @@ export const CollaborativePlaylist: React.FC = () => {
                   })
                 )}
               </div>
+              {visibleCount < sortedSongs.length && <button type="button" onClick={() => setVisibleCount(count => count + 20)} className="mt-4 w-full rounded-full border border-white/20 py-2.5 text-xs text-zinc-200 hover:bg-zinc-800">Ver más canciones ({sortedSongs.length - visibleCount} restantes)</button>}
             </div>
 
             <div className="mt-6 border-t border-white/10 pt-5 text-center">
