@@ -1,5 +1,11 @@
 import { writeFile } from 'node:fs/promises';
 
+process.on('uncaughtException', error => {
+  const message = String(error?.message || error).replace(/\r?\n/g, ' ');
+  console.error(`::error title=Spotify playlist sync failed::${message}`);
+  process.exitCode = 1;
+});
+
 const clientId = process.env.SPOTIFY_CLIENT_ID;
 const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 const playlistId = process.env.SPOTIFY_PLAYLIST_ID || '408drhVBzu4Jxrt501CwOL';
