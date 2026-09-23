@@ -160,10 +160,10 @@ ${SPOTIFY_PLAYLIST_URL}
             <span>Música & Setlist de la Fiesta</span>
           </div>
           <h2 className="font-serif text-4xl sm:text-6xl font-semibold silver-gradient-text mb-3">
-            Playlist de Spotify & Votación
+            La música de la fiesta
           </h2>
           <p className="text-zinc-400 text-sm sm:text-base font-light">
-            Escuchá la lista oficial, votá los temas que no pueden faltar en la pista y proponé canciones nuevas para que el organizador las agregue a Spotify.
+            Escuchá la playlist de Clara, votá tus favoritas y proponé el próximo tema para bailar.
           </p>
         </div>
 
@@ -177,7 +177,7 @@ ${SPOTIFY_PLAYLIST_URL}
                 <span>🟢 Playlist Oficial del Evento</span>
               </div>
               <h3 className="font-serif text-2xl sm:text-3xl font-semibold text-white">
-                Los 15 de {config.honoree} · Spotify Oficial
+                La playlist de {config.honoree}
               </h3>
               <p className="text-zinc-400 text-xs sm:text-sm font-light mt-1 max-w-xl">
                 Escuchá la música de la fiesta directamente aquí o abrila en tu aplicación de Spotify.
@@ -203,7 +203,7 @@ ${SPOTIFY_PLAYLIST_URL}
               style={{ borderRadius: '12px' }}
               src="https://open.spotify.com/embed/playlist/408drhVBzu4Jxrt501CwOL?utm_source=generator&si=3b44a51ff97744da"
               width="100%"
-              height="232"
+              height="352"
               frameBorder="0"
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               loading="lazy"
@@ -215,7 +215,7 @@ ${SPOTIFY_PLAYLIST_URL}
           <div className="mt-4 p-3.5 rounded-xl bg-zinc-900/70 border border-white/10 flex items-start gap-3 text-xs text-zinc-400">
             <Info className="w-4 h-4 text-[#1DB954] shrink-0 mt-0.5" />
             <p>
-              <strong className="text-zinc-200">¿Querés sumar una canción que no está en la lista?</strong> Como Spotify no permite la edición anónima abierta a cualquier persona, podés <strong>proponerla en el formulario de abajo</strong> y le enviaremos el aviso directo por mail al organizador con el link para agregarla a Spotify.
+              <strong className="text-zinc-200">¿Falta un tema?</strong> Proponelo abajo: aparecerá en esta web y el organizador recibirá un aviso para sumarlo a la playlist de Spotify.
             </p>
           </div>
         </div>
@@ -232,7 +232,7 @@ ${SPOTIFY_PLAYLIST_URL}
               </h3>
             </div>
             <p className="text-xs text-zinc-400 mb-6 font-light">
-              Pedí el tema que querés que suene. Se le notificará al administrador de la playlist por email para que lo sume a Spotify.
+              Pedí el tema que querés que suene. Aparecerá en la lista de esta web y el organizador podrá sumarlo a Spotify.
             </p>
 
             <form onSubmit={handleAddSong} className="space-y-4">
@@ -314,7 +314,7 @@ ${SPOTIFY_PLAYLIST_URL}
 
             <div className="mt-5 p-3 rounded-xl bg-zinc-900/50 border border-white/5 flex items-center gap-2 text-[11px] text-zinc-400">
               <Mail className="w-3.5 h-3.5 text-[#C0C0C0] shrink-0" />
-              <span>Aviso automático al organizador: <strong className="text-zinc-300">{adminEmail}</strong></span>
+              <span>El organizador recibirá un aviso con tu propuesta.</span>
             </div>
           </div>
 
