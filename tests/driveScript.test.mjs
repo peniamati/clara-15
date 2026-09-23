@@ -65,3 +65,23 @@ test('quita de la carpeta una foto autorizada sin eliminar el archivo original',
   assert.deepEqual(response, { ok: true, removed: true });
   assert.equal(harness.removed, true);
 });
+
+test('informa el estado de una subida sin esperar una nueva lista de Drive', () => {
+  const cache = new Map();
+  const image = { id: fileId, name: 'prueba.jpg', mimeType: 'image/jpeg' };
+  const sandbox = {
+    CacheService: { getScriptCache: () => ({ get: key => cache.get(key) || null, put: (key, value) => cache.set(key, value) }) },
+    ContentService: { MimeType: { JSON: 'JSON', JAVASCRIPT: 'JAVASCRIPT' }, createTextOutput: text => ({ text, setMimeType() { return this; } }) },
+    Utilities: { base64Decode: () => [1, 2, 3], newBlob: () => ({}) },
+    DriveApp: { Access: { ANYONE_WITH_LINK: 'link' }, Permission: { VIEW: 'view' }, getFolderById: () => ({ createFile: () => ({
+      getId: () => image.id, getName: () => image.name, getMimeType: () => image.mimeType,
+      getDateCreated: () => new Date('2026-09-23T12:00:00Z'), setSharing() {},
+    }) }) },
+  };
+  vm.runInNewContext(source, sandbox);
+  const post = sandbox.doPost({ parameter: { operationId, mimeType: 'image/jpeg', fileName: image.name, base64: 'data:image/jpeg;base64,AQID' } });
+  assert.equal(JSON.parse(post.text).ok, true);
+  const get = sandbox.doGet({ parameter: { action: 'uploadStatus', operationId, callback: 'cb' } });
+  assert.match(get.text, /^cb\(\{"ok":true,"image":/);
+  assert.match(get.text, /prueba\.jpg/);
+});

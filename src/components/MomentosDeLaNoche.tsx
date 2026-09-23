@@ -250,8 +250,8 @@ export const MomentosDeLaNoche: React.FC = () => {
       setPhotoSource('');
       setCaption('');
       setGuestName('');
-    } catch {
-      notify('Hubo un error al publicar la foto en el muro.');
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'Hubo un error al publicar la foto en el muro.');
     } finally {
       setIsPublishing(false);
     }

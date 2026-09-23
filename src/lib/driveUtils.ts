@@ -61,6 +61,7 @@ export async function uploadImageToDrive(imageDataUrl: string, requestedName: st
   const mimeType = imageDataUrl.match(/^data:([^;]+);base64,/)?.[1];
   if (!mimeType) throw new Error('La imagen no tiene un formato compatible con Drive.');
   const fileName = requestedName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100);
+  const operationId = crypto.randomUUID();
   const target = `drive-upload-${Date.now()}`;
   const frame = document.createElement('iframe');
   frame.name = target;
@@ -70,7 +71,7 @@ export async function uploadImageToDrive(imageDataUrl: string, requestedName: st
   form.action = GOOGLE_DRIVE_SYNC_ENDPOINT;
   form.target = target;
   form.hidden = true;
-  for (const [name, value] of Object.entries({ mimeType, fileName, base64: imageDataUrl })) {
+  for (const [name, value] of Object.entries({ mimeType, fileName, base64: imageDataUrl, operationId })) {
     const input = document.createElement('input');
     input.name = name;
     input.value = value;
@@ -78,19 +79,27 @@ export async function uploadImageToDrive(imageDataUrl: string, requestedName: st
   }
   document.body.append(frame, form);
   form.submit();
-  window.setTimeout(() => { frame.remove(); form.remove(); }, 12000);
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    await new Promise(resolve => window.setTimeout(resolve, 1200));
-    const images = await listDriveImages();
-    const uploaded = images.find(image => image.name === fileName);
-    if (uploaded) return uploaded;
+  try {
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      await new Promise(resolve => window.setTimeout(resolve, 1200));
+      let status: DriveUploadStatus;
+      try { status = await readDriveOperationStatus<DriveUploadStatus>('uploadStatus', operationId); }
+      catch { continue; }
+      if (status.pending) continue;
+      if (!status.ok || !status.image) throw new Error(status.error || 'Drive no pudo guardar la foto.');
+      return status.image;
+    }
+    throw new Error('Drive tardó demasiado en confirmar la subida. Revisá el muro antes de reintentar.');
+  } finally {
+    frame.remove();
+    form.remove();
   }
-  throw new Error('Drive recibió la foto, pero todavía no aparece en la carpeta. Reintentá en unos segundos.');
 }
 
+interface DriveUploadStatus { ok: boolean; pending?: boolean; image?: DriveSyncedImage; error?: string }
 interface DriveRemovalStatus { ok: boolean; pending?: boolean; removed?: boolean; error?: string }
 
-function readDriveRemovalStatus(operationId: string): Promise<DriveRemovalStatus> {
+function readDriveOperationStatus<T>(action: 'uploadStatus' | 'deleteStatus', operationId: string): Promise<T> {
   return new Promise((resolve, reject) => {
     const callbackName = `__claraDriveDelete${Date.now()}${Math.random().toString(36).slice(2)}`;
     const script = document.createElement('script');
@@ -108,7 +117,7 @@ function readDriveRemovalStatus(operationId: string): Promise<DriveRemovalStatus
       script.remove();
       cleanupTimer = window.setTimeout(cleanup, 300000);
     }, 10000);
-    (window as unknown as Record<string, unknown>)[callbackName] = (status: DriveRemovalStatus) => {
+    (window as unknown as Record<string, unknown>)[callbackName] = (status: T) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timeout);
@@ -119,7 +128,7 @@ function readDriveRemovalStatus(operationId: string): Promise<DriveRemovalStatus
       if (!settled) { settled = true; window.clearTimeout(timeout); reject(new Error('No se pudo consultar la operación en Drive.')); }
       cleanup();
     };
-    script.src = `${GOOGLE_DRIVE_SYNC_ENDPOINT}?callback=${encodeURIComponent(callbackName)}&action=deleteStatus&operationId=${encodeURIComponent(operationId)}&t=${Date.now()}`;
+    script.src = `${GOOGLE_DRIVE_SYNC_ENDPOINT}?callback=${encodeURIComponent(callbackName)}&action=${action}&operationId=${encodeURIComponent(operationId)}&t=${Date.now()}`;
     document.body.appendChild(script);
   });
 }
@@ -149,7 +158,7 @@ export async function removeImageFromDriveFolder(fileId: string, idToken: string
     for (let attempt = 0; attempt < 20; attempt += 1) {
       await new Promise(resolve => window.setTimeout(resolve, 1200));
       let status: DriveRemovalStatus;
-      try { status = await readDriveRemovalStatus(operationId); }
+      try { status = await readDriveOperationStatus<DriveRemovalStatus>('deleteStatus', operationId); }
       catch { continue; }
       if (status.pending) continue;
       if (!status.ok || !status.removed) throw new Error(status.error || 'Drive no pudo quitar la foto de la carpeta.');
