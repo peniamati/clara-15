@@ -49,11 +49,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
 
   const [activeTab, setActiveTab] = useState<'stats' | 'guests' | 'moderation' | 'customizer' | 'collabs'>('stats');
   const organizerTabs = [
-    { id: 'stats', label: 'Inicio', description: 'Estado general', icon: LayoutDashboard },
-    { id: 'guests', label: 'Invitados', description: 'RSVP y mesas', icon: Users },
-    { id: 'moderation', label: 'Contenido', description: 'Música y firmas', icon: Music },
-    { id: 'customizer', label: 'Diseño', description: 'Datos y apariencia', icon: Settings2 },
-    { id: 'collabs', label: 'Equipo', description: 'Administradores', icon: UserCog },
+    { id: 'stats', label: 'Inicio', description: 'Qué hacer ahora', icon: LayoutDashboard },
+    { id: 'guests', label: 'Asistencia', description: 'Invitados y mesas', icon: Users },
+    { id: 'moderation', label: 'Publicaciones', description: 'Fotos, firmas y música', icon: Music },
+    { id: 'customizer', label: 'Invitación', description: 'Textos y diseño', icon: Settings2 },
+    { id: 'collabs', label: 'Accesos', description: 'Administradores', icon: UserCog },
   ] as const;
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   React.useEffect(() => {
@@ -277,8 +277,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="!font-sans text-2xl leading-tight sm:text-3xl font-semibold text-white break-words">Panel Organizador · {config.honoree}</h2>
-              <span className="block text-xs font-light text-zinc-400">Panel de organización del evento</span>
+              <h2 className="!font-sans text-2xl leading-tight sm:text-3xl font-semibold text-white break-words">Organizá los 15 de {config.honoree}</h2>
+              <span className="block text-xs font-light text-zinc-400">Elegí una tarea para empezar; tus cambios quedan guardados cuando lo indicamos.</span>
             </div>
           </div>
         </div>
@@ -315,16 +315,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
         {activeTab === 'stats' && (
           <div className="space-y-6">
             <OrganizerHelp />
+            <section aria-labelledby="quick-actions-title">
+              <div className="mb-3"><p className="text-xs uppercase tracking-widest text-[#C0C0C0]">Empezá por acá</p><h3 id="quick-actions-title" className="text-xl font-semibold">¿Qué necesitás hacer?</h3></div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  { title: 'Ver quién viene', detail: `${confirmedGuests} personas confirmadas · buscar, asignar mesa o descargar la lista`, tab: 'guests' as const, icon: Users },
+                  { title: 'Revisar lo que publicaron', detail: `${songs.length} canciones · fotos y firmas de los invitados`, tab: 'moderation' as const, icon: Music },
+                  { title: 'Cambiar la invitación', detail: 'Fecha, lugar, textos, regalos y apariencia', tab: 'customizer' as const, icon: Settings2 },
+                  { title: 'Dar acceso a otra persona', detail: 'Agregar o quitar cuentas de organización', tab: 'collabs' as const, icon: UserCog },
+                ].map(action => <button key={action.tab} type="button" onClick={() => setActiveTab(action.tab)} className="flex min-h-24 items-start gap-4 rounded-2xl border border-white/10 bg-black p-4 text-left transition-colors hover:border-[#C0C0C0]/60 focus-visible:outline-2 focus-visible:outline-[#C0C0C0]"><action.icon className="mt-1 h-5 w-5 shrink-0 text-[#C0C0C0]" /><span><strong className="block text-base text-white">{action.title}</strong><span className="mt-1 block text-sm leading-snug text-zinc-400">{action.detail}</span></span></button>)}
+              </div>
+            </section>
             <section className="rounded-2xl border border-white/10 bg-black p-5" aria-labelledby="publication-title">
               <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-xs uppercase tracking-widest text-[#C0C0C0]">Estado de publicación</p><h3 id="publication-title" className="text-xl font-semibold">{readyChecks === publicationChecks.length ? 'La información esencial está completa' : `${readyChecks} de ${publicationChecks.length} puntos listos`}</h3></div><button onClick={() => setActiveTab('customizer')} className="min-h-11 rounded-full bg-white px-5 text-xs font-bold uppercase tracking-wider text-black">Revisar datos</button></div>
               <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{publicationChecks.map(([label,ready]) => <div key={label} className="flex items-center gap-2 rounded-xl bg-zinc-900 p-3 text-sm">{ready ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> : <XCircle className="h-5 w-5 text-amber-300" />}<span className={ready ? 'text-zinc-200' : 'text-amber-100'}>{label}</span></div>)}</div>
             </section>
-            <section className="rounded-2xl border border-violet-400/20 bg-violet-400/[.06] p-5" aria-labelledby="funnel-title">
+            <details className="rounded-2xl border border-violet-400/20 bg-violet-400/[.06] p-5">
+              <summary className="cursor-pointer text-sm font-semibold text-violet-200">Ver estadísticas de la invitación</summary>
+              <section className="mt-5" aria-labelledby="funnel-title">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-2"><div><p className="text-xs uppercase tracking-widest text-violet-300">Trazabilidad de la invitación</p><h3 id="funnel-title" className="text-xl font-semibold">Embudo de interacción</h3></div><p className="text-xs text-zinc-400">No incluye nombres ni mensajes</p></div>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
                 {[['Visitas', invitationViews], ['Personas únicas', uniqueVisitors], ['Aperturas', invitationOpens], ['Iniciaron RSVP', rsvpStarts], ['Respondieron', rsvpCompletions], ['Conversión', `${conversion}%`]].map(([label,value]) => <div key={label} className="rounded-xl border border-white/10 bg-black/50 p-4"><span className="block text-[11px] uppercase tracking-wide text-zinc-400">{label}</span><strong className="mt-1 block text-2xl text-white">{value}</strong></div>)}
               </div>
-            </section>
+              </section>
+            </details>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="p-5 rounded-2xl bg-black border border-white/10">
                 <span className="text-xs text-zinc-400 font-light uppercase tracking-wider">Total Registrados</span>
@@ -344,20 +358,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
-              <div className="p-6 rounded-2xl bg-black border border-white/10">
-                <h4 className="font-serif text-xl font-semibold text-white mb-3">Canciones Recomendadas ({songs.length})</h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {songs.map(s => (
-                    <div key={s.id} className="text-xs text-zinc-300 flex justify-between p-2.5 bg-zinc-900 rounded-lg">
-                      <span>{s.title} - {s.artist}</span>
-                      <span className="text-[#C0C0C0] font-bold">{s.votes} votos</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
           </div>
         )}
 

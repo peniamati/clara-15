@@ -23,7 +23,7 @@ export const Footer: React.FC = () => {
 
         <div className="mt-10 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 font-light">
           <div>
-            © 2026 {config.honoree} 15 Years. Todos los derechos reservados.
+            © 2026 Matías Peña · Diseño y desarrollo de la invitación.
           </div>
 
           <div className="flex items-center gap-1.5 text-zinc-400 font-serif">
