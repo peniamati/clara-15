@@ -83,19 +83,21 @@ function removePhotoFromFolder(params) {
   verifyOrganizer(params);
   const fileId = String(params.fileId || '');
   if (!/^[a-zA-Z0-9_-]{20,100}$/.test(fileId)) throw new Error('La foto no tiene un identificador válido.');
-  const folder = DriveApp.getFolderById(FOLDER_ID);
   const file = DriveApp.getFileById(fileId);
   if (!ALLOWED_IMAGE_TYPES.includes(file.getMimeType())) throw new Error('El archivo no es una foto admitida.');
   const parents = file.getParents();
   let insideFolder = false;
   while (parents.hasNext()) if (parents.next().getId() === FOLDER_ID) insideFolder = true;
   if (!insideFolder) throw new Error('La foto ya no está en la carpeta de Clara.');
-  // Remove only this folder association; never delete another person's original file.
-  folder.removeFile(file);
-  const remainingParents = file.getParents();
-  while (remainingParents.hasNext()) {
-    if (remainingParents.next().getId() === FOLDER_ID) throw new Error('Drive no confirmó que la foto saliera de la carpeta.');
-  }
+  // Drive API v3 changes only the parent folder; it never trashes the original.
+  const endpoint = 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(fileId);
+  const headers = { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() };
+  const response = UrlFetchApp.fetch(endpoint + '?removeParents=' + encodeURIComponent(FOLDER_ID) + '&supportsAllDrives=true&fields=id,parents', {
+    method: 'patch', headers: headers, contentType: 'application/json', payload: '{}', muteHttpExceptions: true
+  });
+  if (response.getResponseCode() !== 200) throw new Error('Drive rechazó el cambio de carpeta: ' + response.getContentText().slice(0, 300));
+  const remainingParents = JSON.parse(response.getContentText()).parents || [];
+  if (remainingParents.includes(FOLDER_ID)) throw new Error('Drive no confirmó que la foto saliera de la carpeta.');
 }
 
 function sendOrganizerNotification(params) {

@@ -21,16 +21,21 @@ function scriptHarness({ emailVerified = true, insideFolder = true } = {}) {
       return { hasNext: () => index < parents.length, next: () => parents[index++] };
     },
   };
-  const folder = { removeFile: () => { removed = true; } };
+  const folder = {};
   const sandbox = {
     ContentService: { MimeType: { JSON: 'JSON', JAVASCRIPT: 'JAVASCRIPT' }, createTextOutput: text => ({ text, setMimeType() { return this; } }) },
     CacheService: { getScriptCache: () => ({ put() {}, get() { return null; } }) },
-    UrlFetchApp: { fetch: url => ({
+    UrlFetchApp: { fetch: (url, options) => {
+      if (url.includes('/drive/v3/files/')) removed = options.method === 'patch';
+      return ({
       getResponseCode: () => 200,
       getContentText: () => url.includes('accounts:lookup')
         ? JSON.stringify({ users: [{ localId: 'organizer-uid', email: 'admin@example.com', emailVerified }] })
+        : url.includes('/drive/v3/files/') ? JSON.stringify({ id: fileId, parents: [] })
         : JSON.stringify({ fields: { adminEmails: { arrayValue: { values: [{ stringValue: 'admin@example.com' }] } } } }),
-    }) },
+      });
+    } },
+    ScriptApp: { getOAuthToken: () => 'test-token' },
     Utilities: {
       base64DecodeWebSafe: value => Buffer.from(value, 'base64url'),
       newBlob: bytes => ({ getDataAsString: () => bytes.toString() }),
