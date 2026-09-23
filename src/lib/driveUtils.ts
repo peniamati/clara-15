@@ -4,8 +4,8 @@
 
 export const GOOGLE_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/1vD5IpM96K5bMCfJbVpTmEMS9WwE1Y4sH';
 export const GOOGLE_DRIVE_SYNC_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxGExLVYOswBQ0Y3wn0D2iMtdS-ioBXJFiMpMmv6k1_lWm5JsLv0E98ubFhI3bCRp0yMg/exec';
-// Enable only after the Apps Script owner grants Gmail scope and a test POST returns { ok: true }.
-export const ORGANIZER_EMAIL_ENABLED = false;
+// Apps Script version 8 uses MailApp; a real POST delivered to the organizer inbox.
+export const ORGANIZER_EMAIL_ENABLED = true;
 
 export interface DriveSyncedImage {
   id: string;
