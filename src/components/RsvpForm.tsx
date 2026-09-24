@@ -3,7 +3,8 @@ import React, { useRef, useState } from 'react';
 import { useEvent } from '../context/EventContext';
 import confetti from 'canvas-confetti';
 import { notifyOrganizer, ORGANIZER_EMAIL_ENABLED } from '../lib/driveUtils';
-import { guestContactPhone, isMinorGuest, parseGuestAge } from '../lib/rsvpAge';
+import { isMinorGuest, parseGuestAge } from '../lib/rsvpAge';
+import { FamilyMemberDraft, prepareFamilyGuests } from '../lib/rsvpFamily';
 import {
   CheckCircle2,
   XCircle,
@@ -17,11 +18,13 @@ import {
   ShieldCheck,
   Phone,
   User,
-  HeartHandshake
+  HeartHandshake,
+  Plus,
+  Trash2
 } from 'lucide-react';
 
 export const RsvpForm: React.FC = () => {
-  const { config, addOrUpdateGuestRsvp, trackEvent } = useEvent();
+  const { config, addGuestGroupRsvp, trackEvent } = useEvent();
   const hasTrackedStart = useRef(false);
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -34,6 +37,8 @@ export const RsvpForm: React.FC = () => {
   const [tutorName, setTutorName] = useState('');
   const [tutorPhone, setTutorPhone] = useState('');
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
+  const [otherMembers, setOtherMembers] = useState<FamilyMemberDraft[]>([]);
+  const [primaryResponsibleAdultId, setPrimaryResponsibleAdultId] = useState('');
   const [notes, setNotes] = useState('');
   const [wantsEmailNotification, setWantsEmailNotification] = useState(false);
   
@@ -43,6 +48,20 @@ export const RsvpForm: React.FC = () => {
 
   const numericAge = parseGuestAge(age);
   const isMinor = isMinorGuest(numericAge);
+  const members: FamilyMemberDraft[] = [
+    { id: 'primary', name, lastName, age, phone, email, dietaryRestrictions: selectedDietary, responsibleAdultId: primaryResponsibleAdultId },
+    ...otherMembers
+  ];
+  const adults = members.filter(member => {
+    const value = parseGuestAge(member.age);
+    return value !== null && !isMinorGuest(value);
+  });
+  const hasMinor = members.some(member => isMinorGuest(parseGuestAge(member.age)));
+  const addMember = () => setOtherMembers(previous => [...previous, {
+    id: crypto.randomUUID(), name: '', lastName: '', age: '', phone: '', email: '', dietaryRestrictions: []
+  }]);
+  const updateMember = (id: string, change: Partial<FamilyMemberDraft>) =>
+    setOtherMembers(previous => previous.map(member => member.id === id ? { ...member, ...change } : member));
 
   const dietaryOptions = [
     'Ninguna (Menú General)',
@@ -70,23 +89,10 @@ export const RsvpForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !lastName.trim()) {
-      notify('Por favor completa tu nombre y apellido.');
-      return;
-    }
-
-    if (numericAge === null) {
-      setError('Ingresá la edad en años, entre 0 y 99. Para bebés menores de un año, ingresá 0.');
-      return;
-    }
-
-    if (!isMinor && !phone.trim()) {
-      setError('Ingresá un número de contacto para confirmar la asistencia.');
-      return;
-    }
-
-    if (status === 'CONFIRMED' && isMinor && (!tutorName.trim() || !tutorPhone.trim())) {
-      notify('Al ser menor de 18 años, por favor ingresa el nombre y teléfono de contacto de tu padre, madre o tutor responsable.');
+    const prepared = prepareFamilyGuests(members, status, { name: tutorName, phone: tutorPhone }, notes);
+    if (prepared.error) {
+      setError(prepared.error);
+      requestAnimationFrame(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       return;
     }
 
@@ -94,29 +100,14 @@ export const RsvpForm: React.FC = () => {
     setSaving(true);
     setError('');
     try {
-    await addOrUpdateGuestRsvp({
-      name: name.trim(),
-      lastName: lastName.trim(),
-      email: email.trim(),
-      phone: guestContactPhone(numericAge, phone, tutorPhone),
-      age: numericAge,
-      tutorName: isMinor ? tutorName.trim() : undefined,
-      tutorPhone: isMinor ? tutorPhone.trim() : undefined,
-      emergencyContactName: isMinor ? tutorName.trim() : undefined,
-      emergencyContactPhone: isMinor ? tutorPhone.trim() : undefined,
-      status,
-      adultsCount: isMinor ? 0 : 1,
-      kidsCount: isMinor ? 1 : 0,
-      dietaryRestrictions: selectedDietary.length > 0 ? selectedDietary : ['Menú Estándar'],
-      notes: notes.trim()
-    });
+    await addGuestGroupRsvp(prepared.guests);
 
     setSubmitted(true);
     if (ORGANIZER_EMAIL_ENABLED && wantsEmailNotification) {
       notifyOrganizer('rsvp', {
-        guest: `${name.trim()} ${lastName.trim()}`,
+        guest: members.map(member => `${member.name.trim()} ${member.lastName.trim()}`).join(', '),
         status,
-        phone: guestContactPhone(numericAge, phone, tutorPhone),
+        phone: prepared.guests[0].phone || '',
         email: email.trim(),
         notes: notes.trim(),
         adminEmail: (config.adminEmails?.length ? config.adminEmails : ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com']).join(',')
@@ -132,14 +123,18 @@ export const RsvpForm: React.FC = () => {
         origin: { y: 0.6 }
       });
     }
-    } catch { setError('No se pudo guardar la respuesta. Revisá tu conexión e intentá nuevamente.'); }
+    } catch {
+      setError('No se pudo guardar el grupo. Revisá tu conexión e intentá nuevamente.');
+      requestAnimationFrame(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
     finally { setSaving(false); }
   };
 
   const sendWhatsAppConfirmation = () => {
-    const text = `¡Hola ${config.honoree}! Soy ${name} ${lastName}${numericAge !== null ? ` (${numericAge} años)` : ''}. ${
+    const group = members.map(member => `${member.name.trim()} ${member.lastName.trim()}`).join(', ');
+    const text = `¡Hola ${config.honoree}! ${members.length > 1 ? `Somos ${group}.` : `Soy ${group}${numericAge !== null ? ` (${numericAge} años)` : ''}.`} ${
       status === 'CONFIRMED'
-        ? `¡Confirmé mi asistencia para tu fiesta de 15! ${isMinor ? `(Contacto tutor: ${tutorName} - ${tutorPhone}).` : ''}`
+        ? `¡Confirmamos la asistencia de ${members.length} ${members.length === 1 ? 'persona' : 'personas'} para tu fiesta de 15!`
         : 'Lamentablemente no podré asistir a tus 15 años, ¡te deseo una noche fantástica e inolvidable!'
     }`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
@@ -148,7 +143,7 @@ export const RsvpForm: React.FC = () => {
   const resetForAnotherGuest = () => {
     setName(''); setLastName(''); setPhone(''); setEmail(''); setAge('15');
     setStatus('CONFIRMED'); setTutorName(''); setTutorPhone('');
-    setSelectedDietary([]); setNotes(''); setWantsEmailNotification(false); setError(''); setSubmitted(false);
+    setSelectedDietary([]); setOtherMembers([]); setPrimaryResponsibleAdultId(''); setNotes(''); setWantsEmailNotification(false); setError(''); setSubmitted(false);
     requestAnimationFrame(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
@@ -183,7 +178,7 @@ export const RsvpForm: React.FC = () => {
             </h3>
             <p className="text-zinc-300 text-sm max-w-md mx-auto mb-8 font-light">
               {status === 'CONFIRMED'
-                ? `¡Nos emociona contar con vos, ${name}! Tu respuesta quedó guardada correctamente.`
+                ? `¡Gracias, ${name}! ${members.length === 1 ? 'Tu respuesta quedó guardada' : `Quedaron guardadas las ${members.length} confirmaciones de tu grupo`}.`
                 : 'Agradecemos que nos hayas avisado. ¡Te enviaremos las fotos y el resumen de la fiesta!'}
             </p>
 
@@ -198,9 +193,8 @@ export const RsvpForm: React.FC = () => {
                 onClick={resetForAnotherGuest}
                 className="px-8 py-3.5 rounded-full bg-zinc-900 border border-white/10 text-white text-xs font-semibold tracking-wider uppercase hover:border-[#C0C0C0]/30 transition-all"
               >
-                Confirmar otra persona
+                Confirmar otro grupo
               </button>
-              <button onClick={() => setSubmitted(false)} className="px-5 py-3 text-xs text-zinc-400 underline">Editar esta respuesta</button>
             </div>
           </div>
         ) : (
@@ -262,19 +256,19 @@ export const RsvpForm: React.FC = () => {
                 />
               </div>
 
-              <div>
+              {!isMinor && <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
-                  WhatsApp / Celular {isMinor ? '(opcional; usaremos el del tutor)' : '*'}
+                  WhatsApp / Celular *
                 </label>
                 <input
                   type="tel"
-                  required={!isMinor}
+                  required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+54 9 11 1234-5678"
                   className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
                 />
-              </div>
+              </div>}
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
@@ -294,7 +288,7 @@ export const RsvpForm: React.FC = () => {
                 <p className="mt-1 text-xs text-zinc-500">Si tiene menos de un año, ingresá 0.</p>
               </div>
 
-              <div className="sm:col-span-2">
+              {!isMinor && <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
                   Email <span className="text-zinc-500 font-normal lowercase">(opcional, como dato de contacto)</span>
                 </label>
@@ -305,11 +299,66 @@ export const RsvpForm: React.FC = () => {
                   placeholder="tucorreo@ejemplo.com"
                   className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none"
                 />
-              </div>
+              </div>}
             </div>
 
+            <div className="space-y-4 border-t border-white/10 pt-6">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-[#C0C0C0]" />
+                <h3 className="font-serif text-xl font-semibold">Grupo familiar o acompañantes</h3>
+              </div>
+              <p className="text-xs text-zinc-400">Agregá a todas las personas en una sola confirmación. Cada integrante tendrá su propio registro para el ingreso y el menú.</p>
+              {otherMembers.map((member, index) => {
+                const memberAge = parseGuestAge(member.age);
+                const memberIsMinor = isMinorGuest(memberAge);
+                return <div key={member.id} className="rounded-2xl border border-white/15 bg-zinc-900/60 p-4 space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-sm font-semibold">Persona {index + 2}</h4>
+                    <button type="button" onClick={() => setOtherMembers(previous => previous.filter(item => item.id !== member.id))} aria-label={`Quitar persona ${index + 2}`} className="flex items-center gap-1 rounded-lg p-2 text-xs text-rose-300 hover:bg-rose-950/40"><Trash2 className="h-4 w-4" /> Quitar</button>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <label className="text-xs text-zinc-300">Nombre *
+                      <input type="text" required value={member.name} onChange={event => updateMember(member.id, { name: event.target.value })} className="mt-2 w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white" />
+                    </label>
+                    <label className="text-xs text-zinc-300">Apellido *
+                      <input type="text" required value={member.lastName} onChange={event => updateMember(member.id, { lastName: event.target.value })} className="mt-2 w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white" />
+                    </label>
+                    <label className="text-xs text-zinc-300">Edad (años) *
+                      <input type="number" min="0" max="99" step="1" required value={member.age} onChange={event => updateMember(member.id, { age: event.target.value })} className="mt-2 w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white" />
+                    </label>
+                    {memberAge !== null && !memberIsMinor && <label className="text-xs text-zinc-300">WhatsApp / Celular *
+                      <input type="tel" required value={member.phone} onChange={event => updateMember(member.id, { phone: event.target.value })} className="mt-2 w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white" />
+                    </label>}
+                    {memberAge !== null && !memberIsMinor && <label className="text-xs text-zinc-300 sm:col-span-2">Email (opcional)
+                      <input type="email" value={member.email} onChange={event => updateMember(member.id, { email: event.target.value })} className="mt-2 w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white" />
+                    </label>}
+                  </div>
+                  {status === 'CONFIRMED' && <div>
+                    <p className="mb-2 text-xs text-zinc-300">Menú especial de esta persona</p>
+                    <div className="flex flex-wrap gap-2">{dietaryOptions.map(option => <button key={option} type="button" onClick={() => {
+                      const current = member.dietaryRestrictions;
+                      updateMember(member.id, { dietaryRestrictions: option.startsWith('Ninguna') ? [option] : current.includes(option) ? current.filter(item => item !== option) : [...current.filter(item => !item.startsWith('Ninguna')), option] });
+                    }} className={`rounded-xl border px-3 py-2 text-xs ${member.dietaryRestrictions.includes(option) ? 'border-[#C0C0C0] bg-white/10 text-white' : 'border-white/10 text-zinc-400'}`}>{option}</button>)}</div>
+                  </div>}
+                  {status === 'CONFIRMED' && memberIsMinor && adults.length > 1 && <label className="block text-xs text-zinc-300">Adulto responsable de esta persona
+                    <select value={member.responsibleAdultId || adults[0].id} onChange={event => updateMember(member.id, { responsibleAdultId: event.target.value })} className="mt-2 w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white">
+                      {adults.map(adult => <option key={adult.id} value={adult.id}>{adult.name} {adult.lastName}</option>)}
+                    </select>
+                  </label>}
+                  {status === 'CONFIRMED' && memberIsMinor && adults.length === 1 && <p className="text-xs text-zinc-400">Contacto responsable: {adults[0].name} {adults[0].lastName}</p>}
+                </div>;
+              })}
+              <button type="button" onClick={addMember} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#C0C0C0]/40 px-4 py-3 text-sm font-semibold text-[#C0C0C0] hover:bg-white/10"><Plus className="h-4 w-4" /> Agregar otra persona</button>
+            </div>
+
+            {status === 'CONFIRMED' && isMinor && adults.length > 1 && <label className="block text-xs text-zinc-300">Adulto responsable de {name || 'la primera persona'}
+              <select value={primaryResponsibleAdultId || adults[0].id} onChange={event => setPrimaryResponsibleAdultId(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white">
+                {adults.map(adult => <option key={adult.id} value={adult.id}>{adult.name} {adult.lastName}</option>)}
+              </select>
+            </label>}
+
             {/* Conditional Tutor/Guardian Section for Guests Under 18 */}
-            {status === 'CONFIRMED' && isMinor && (
+            {status === 'CONFIRMED' && hasMinor && adults.length === 0 && (
               <div className="p-5 rounded-2xl bg-zinc-900/90 border border-[#C0C0C0]/30 space-y-4 animate-fade-in">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#C0C0C0]">
                   <ShieldCheck className="w-4 h-4 text-[#C0C0C0]" />
@@ -319,7 +368,7 @@ export const RsvpForm: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 font-light">
-                  Por seguridad y organización del salón, solicitamos los datos de un adulto responsable en caso de cualquier necesidad durante la fiesta.
+                  No agregaste un adulto al grupo. Ingresá un solo contacto responsable para todos los menores.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -409,7 +458,7 @@ export const RsvpForm: React.FC = () => {
               className="w-full py-4 rounded-full bg-[#C0C0C0] text-black font-semibold text-xs tracking-widest uppercase hover:bg-[#E0E0E0] transition-all flex items-center justify-center gap-2 shadow-xl shadow-[#C0C0C0]/10"
             >
               <Send className="w-4 h-4" />
-              <span>Confirmar asistencia</span>
+                  <span>{saving ? 'Guardando...' : `Registrar ${members.length} ${members.length === 1 ? 'persona' : 'personas'}`}</span>
             </button>
 
           </form>

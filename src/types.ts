@@ -56,6 +56,7 @@ export interface EventConfig {
 
 export interface Guest {
   id: string;
+  groupId?: string;
   name: string;
   lastName: string;
   email: string;

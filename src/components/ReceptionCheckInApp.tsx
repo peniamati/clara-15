@@ -81,7 +81,7 @@ export const ReceptionCheckInApp: React.FC<ReceptionCheckInAppProps> = ({ onClos
         {/* Guest List Grid */}
         <div className="space-y-3 max-h-[380px] overflow-y-auto pr-2">
           {filteredGuests.map((g) => {
-            const isMinor = g.age ? g.age < 18 : false;
+            const isMinor = g.age !== undefined && g.age < 18;
             const tutor = g.tutorName || g.emergencyContactName;
             const tutorTel = g.tutorPhone || g.emergencyContactPhone;
 
@@ -93,7 +93,7 @@ export const ReceptionCheckInApp: React.FC<ReceptionCheckInAppProps> = ({ onClos
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-white text-sm">{g.name} {g.lastName}</span>
-                    {g.age && (
+                    {g.age !== undefined && (
                       <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-[#C0C0C0] text-[10px] font-medium">
                         {g.age} años
                       </span>

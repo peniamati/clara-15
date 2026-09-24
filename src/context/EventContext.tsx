@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, query, where, runTransaction, increment } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, query, where, runTransaction, increment, writeBatch } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { visitorId } from '../lib/visitor';
 import { app, db, auth, firebaseConfigurationIssues } from '../lib/firebase';
@@ -51,6 +51,7 @@ interface EventContextType {
   updateConfig: (newConfig: Partial<EventConfig>) => Promise<void>;
   guests: Guest[];
   addOrUpdateGuestRsvp: (guestData: Partial<Guest>) => Promise<Guest>;
+  addGuestGroupRsvp: (members: Partial<Guest>[]) => Promise<Guest[]>;
   checkInGuest: (guestId: string) => Promise<boolean>;
   assignGuestTable: (guestId: string, tableNumber: number) => Promise<boolean>;
   timeline: TimelineItem[];
@@ -339,6 +340,30 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return clean;
   };
 
+  const addGuestGroupRsvp = async (members: Partial<Guest>[]): Promise<Guest[]> => {
+    if (!members.length || members.length > 400) throw new Error('Cantidad de integrantes no admitida.');
+    const ownerUid = await visitorId();
+    const groupId = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+    const batch = writeBatch(db);
+    const guests = members.map(member => {
+      const id = crypto.randomUUID();
+      const guest: Guest = {
+        id, name: member.name || '', lastName: member.lastName || '',
+        email: member.email || '', phone: member.phone || '',
+        status: member.status || 'CONFIRMED', adultsCount: member.adultsCount || 0,
+        kidsCount: member.kidsCount || 0, tableNumber: 0, dietaryRestrictions: [], notes: '',
+        ...member, groupId, qrCode: id, uniqueInviteUrl: ''
+      };
+      const clean = JSON.parse(JSON.stringify({ ...guest, ownerUid, createdAt }));
+      batch.set(doc(db, 'guests', id), clean);
+      return clean as Guest;
+    });
+    await batch.commit();
+    setActiveGuest(guests[0]);
+    return guests;
+  };
+
   const checkInGuest = (guestId: string) => persist(() => updateDoc(doc(db, 'guests', guestId), {
     status: 'CHECKED_IN', checkInTime: new Date().toISOString()
   }));
@@ -479,6 +504,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateConfig,
         guests,
         addOrUpdateGuestRsvp,
+        addGuestGroupRsvp,
         checkInGuest,
         assignGuestTable,
         timeline: config.timeline || [],

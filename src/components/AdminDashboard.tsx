@@ -329,6 +329,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
       return;
     }
     const rows = guests.map(g => ({
+      'Grupo familiar': g.groupId || '',
       Nombre: g.name,
       Apellido: g.lastName,
       Edad: g.age ?? '',
@@ -344,10 +345,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     }));
     const worksheet = XLSX.utils.json_to_sheet(rows);
     worksheet['!cols'] = [
-      { wch: 18 }, { wch: 18 }, { wch: 8 }, { wch: 15 }, { wch: 24 }, { wch: 20 },
+      { wch: 38 }, { wch: 18 }, { wch: 18 }, { wch: 8 }, { wch: 15 }, { wch: 24 }, { wch: 20 },
       { wch: 18 }, { wch: 28 }, { wch: 15 }, { wch: 14 }, { wch: 28 }, { wch: 36 },
     ];
-    worksheet['!autofilter'] = { ref: worksheet['!ref'] || 'A1:L1' };
+    worksheet['!autofilter'] = { ref: worksheet['!ref'] || 'A1:M1' };
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Invitados');
     try {
@@ -582,6 +583,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-white text-sm">{g.name} {g.lastName}</span>
+                        {g.groupId && <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] text-indigo-200" title={`Grupo ${g.groupId}`}>Grupo · {guests.filter(member => member.groupId === g.groupId).length}</span>}
                         {g.age !== undefined && (
                           <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-[#C0C0C0] text-[10px] font-medium">
                             {g.age} años
