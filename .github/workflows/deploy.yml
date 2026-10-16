@@ -3,7 +3,8 @@ name: Deploy to GitHub Pages
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/15 * * * *'
+    # 09:17 UTC = 06:17 in Argentina; one Spotify check per day.
+    - cron: '17 9 * * *'
   push:
     branches:
       - main
@@ -102,6 +103,7 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_DATABASE_ID: ${{ secrets.VITE_FIREBASE_DATABASE_ID }}
+          VITE_SPOTIFY_LIVE_SYNC: ${{ vars.VITE_SPOTIFY_LIVE_SYNC || 'false' }}
         run: |
           test "$VITE_FIREBASE_PROJECT_ID" = "foton-8d1e5"
           test -n "$VITE_FIREBASE_APP_ID"

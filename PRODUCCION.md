@@ -56,3 +56,13 @@ Los datos anteriores que sólo estaban en localStorage no se importan automátic
 - El ingreso permite introducir/buscar un código QR; no incluye lector de cámara.
 - Trivia y memotest son juegos locales. Las encuestas tienen votos compartidos. El sorteo depende del listado de asistentes disponible para la organización.
 - Aún deben validarse reglas con emulador, permisos reales, subida de fotos y pruebas visuales autenticadas. La revisión de dependencias informó vulnerabilidades y debe resolverse antes de declarar producción cerrada.
+# Sincronización de Spotify
+
+El workflow de Pages consulta Spotify una vez por día, a las 06:17 de Argentina. Las ejecuciones por cambios en `main` siguen publicando el sitio. La playlist incrustada de Spotify muestra sus propios cambios sin esperar a GitHub Pages.
+
+Para que el listado y los votos de la web se actualicen para todos al entrar una visita, la función `refreshSpotifyOnVisit` guarda la playlist en `spotifySync/current` de Firestore. La web escucha ese documento en tiempo real. Las visitas simultáneas comparten una única actualización y el servidor no consulta Spotify más de una vez cada 15 minutos. Requiere Cloud Functions for Firebase (plan Blaze); no se envían credenciales de Spotify al navegador.
+
+1. En el proyecto Firebase `foton-8d1e5`, habilitar Cloud Functions y tener disponible el CLI con acceso de despliegue.
+2. Guardar `SPOTIFY_CLIENT_ID` y `SPOTIFY_REFRESH_TOKEN` como secretos de Functions (`firebase functions:secrets:set SPOTIFY_CLIENT_ID` y `firebase functions:secrets:set SPOTIFY_REFRESH_TOKEN`). Usar los mismos valores que ya utiliza GitHub Actions, sin copiarlos al repositorio.
+3. Si `VITE_FIREBASE_DATABASE_ID` no es `(default)`, configurar `SPOTIFY_FIRESTORE_DATABASE_ID` con ese mismo identificador. Desde `functions`, instalar con `npm ci`. Desde la raíz, desplegar las reglas y la función: `firebase deploy --only firestore:rules,functions:refreshSpotifyOnVisit --project foton-8d1e5`.
+4. Crear la variable de repositorio `VITE_SPOTIFY_LIVE_SYNC=true` en GitHub Actions y ejecutar el workflow una vez para publicar el cliente. Hasta completar estos pasos, la web usa la sincronización diaria.

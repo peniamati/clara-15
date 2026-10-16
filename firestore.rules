@@ -19,6 +19,10 @@ service cloud.firestore {
         && request.auth.token.email in ['antonella.brizuela18@gmail.com', 'matiaspa380@gmail.com'];
       allow update: if admin() && request.resource.data.adminEmails.size() > 0;
     }
+    match /spotifySync/current {
+      allow read: if true;
+      allow write: if false;
+    }
     match /guests/{id} {
       allow read: if true;
       allow create: if ownerCreate()

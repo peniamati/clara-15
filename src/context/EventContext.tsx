@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, query, where, runTransaction, increment, writeBatch } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { visitorId } from '../lib/visitor';
 import { app, db, auth, firebaseConfigurationIssues } from '../lib/firebase';
 import { describePersistenceError, validatePhotoSource } from '../lib/photoUpload';
@@ -174,6 +175,22 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [schedule, setSchedule] = useState<ScheduleItem[]>(initialSchedule);
   const [songs, setSongs] = useState<SongRequest[]>(() => firebaseConfigurationIssues.length ? initialSongs : []);
+  const [officialTracks, setOfficialTracks] = useState<SongRequest[]>(initialSongs);
+
+  useEffect(() => {
+    if (firebaseConfigurationIssues.length || import.meta.env.VITE_SPOTIFY_LIVE_SYNC !== 'true') return;
+    let attempted = false;
+    return onSnapshot(doc(db, 'spotifySync', 'current'), snapshot => {
+      const data = snapshot.data();
+      if (Array.isArray(data?.tracks) && data.tracks.length) {
+        setOfficialTracks(data.tracks as SongRequest[]);
+      }
+      if (attempted || Number(data?.updatedAt || 0) > Date.now() - 15 * 60 * 1000) return;
+      attempted = true;
+      void visitorId().then(() => httpsCallable(getFunctions(app, 'us-central1'), 'refreshSpotifyOnVisit')())
+        .catch(error => console.warn('Spotify live refresh unavailable; keeping the saved playlist.', error));
+    }, error => console.warn('Could not load the shared Spotify playlist.', error));
+  }, []);
   const [guestbook, setGuestbook] = useState<GuestbookMessage[]>(() => firebaseConfigurationIssues.length ? initialGuestbook : []);
   const [timeCapsule, setTimeCapsule] = useState<TimeCapsuleMessage[]>([]);
   const [photoboothImages, setPhotoboothImages] = useState<PhotoboothImage[]>(() => firebaseConfigurationIssues.length ? initialPhotobooth : []);
@@ -261,10 +278,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (name === 'songs') {
           (setter as (items: any[]) => void)([
             ...remoteItems.map((item: any) => {
-              const official = findOfficialTrack(item, initialSongs);
-              return official ? { ...item, isInOfficialPlaylist: true, approved: true, spotifyUrl: official.spotifyUrl || item.spotifyUrl } : item;
+              const official = findOfficialTrack(item, officialTracks);
+              return official ? { ...item, isInOfficialPlaylist: true, approved: true, spotifyUrl: official.spotifyUrl || item.spotifyUrl } : { ...item, isInOfficialPlaylist: false };
             }),
-            ...initialSongs.filter(item => !remoteItems.some((remote: any) => findOfficialTrack(remote, [item])))
+            ...officialTracks.filter(item => !remoteItems.some((remote: any) => findOfficialTrack(remote, [item])))
           ]);
         } else {
           (setter as (items: any[]) => void)(remoteItems);
@@ -276,7 +293,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, () => setSyncError('No se pudieron cargar las cápsulas.')));
     else setTimeCapsule([]);
     return () => stops.forEach(stop => stop());
-  }, [isAdminLoggedIn]);
+  }, [isAdminLoggedIn, officialTracks]);
 
   useEffect(() => {
     if (!isAdminLoggedIn) { setAnalyticsEvents([]); return; }
@@ -442,7 +459,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
   const voteSong = (id: string) => {
-    const bundledSong = initialSongs.find(song => song.id === id);
+    const bundledSong = officialTracks.find(song => song.id === id);
     const persistedSong = songs.find(song => song.id === id && song.ownerUid);
     if (!bundledSong || persistedSong) return vote('songs', id, 'votes');
     return persist(async () => {
