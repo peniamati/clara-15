@@ -15,6 +15,7 @@ import {
 } from '../types';
 import { DEFAULT_HERO_IMAGE } from '../lib/heroMedia';
 import { spotifyPlaylistTracks } from './spotifyTracks';
+import { DEFAULT_EVENT_ALBUM_URL } from '../lib/eventAlbum';
 
 export const initialEventConfig: EventConfig = {
   id: 'evt-clara-15',
@@ -50,6 +51,8 @@ export const initialEventConfig: EventConfig = {
   enableGifts: true,
   enableGuestbook: true,
   enableTrivia: false,
+  eventAlbumUrl: DEFAULT_EVENT_ALBUM_URL,
+  enableEventAlbum: true,
   backgroundMusicUrl: 'https://www.youtube.com/watch?v=i2bu-UcVbiQ',
   customHashtag: '#Clara15Disco',
   rsvpDeadline: '2026-10-07',

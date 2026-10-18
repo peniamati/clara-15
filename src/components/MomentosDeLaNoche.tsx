@@ -1,6 +1,7 @@
 import { notify } from '../lib/notify';
 import React, { useRef, useState } from 'react';
 import { useEvent } from '../context/EventContext';
+import { EventPhotoAlbum } from './EventPhotoAlbum';
 import { 
   Camera, 
   Download, 
@@ -294,6 +295,8 @@ export const MomentosDeLaNoche: React.FC = () => {
             Sacá fotos en vivo con el photobooth de la fiesta, sumale filtros y stickers de los 15 de {config.honoree}, o subilas en calidad original a Google Drive para compartirlas en el muro.
           </p>
         </div>
+
+        <EventPhotoAlbum />
 
         {/* Photobooth Studio Card */}
         <div className="mb-16 bg-[#0F0F0F] border border-[#C0C0C0]/25 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">

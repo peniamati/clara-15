@@ -48,6 +48,7 @@ export interface EventConfig {
   rsvpDeadline: string;
   welcomeMessage: string;
   eventAlbumUrl?: string;
+  enableEventAlbum?: boolean;
   heroVideoUrl?: string;
   heroImageUrl: string;
   adminEmails?: string[];

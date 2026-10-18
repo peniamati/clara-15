@@ -32,6 +32,7 @@ import {
 import { initialSongs } from '../data/mockData';
 import { findOfficialTrack } from '../lib/playlist';
 import { extractDriveFileId } from '../lib/driveUtils';
+import { DEFAULT_EVENT_ALBUM_URL, resolveEventAlbumUrl } from '../lib/eventAlbum';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -314,6 +315,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
+    if (localConfig.enableEventAlbum !== false && !resolveEventAlbumUrl(localConfig.eventAlbumUrl)) {
+      setNotice({ title: 'Enlace del álbum no válido', message: 'Pegá un enlace completo que comience con https://, de Google Fotos o de tu álbum compartido.', tone: 'error' });
+      return;
+    }
     setSaving(true);
     try {
       await updateConfig(editableConfig(localConfig));
@@ -756,11 +761,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
 
               {customizerTab === 'content' && (
                 <div className="space-y-6">
-                  <ContentEditor config={localConfig} onChange={handleLocalConfigChange} />
-                  <div>
-                    <label className="block text-xs uppercase tracking-wider text-zinc-300 mb-1.5">Enlace a un álbum compartido (opcional)</label>
-                    <input type="url" value={localConfig.eventAlbumUrl || ''} onChange={e => handleLocalConfigChange('eventAlbumUrl', e.target.value)} placeholder="https://photos.app.goo.gl/..." className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                  <div className="space-y-4 rounded-2xl border border-white/20 bg-black/40 p-4 sm:p-6">
+                    <h3 className="font-serif text-2xl text-white">Fotos de la fiesta</h3>
+                    <label className="flex items-center gap-3 text-sm text-zinc-200">
+                      <input type="checkbox" checked={localConfig.enableEventAlbum !== false} onChange={e => handleLocalConfigChange('enableEventAlbum', e.target.checked)} className="h-4 w-4 accent-white" />
+                      Mostrar el álbum en la invitación
+                    </label>
+                    <label htmlFor="event-album-url" className="block text-xs uppercase tracking-wider text-zinc-300">Enlace del álbum · Google Fotos o Google Drive</label>
+                    <input id="event-album-url" type="url" value={localConfig.eventAlbumUrl || ''} onChange={e => handleLocalConfigChange('eventAlbumUrl', e.target.value)} placeholder={DEFAULT_EVENT_ALBUM_URL} aria-describedby="event-album-help" className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-white/10 text-white text-sm focus:border-[#C0C0C0] outline-none" />
+                    <p id="event-album-help" className="text-xs leading-relaxed text-zinc-400">Agrega un botón para abrir el álbum completo en “Momentos de la Noche”. Si dejás el campo vacío se usa el álbum de Clara. Las fotos de Google Fotos no se importan automáticamente al muro de Drive.</p>
+                    {resolveEventAlbumUrl(localConfig.eventAlbumUrl) && <a href={resolveEventAlbumUrl(localConfig.eventAlbumUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-white/25 px-4 text-xs font-semibold text-white hover:bg-white/10">Probar enlace del álbum ↗</a>}
                   </div>
+                  <ContentEditor config={localConfig} onChange={handleLocalConfigChange} />
                 </div>
               )}
 
