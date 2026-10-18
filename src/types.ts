@@ -134,6 +134,9 @@ export interface TimeCapsuleMessage {
 }
 
 export interface PhotoboothImage {
+  photoSource?: 'google-photos';
+  sourceUrl?: string;
+  thumbnailUrl?: string;
   id: string;
   guestName: string;
   imageUrl: string;

@@ -66,3 +66,9 @@ Para que el listado y los votos de la web se actualicen para todos al entrar una
 2. Guardar `SPOTIFY_CLIENT_ID` y `SPOTIFY_REFRESH_TOKEN` como secretos de Functions (`firebase functions:secrets:set SPOTIFY_CLIENT_ID` y `firebase functions:secrets:set SPOTIFY_REFRESH_TOKEN`). Usar los mismos valores que ya utiliza GitHub Actions, sin copiarlos al repositorio.
 3. Si `VITE_FIREBASE_DATABASE_ID` no es `(default)`, configurar `SPOTIFY_FIRESTORE_DATABASE_ID` con ese mismo identificador. Desde `functions`, instalar con `npm ci`. Desde la raíz, desplegar las reglas y la función: `firebase deploy --only firestore:rules,functions:refreshSpotifyOnVisit --project foton-8d1e5`.
 4. Crear la variable de repositorio `VITE_SPOTIFY_LIVE_SYNC=true` en GitHub Actions y ejecutar el workflow una vez para publicar el cliente. Hasta completar estos pasos, la web usa la sincronización diaria.
+
+## Fotos del álbum dentro del muro
+
+El Muro de Fotos de la Noche muestra las fotos del álbum público de Google Fotos junto a los recuerdos publicados desde la web. `scripts/sync-event-album.mjs` lee el enlace de la configuración pública y genera `src/data/eventAlbumPhotos.json`. La ejecución diaria existente actualiza tanto Spotify como el álbum y solo despliega si cambió alguno de ellos. No se crean ejecuciones adicionales por visita.
+
+Google Fotos no ofrece una galería incrustada mediante el enlace compartido: el importador lee los datos de su página pública sin ejecutar código remoto. Si esa página cambia de formato o no está disponible, se conserva la última importación válida. Un álbum privado no puede importarse con este método. Las fotos del álbum se gestionan en Google Fotos; no se duplican como documentos de Firestore ni se les muestran controles de likes que requieran esos documentos.

@@ -44,13 +44,19 @@ jobs:
           SPOTIFY_PLAYLIST_ID: ${{ secrets.SPOTIFY_PLAYLIST_ID }}
         run: node scripts/sync-spotify.mjs
 
-      - name: Check playlist against the published site
+      - name: Synchronize public party album
+        env:
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_DATABASE_ID: ${{ secrets.VITE_FIREBASE_DATABASE_ID }}
+        run: node scripts/sync-event-album.mjs
+
+      - name: Check playlist and album against the published site
         id: playlist
         env:
           EVENT_NAME: ${{ github.event_name }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          current_hash="$(sha256sum src/data/spotifyTracks.ts | cut -d ' ' -f 1)"
+          current_hash="$(cat src/data/spotifyTracks.ts src/data/eventAlbumPhotos.json | sha256sum | cut -d ' ' -f 1)"
           printf '%s\n' "$current_hash" > "$RUNNER_TEMP/spotify-playlist.sha256"
           if [ "$EVENT_NAME" != "schedule" ]; then
             echo "publish=true" >> "$GITHUB_OUTPUT"
@@ -69,7 +75,7 @@ jobs:
               fi
               if [ "$current_hash" = "$published_hash" ]; then
                 echo "publish=false" >> "$GITHUB_OUTPUT"
-                echo "Playlist unchanged; skipping build and deployment."
+                echo "Playlist and party album unchanged; skipping build and deployment."
               else
                 echo "publish=true" >> "$GITHUB_OUTPUT"
               fi

@@ -1,7 +1,9 @@
 import { notify } from '../lib/notify';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useEvent } from '../context/EventContext';
-import { EventPhotoAlbum } from './EventPhotoAlbum';
+import eventAlbumPhotos from '../data/eventAlbumPhotos.json';
+import { resolveEventAlbumUrl } from '../lib/eventAlbum';
+import type { PhotoboothImage } from '../types';
 import { 
   Camera, 
   Download, 
@@ -18,7 +20,9 @@ import {
   X,
   Flame,
   Info,
-  LoaderCircle
+  LoaderCircle,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { GOOGLE_DRIVE_FOLDER_URL, extractDriveFileId, getDriveDirectImageUrl, uploadImageToDrive } from '../lib/driveUtils';
 
@@ -160,7 +164,12 @@ const composePhotoboothImage = (
 };
 
 export const MomentosDeLaNoche: React.FC = () => {
-  const { photoboothImages, addPhotoboothImage, likePhotoboothImage, config, driveSyncStatus } = useEvent();
+  const { photoboothImages: uploadedImages, addPhotoboothImage, likePhotoboothImage, config, driveSyncStatus } = useEvent();
+  const albumUrl = resolveEventAlbumUrl(config.eventAlbumUrl);
+  const importedPhotos = config.enableEventAlbum !== false && albumUrl === eventAlbumPhotos.albumUrl
+    ? eventAlbumPhotos.photos as PhotoboothImage[] : [];
+  const photoboothImages = [...importedPhotos, ...uploadedImages];
+  const [visiblePhotoCount, setVisiblePhotoCount] = useState(24);
 
   // Photobooth interactive states
   const [photoSource, setPhotoSource] = useState<string>('');
@@ -178,6 +187,19 @@ export const MomentosDeLaNoche: React.FC = () => {
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedIndex = selectedWallImage ? photoboothImages.findIndex(image => image.id === selectedWallImage.id) : -1;
+  const movePhoto = (direction: number) => setSelectedWallImage(photoboothImages[(selectedIndex + direction + photoboothImages.length) % photoboothImages.length]);
+  useEffect(() => {
+    if (!selectedWallImage) return;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedWallImage(null);
+      if (event.key === 'ArrowRight') movePhoto(1);
+      if (event.key === 'ArrowLeft') movePhoto(-1);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [selectedWallImage, selectedIndex, photoboothImages]);
 
   const filterOptions = ['Normal', 'Golden Hour', 'Glamour B&W', 'Hollywood Glow', 'Neon Party', 'Disco Silver'];
   const stickerOptions = [
@@ -292,11 +314,103 @@ export const MomentosDeLaNoche: React.FC = () => {
             Momentos de la Noche
           </h2>
           <p className="text-zinc-400 text-sm sm:text-base font-light">
-            Sacá fotos en vivo con el photobooth de la fiesta, sumale filtros y stickers de los 15 de {config.honoree}, o subilas en calidad original a Google Drive para compartirlas en el muro.
+            Reviví los 15 de {config.honoree} con las fotos del álbum compartido. Tocá una imagen para verla completa o sumá tus recuerdos con el photobooth.
           </p>
         </div>
 
-        <EventPhotoAlbum />
+        {/* Live Photo Wall (Muro de Fotos en Tiempo Real) */}
+        <div className="mb-16" id="fotos-fiesta">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h3 className="font-serif text-3xl font-semibold text-white flex items-center gap-2.5">
+                <ImageIcon className="w-6 h-6 text-[#C0C0C0]" />
+                <span>Muro de Fotos de la Noche</span>
+              </h3>
+              <p className="text-xs text-zinc-400 mt-1">
+                {importedPhotos.length > 0 ? `${importedPhotos.length} fotos del álbum compartido de Google Fotos, junto a los recuerdos del muro.` : 'Todas las fotos que los invitados van compartiendo durante la fiesta.'}
+              </p>
+              {config.enableEventAlbum !== false && albumUrl && <a href={albumUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-zinc-200 underline">Abrir álbum original <ExternalLink className="h-3.5 w-3.5" /></a>}
+            </div>
+
+            <div className="flex flex-col sm:items-end gap-2">
+              <span className="px-4 py-1.5 rounded-full bg-zinc-900 border border-white/10 text-xs text-[#C0C0C0] font-semibold">
+                {photoboothImages.length} fotos en el muro
+              </span>
+              <span className="flex items-center gap-1.5 text-[11px] text-zinc-400" aria-live="polite">
+                {driveSyncStatus === 'loading' && <LoaderCircle className="w-3.5 h-3.5 animate-spin text-amber-400" />}
+                {driveSyncStatus === 'loading' && 'Actualizando fotos desde Google Drive…'}
+                {driveSyncStatus === 'synced' && <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Fotos de Drive actualizadas</>}
+                {driveSyncStatus === 'error' && 'Mostrando las fotos guardadas · reintentando Drive'}
+              </span>
+            </div>
+          </div>
+
+          {photoboothImages.length === 0 ? (
+            <div className="text-center py-20 rounded-3xl bg-[#0F0F0F] border border-white/10">
+              <Camera className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+              <h4 className="text-white font-serif text-xl font-medium mb-1">
+                El Muro está listo para estrenarse
+              </h4>
+              <p className="text-zinc-400 text-xs sm:text-sm font-light max-w-md mx-auto">
+                ¡Sé el primero en sacarte una foto o subir una desde tu celular para empezar a llenar los momentos de la noche!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+              {photoboothImages.slice(0, visiblePhotoCount).map((img) => (
+                <div
+                  key={img.id}
+                  className="rounded-2xl overflow-hidden bg-[#0F0F0F] border border-white/10 hover:border-[#C0C0C0]/40 transition-all shadow-xl group flex flex-col justify-between"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSelectedWallImage(img)}
+                    className="aspect-square w-full relative overflow-hidden bg-black text-left"
+                    aria-label={`Ampliar ${img.caption || `foto de ${img.guestName}`}`}
+                  >
+                    <img
+                      src={img.thumbnailUrl || img.imageUrl}
+                      alt={img.caption || `Momento por ${img.guestName}`}
+                      className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    {img.sticker && img.sticker !== 'Sin sticker' && (
+                      <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/80 border border-white/20 text-[10px] text-white font-medium">
+                        {img.sticker}
+                      </span>
+                    )}
+                    <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/75 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity">Ver completa</span>
+                  </button>
+
+                  <div className="p-4 flex items-center justify-between gap-3 bg-[#0F0F0F]">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-white truncate">
+                        {img.guestName}
+                      </p>
+                      {img.caption && (
+                        <p className="text-[11px] text-zinc-400 font-light truncate mt-0.5">
+                          {img.caption}
+                        </p>
+                      )}
+                    </div>
+
+                    {img.photoSource !== 'google-photos' && <button
+                      type="button"
+                      onClick={() => likePhotoboothImage(img.id)}
+                      className="shrink-0 px-3 py-1.5 rounded-full bg-zinc-900 border border-white/10 hover:border-[#C0C0C0]/50 text-xs text-rose-400 flex items-center gap-1.5 transition-all active:scale-95"
+                      title="Dar me gusta"
+                    >
+                      <Heart className="w-3.5 h-3.5 fill-rose-500/20 text-rose-400" />
+                      <span className="text-zinc-200 font-bold">{img.likes || 0}</span>
+                    </button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {visiblePhotoCount < photoboothImages.length && <button type="button" onClick={() => setVisiblePhotoCount(count => count + 24)} className="mx-auto mt-7 flex min-h-12 items-center justify-center rounded-full border border-white/25 px-7 py-3 text-sm font-semibold text-white hover:bg-white/10">Ver más fotos ({photoboothImages.length - visiblePhotoCount} restantes)</button>}
+        </div>
+
 
         {/* Photobooth Studio Card */}
         <div className="mb-16 bg-[#0F0F0F] border border-[#C0C0C0]/25 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
@@ -567,107 +681,18 @@ export const MomentosDeLaNoche: React.FC = () => {
 
         </div>
 
-        {/* Live Photo Wall (Muro de Fotos en Tiempo Real) */}
-        <div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-            <div>
-              <h3 className="font-serif text-3xl font-semibold text-white flex items-center gap-2.5">
-                <ImageIcon className="w-6 h-6 text-[#C0C0C0]" />
-                <span>Muro de Fotos de la Noche</span>
-              </h3>
-              <p className="text-xs text-zinc-400 mt-1">
-                Todas las fotos que los invitados van compartiendo durante la fiesta en tiempo real.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:items-end gap-2">
-              <span className="px-4 py-1.5 rounded-full bg-zinc-900 border border-white/10 text-xs text-[#C0C0C0] font-semibold">
-                {photoboothImages.length} fotos en el muro
-              </span>
-              <span className="flex items-center gap-1.5 text-[11px] text-zinc-400" aria-live="polite">
-                {driveSyncStatus === 'loading' && <LoaderCircle className="w-3.5 h-3.5 animate-spin text-amber-400" />}
-                {driveSyncStatus === 'loading' && 'Actualizando fotos desde Google Drive…'}
-                {driveSyncStatus === 'synced' && <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Fotos de Drive actualizadas</>}
-                {driveSyncStatus === 'error' && 'Mostrando las fotos guardadas · reintentando Drive'}
-              </span>
-            </div>
-          </div>
-
-          {photoboothImages.length === 0 ? (
-            <div className="text-center py-20 rounded-3xl bg-[#0F0F0F] border border-white/10">
-              <Camera className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-              <h4 className="text-white font-serif text-xl font-medium mb-1">
-                El Muro está listo para estrenarse
-              </h4>
-              <p className="text-zinc-400 text-xs sm:text-sm font-light max-w-md mx-auto">
-                ¡Sé el primero en sacarte una foto o subir una desde tu celular para empezar a llenar los momentos de la noche!
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {photoboothImages.map((img) => (
-                <div
-                  key={img.id}
-                  className="rounded-2xl overflow-hidden bg-[#0F0F0F] border border-white/10 hover:border-[#C0C0C0]/40 transition-all shadow-xl group flex flex-col justify-between"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelectedWallImage(img)}
-                    className="aspect-square w-full relative overflow-hidden bg-black text-left"
-                    aria-label={`Ampliar ${img.caption || `foto de ${img.guestName}`}`}
-                  >
-                    <img
-                      src={img.imageUrl}
-                      alt={img.caption || `Momento por ${img.guestName}`}
-                      className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
-                      loading="lazy"
-                    />
-                    {img.sticker && img.sticker !== 'Sin sticker' && (
-                      <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/80 border border-white/20 text-[10px] text-white font-medium">
-                        {img.sticker}
-                      </span>
-                    )}
-                    <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/75 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity">Ver completa</span>
-                  </button>
-
-                  <div className="p-4 flex items-center justify-between gap-3 bg-[#0F0F0F]">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-white truncate">
-                        {img.guestName}
-                      </p>
-                      {img.caption && (
-                        <p className="text-[11px] text-zinc-400 font-light truncate mt-0.5">
-                          {img.caption}
-                        </p>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => likePhotoboothImage(img.id)}
-                      className="shrink-0 px-3 py-1.5 rounded-full bg-zinc-900 border border-white/10 hover:border-[#C0C0C0]/50 text-xs text-rose-400 flex items-center gap-1.5 transition-all active:scale-95"
-                      title="Dar me gusta"
-                    >
-                      <Heart className="w-3.5 h-3.5 fill-rose-500/20 text-rose-400" />
-                      <span className="text-zinc-200 font-bold">{img.likes || 0}</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
       </div>
 
       {selectedWallImage && (
         <div className="fixed inset-0 z-[120] bg-black/95 backdrop-blur-md p-3 sm:p-8 flex flex-col" role="dialog" aria-modal="true" aria-label="Vista ampliada de la foto">
-          <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate">{selectedWallImage.guestName}</p>
               {selectedWallImage.caption && <p className="text-xs text-zinc-400 truncate">{selectedWallImage.caption}</p>}
             </div>
             <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-400">{selectedIndex + 1} / {photoboothImages.length}</span>
               <a
                 href={selectedWallImage.imageUrl}
                 download
@@ -681,6 +706,10 @@ export const MomentosDeLaNoche: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
+          </div>
+          <div className="flex items-center justify-center gap-4 mb-3">
+            <button type="button" onClick={() => movePhoto(-1)} aria-label="Foto anterior" className="rounded-full border border-white/20 p-3 text-white"><ChevronLeft className="h-5 w-5" /></button>
+            <button type="button" onClick={() => movePhoto(1)} aria-label="Foto siguiente" className="rounded-full border border-white/20 p-3 text-white"><ChevronRight className="h-5 w-5" /></button>
           </div>
           <img src={selectedWallImage.imageUrl} alt={selectedWallImage.caption || `Foto de ${selectedWallImage.guestName}`} className="min-h-0 flex-1 w-full object-contain" />
         </div>
