@@ -24,7 +24,7 @@ service cloud.firestore {
       allow write: if false;
     }
     match /guests/{id} {
-      allow read: if true;
+      allow read: if admin();
       allow create: if ownerCreate()
         && request.resource.data.status in ['CONFIRMED', 'DECLINED']
         && request.resource.data.tableNumber == 0
