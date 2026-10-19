@@ -36,10 +36,14 @@ export function buildGuestbookPdf(messages: GuestbookMessage[], honoree: string)
   y += 17;
 
   for (const entry of sorted) {
-    const name = entry.guestName?.trim() || 'Invitado';
+    const name = String(entry.guestName ?? '').trim() || 'Invitado';
     const date = entry.createdAt && !Number.isNaN(Date.parse(entry.createdAt))
       ? new Date(entry.createdAt).toLocaleDateString('es-AR') : '';
-    const lines = pdf.splitTextToSize(entry.message?.trim() || '(Sin mensaje)', PAGE_WIDTH - 2 * MARGIN);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10.5);
+    const lines = pdf.splitTextToSize(String(entry.message ?? '').trim() || '(Sin mensaje)', PAGE_WIDTH - 2 * MARGIN);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
     const nameLines = pdf.splitTextToSize(name, 125);
     reserve(12 + nameLines.length * 6);
     pdf.setDrawColor(210, 210, 210);
@@ -61,6 +65,10 @@ export function buildGuestbookPdf(messages: GuestbookMessage[], honoree: string)
     pdf.setTextColor(55, 55, 55);
     for (const line of lines) {
       reserve(6);
+      // A page header changes the font; restore the body style after every break.
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10.5);
+      pdf.setTextColor(55, 55, 55);
       pdf.text(line, MARGIN, y);
       y += 6;
     }
@@ -78,7 +86,7 @@ export function buildGuestbookPdf(messages: GuestbookMessage[], honoree: string)
   return pdf;
 }
 
-export function downloadGuestbookPdf(messages: GuestbookMessage[], honoree: string): void {
+export function prepareGuestbookPdf(messages: GuestbookMessage[], honoree: string): { blob: Blob; filename: string } {
   const filename = `Libro_de_firmas_${honoree.replace(/[^a-zA-Z0-9_-]+/g, '_')}.pdf`;
-  buildGuestbookPdf(messages, honoree).save(filename);
+  return { blob: buildGuestbookPdf(messages, honoree).output('blob'), filename };
 }

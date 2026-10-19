@@ -41,6 +41,7 @@ import {
 } from '../data/mockData';
 
 interface EventContextType {
+  savedConfig: EventConfig;
   syncError: string;
   clearSyncError: () => void;
   moderateContent: (group: string, id: string, approved: boolean) => Promise<boolean>;
@@ -515,6 +516,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value={{
         syncError, clearSyncError: () => setSyncError(''), moderateContent, deleteContent,
         config: activeConfig,
+        savedConfig: config,
         previewConfig,
         setPreviewConfig,
         activeConfig,
