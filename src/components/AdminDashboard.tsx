@@ -33,13 +33,15 @@ import { initialSongs } from '../data/mockData';
 import { findOfficialTrack } from '../lib/playlist';
 import { extractDriveFileId } from '../lib/driveUtils';
 import { DEFAULT_EVENT_ALBUM_URL, resolveEventAlbumUrl } from '../lib/eventAlbum';
+import { prepareGuestbookPdf } from '../lib/guestbookPdf';
+import { guestReportRows, specialMenus } from '../lib/guestReports';
 
 interface AdminDashboardProps {
   onClose: () => void;
   onPreviewChange: (preview: boolean) => void;
 }
 
-type OrganizerNoticeState = { title: string; message: string; tone?: 'success' | 'error'; actionUrl?: string; actionLabel?: string };
+type OrganizerNoticeState = { title: string; message: string; tone?: 'success' | 'error'; actionUrl?: string; actionLabel?: string; downloadName?: string };
 
 const OrganizerNotice: React.FC<{ notice: OrganizerNoticeState | null; onClose: () => void }> = ({ notice, onClose }) => {
   if (!notice) return null;
@@ -50,7 +52,8 @@ const OrganizerNotice: React.FC<{ notice: OrganizerNoticeState | null; onClose: 
       </div>
       <h3 id="notice-title" className="mb-2 font-serif text-2xl font-semibold text-white">{notice.title}</h3>
       <p className="mb-6 text-sm leading-relaxed text-zinc-400">{notice.message}</p>
-      {notice.actionUrl && <a href={notice.actionUrl} target="_blank" rel="noopener noreferrer" className="mb-3 block w-full rounded-full border border-white/20 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white">{notice.actionLabel || 'Abrir enlace'}</a>}
+      {notice.actionUrl && <a href={notice.actionUrl} download={notice.downloadName} target={notice.downloadName ? undefined : '_blank'} rel="noopener noreferrer" className="mb-3 block w-full rounded-full border border-white/20 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white">{notice.actionLabel || 'Abrir enlace'}</a>}
+      {notice.downloadName && <a href={notice.actionUrl} target="_blank" rel="noopener noreferrer" className="mb-4 block text-sm text-zinc-300 underline">Abrir PDF para verlo o imprimirlo</a>}
       <button type="button" onClick={onClose} className="w-full rounded-full bg-[#C0C0C0] px-5 py-3 text-xs font-bold uppercase tracking-wider text-black">Entendido</button>
     </div>
   </div>;
@@ -58,7 +61,7 @@ const OrganizerNotice: React.FC<{ notice: OrganizerNoticeState | null; onClose: 
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPreviewChange }) => {
   const {
-    config,
+    savedConfig: config,
     setPreviewConfig,
     updateConfig,
     guests,
@@ -89,6 +92,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   const [saving, setSaving] = useState(false);
   const [exportingGuestbook, setExportingGuestbook] = useState(false);
   const [notice, setNotice] = useState<OrganizerNoticeState | null>(null);
+  const pdfUrlRef = useRef<string | null>(null);
+  React.useEffect(() => () => {
+    if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
+  }, []);
   const [confirmation, setConfirmation] = useState<{ title: string; message: string; action: string; run: () => Promise<void> } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -145,6 +152,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
 
   // Customizer state
   const [localConfig, setLocalConfig] = useState(config);
+  const lastSavedConfig = useRef(config);
+  React.useEffect(() => {
+    const { organizerNotificationSeenAt: _seen, ...previous } = lastSavedConfig.current;
+    setLocalConfig(current => {
+      const { organizerNotificationSeenAt: _localSeen, ...draft } = current;
+      return JSON.stringify(draft) === JSON.stringify(previous) ? config : current;
+    });
+    lastSavedConfig.current = config;
+  }, [config]);
   
   React.useEffect(() => {
     setPreviewConfig(localConfig);
@@ -333,21 +349,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
       setNotice({ title: 'No hay invitados', message: 'La tabla estará disponible cuando haya una respuesta de asistencia.', tone: 'error' });
       return;
     }
-    const rows = guests.map(g => ({
-      'Grupo familiar': g.groupId || '',
-      Nombre: g.name,
-      Apellido: g.lastName,
-      Edad: g.age ?? '',
-      'Menor de edad': g.age !== undefined && g.age < 18 ? 'Sí' : 'No',
-      Tutor: g.tutorName || g.emergencyContactName || '',
-      'Teléfono del tutor': g.tutorPhone || g.emergencyContactPhone || '',
-      Teléfono: g.phone || '',
-      Email: g.email || '',
-      Estado: g.status,
-      Mesa: g.tableNumber || 'Sin asignar',
-      'Menú especial': g.dietaryRestrictions.join(', '),
-      Notas: g.notes || '',
-    }));
+    try {
+    const rows = guestReportRows(guests);
     const worksheet = XLSX.utils.json_to_sheet(rows);
     worksheet['!cols'] = [
       { wch: 38 }, { wch: 18 }, { wch: 18 }, { wch: 8 }, { wch: 15 }, { wch: 24 }, { wch: 20 },
@@ -356,7 +359,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
     worksheet['!autofilter'] = { ref: worksheet['!ref'] || 'A1:M1' };
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Invitados');
-    try {
       XLSX.writeFile(workbook, `Invitados_${config.honoree.replace(/\s+/g, '_')}.xls`, { bookType: 'biff8' });
       setNotice({ title: 'Tabla descargada', message: 'Se generó el archivo de invitados en formato XLS.', tone: 'success' });
     } catch {
@@ -411,7 +413,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
   const readyChecks = publicationChecks.filter(([, ready]) => ready).length;
   const confirmedGuests = guests.filter(g => g.status === 'CONFIRMED' || g.status === 'CHECKED_IN').length;
   const checkedInGuests = guests.filter(g => g.status === 'CHECKED_IN').length;
-  const dietaryCount = guests.filter(g => g.dietaryRestrictions.length > 0 && !g.dietaryRestrictions.includes('Ninguna')).length;
+  const dietaryCount = guests.filter(g => g.status !== 'DECLINED' && specialMenus(g.dietaryRestrictions).length > 0).length;
   const pendingSongRequests = songs.filter(song => !song.isInOfficialPlaylist && !findOfficialTrack(song, initialSongs));
   const newSongRequests = pendingSongRequests.filter(song => Date.parse(song.createdAt || '') > lastSeenAt).length;
   const newConfirmations = guests.filter(guest => guest.status === 'CONFIRMED' && Date.parse(guest.createdAt || '') > lastSeenAt).length;
@@ -601,7 +603,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
                         )}
                       </div>
                       <span className="text-zinc-400 font-light block mt-0.5">
-                        {g.phone ? `WhatsApp: ${g.phone} · ` : ''}Menú: {g.dietaryRestrictions.join(', ') || 'Estándar'}
+                        {g.phone ? `WhatsApp: ${g.phone} · ` : ''}Menú: {specialMenus(g.dietaryRestrictions).join(', ') || 'Estándar'}
                       </span>
                       <p className="mt-2">Correo: {g.email || 'No informado'} · Mensaje: {g.notes || 'Sin mensaje'}</p>
                       {isMinor && tutor && (
@@ -633,12 +635,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onPrevi
           <p className="text-zinc-400">Las canciones propuestas no aparecen en la invitación hasta que estén en la playlist oficial. Las firmas y fotos se publican al enviarse. Al quitar una foto de Drive, también sale de la carpeta compartida.</p>
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900 p-4">
             <div><h4 className="font-semibold">Libro de firmas</h4><p className="text-sm text-zinc-400">Guardá una copia PDF con nombres, fechas y dedicatorias.</p></div>
-            <button type="button" disabled={exportingGuestbook} onClick={async () => {
+            <button type="button" disabled={exportingGuestbook} onClick={() => {
               const publishedMessages = guestbook.filter(message => message.approved);
               if (!publishedMessages.length) { setNotice({ title: 'Todavía no hay firmas publicadas', message: 'Podrás descargar el libro cuando haya una dedicatoria visible.', tone: 'error' }); return; }
               setExportingGuestbook(true);
-              try { const { downloadGuestbookPdf } = await import('../lib/guestbookPdf'); downloadGuestbookPdf(publishedMessages, config.honoree); setNotice({ title: 'PDF generado', message: 'Guardá el archivo en un lugar seguro para conservar las dedicatorias.', tone: 'success' }); }
-              catch { setNotice({ title: 'No se pudo crear el PDF', message: 'Intentá nuevamente desde este dispositivo.', tone: 'error' }); }
+              try {
+                const { blob, filename } = prepareGuestbookPdf(publishedMessages, config.honoree);
+                if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
+                const url = URL.createObjectURL(blob);
+                pdfUrlRef.current = url;
+                setNotice({ title: 'Tu libro de firmas está listo', message: `${publishedMessages.length} dedicatorias preparadas. Pulsá Descargar PDF para guardarlo; también podés abrirlo e imprimirlo.`, tone: 'success', actionUrl: url, actionLabel: 'Descargar PDF', downloadName: filename });
+              }
+              catch (error) { console.error('Guestbook PDF failed:', error); setNotice({ title: 'No se pudo crear el PDF', message: 'Las firmas siguen guardadas. Recargá la página y volvé a intentarlo.', tone: 'error' }); }
               finally { setExportingGuestbook(false); }
             }} className="min-h-11 rounded-full bg-white px-5 text-sm font-semibold text-black disabled:opacity-50"><Download className="mr-2 inline h-4 w-4" />{exportingGuestbook ? 'Generando…' : 'Descargar PDF'}</button>
           </div>
